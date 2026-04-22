@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -6,6 +6,8 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  onAuthStateChanged,
+  type User,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
 import { auth } from "@/app/lib/firebase";
@@ -20,6 +22,14 @@ export function useAuth() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<AuthStatus>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const signUp = async (
     email: string,
@@ -142,6 +152,7 @@ export function useAuth() {
   const clearStatus = () => setStatus(null);
 
   return {
+    user,
     signUp,
     signIn,
     signInWithGoogle,

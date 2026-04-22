@@ -2,9 +2,22 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
 import HeroSection from "../components/HeroSection";
 import StatBoxes from "../components/StatBoxes";
-import ProjectCard from "../components/ProjectCard";
+import ProjectCard, {
+  type Status,
+  type Priority,
+} from "../components/ProjectCard";
 
-const PROJECTS = [
+const PROJECTS: {
+  title: string;
+  description: string;
+  status: Status;
+  progress: number;
+  dueDate: string;
+  tasksDone: number;
+  tasksTotal: number;
+  priority: Priority;
+  avatars: { initials: string; bg: string }[];
+}[] = [
   {
     title: "Redesign Landing Page",
     description:
@@ -131,7 +144,6 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
           <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
             <HeroSection />
-
             <StatBoxes />
 
             <div>

@@ -1,7 +1,7 @@
 export default function TopBar() {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8E2] bg-white px-4 py-3 md:px-8 md:py-4">
-      <div className="relative w-full md:max-w-sm">
+      <div className="relative min-w-0 flex-1 md:max-w-sm">
         <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
           <svg
             width="15"

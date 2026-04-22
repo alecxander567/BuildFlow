@@ -4,8 +4,8 @@ const AVATARS = [
   { initials: "SR", bg: "bg-[#7C3AED]" },
 ];
 
-type Status = "In Progress" | "Review" | "On Hold" | "Completed";
-type Priority = "High" | "Medium" | "Low";
+export type Status = "In Progress" | "Review" | "On Hold" | "Completed";
+export type Priority = "High" | "Medium" | "Low";
 
 interface Avatar {
   initials: string;

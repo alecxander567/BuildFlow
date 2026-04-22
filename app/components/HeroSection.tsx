@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/app/lib/firebase";
+import { useAuth } from "@/app/hooks/useAuth";
 
 function getDynamicDate() {
   const now = new Date();
@@ -34,14 +32,7 @@ function getGreetingEmoji() {
 }
 
 export default function HeroSection() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-    });
-    return () => unsubscribe();
-  }, []);
+  const { user } = useAuth();
 
   const rawName = user?.displayName || user?.email?.split("@")[0] || "there";
   const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);

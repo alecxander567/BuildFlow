@@ -181,12 +181,17 @@ function NavList({ onClose }: NavListProps) {
         <button
           key={item.label}
           onClick={onClose}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
             item.active ?
               "bg-[#FEF0E7] text-[#E8610A]"
-            : "text-[#72706A] hover:bg-[#F2EDE7] hover:text-[#1A1916]"
+            : "text-[#72706A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
           }`}>
-          <span className={item.active ? "text-[#E8610A]" : "text-[#B0ADA7]"}>
+          <span
+            className={
+              item.active ? "text-[#E8610A]" : (
+                "text-[#B0ADA7] group-hover:text-[#E8610A]"
+              )
+            }>
             {item.icon}
           </span>
           <span className="flex-1 text-left">{item.label}</span>
@@ -206,8 +211,10 @@ function NavList({ onClose }: NavListProps) {
           <button
             key={item.label}
             onClick={onClose}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F2EDE7] hover:text-[#1A1916]">
-            <span className="text-[#B0ADA7]">{item.icon}</span>
+            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            <span className="text-[#B0ADA7] group-hover:text-[#E8610A]">
+              {item.icon}
+            </span>
             {item.label}
           </button>
         ))}
@@ -218,7 +225,7 @@ function NavList({ onClose }: NavListProps) {
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { logOut, loading } = useAuth();
+  const { logOut, loading, user } = useAuth();
 
   return (
     <>
@@ -251,14 +258,14 @@ export default function Sidebar() {
         <div className="border-t border-[#EDE8E2] px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8610A] text-xs font-bold text-white">
-              JK
+              {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-[#1A1916]">
-                James Kim
+                {user?.displayName ?? user?.email ?? "Unknown"}
               </p>
               <p className="truncate text-[11px] text-[#B0ADA7]">
-                james@buildflow.io
+                {user?.email ?? ""}
               </p>
             </div>
             <button
@@ -293,38 +300,57 @@ export default function Sidebar() {
             BuildFlow
           </span>
         </div>
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-          aria-label="Toggle menu">
-          {mobileOpen ?
+
+        <div className="flex items-center gap-2">
+          <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-          : <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          }
-        </button>
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-[#F9F7F4]" />
+          </button>
+
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+            aria-label="Toggle menu">
+            {mobileOpen ?
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            : <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            }
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
@@ -338,14 +364,14 @@ export default function Sidebar() {
             <div className="mt-3 border-t border-[#EDE8E2] pt-3 px-2">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8610A] text-xs font-bold text-white">
-                  JK
+                  {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold text-[#1A1916]">
-                    James Kim
+                    {user?.displayName ?? user?.email ?? "Unknown"}
                   </p>
                   <p className="truncate text-[11px] text-[#B0ADA7]">
-                    james@buildflow.io
+                    {user?.email ?? ""}
                   </p>
                 </div>
                 <button
