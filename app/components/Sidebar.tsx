@@ -167,7 +167,11 @@ const SignOutIcon = () => (
   </svg>
 );
 
-function NavList({ onClose }) {
+interface NavListProps {
+  onClose: () => void;
+}
+
+function NavList({ onClose }: NavListProps) {
   return (
     <div className="flex flex-col gap-0.5">
       <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">

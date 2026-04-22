@@ -4,8 +4,32 @@ const AVATARS = [
   { initials: "SR", bg: "bg-[#7C3AED]" },
 ];
 
-function StatusBadge({ status }) {
-  const map = {
+type Status = "In Progress" | "Review" | "On Hold" | "Completed";
+type Priority = "High" | "Medium" | "Low";
+
+interface Avatar {
+  initials: string;
+  bg: string;
+}
+
+interface StatusBadgeProps {
+  status: Status;
+}
+
+interface ProjectCardProps {
+  title?: string;
+  description?: string;
+  status?: Status;
+  progress?: number;
+  dueDate?: string;
+  tasksDone?: number;
+  tasksTotal?: number;
+  priority?: Priority;
+  avatars?: Avatar[];
+}
+
+function StatusBadge({ status }: StatusBadgeProps) {
+  const map: Record<Status, string> = {
     "In Progress": "bg-[#FEF0E7] text-[#E8610A]",
     Review: "bg-[#EDE9FE] text-[#7C3AED]",
     "On Hold": "bg-[#FEF9C3] text-[#A16207]",
@@ -29,7 +53,7 @@ export default function ProjectCard({
   tasksTotal = 12,
   priority = "High",
   avatars = AVATARS,
-}) {
+}: ProjectCardProps) {
   const priorityColor =
     priority === "High" ? "text-[#DC2626]"
     : priority === "Medium" ? "text-[#F57C00]"
