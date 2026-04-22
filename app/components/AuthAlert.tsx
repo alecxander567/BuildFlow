@@ -26,7 +26,6 @@ export default function AuthAlert({ status, onClose }: Props) {
           "border-green-200 bg-green-50 text-green-800"
         : "border-red-200 bg-red-50 text-red-800"
       }`}>
-      {/* icon */}
       <span className="mt-0.5 shrink-0">
         {isSuccess ?
           <svg
@@ -59,7 +58,6 @@ export default function AuthAlert({ status, onClose }: Props) {
 
       <p className="flex-1">{status.message}</p>
 
-      {/* close button */}
       <button
         onClick={onClose}
         aria-label="Dismiss"
