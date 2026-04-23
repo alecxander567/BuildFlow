@@ -21,12 +21,14 @@ export type AuthStatus = {
 export function useAuth() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<AuthStatus>(null);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -153,6 +155,7 @@ export function useAuth() {
 
   return {
     user,
+    authLoading,
     signUp,
     signIn,
     signInWithGoogle,

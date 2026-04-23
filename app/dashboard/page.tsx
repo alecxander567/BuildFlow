@@ -1,111 +1,64 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
 import HeroSection from "../components/HeroSection";
 import StatBoxes from "../components/StatBoxes";
-import ProjectCard, {
-  type Status,
+import ProjectCard from "../components/ProjectCard";
+import { AlertContainer, useAlert } from "../components/Alert";
+import { useAuth } from "@/app/hooks/useAuth";
+import {
+  useProjects,
   type Priority,
-} from "../components/ProjectCard";
+  type ProjectType,
+} from "@/app/hooks/useProject";
 
-const PROJECTS: {
-  title: string;
-  description: string;
-  status: Status;
-  progress: number;
-  dueDate: string;
-  tasksDone: number;
-  tasksTotal: number;
-  priority: Priority;
-  avatars: { initials: string; bg: string }[];
-}[] = [
-  {
-    title: "Redesign Landing Page",
-    description:
-      "Update the marketing site with new brand guidelines and improved conversion flow.",
-    status: "In Progress",
-    progress: 65,
-    dueDate: "Apr 30",
-    tasksDone: 8,
-    tasksTotal: 12,
-    priority: "High",
-    avatars: [
-      { initials: "JK", bg: "bg-[#E8610A]" },
-      { initials: "ML", bg: "bg-[#B84A06]" },
-    ],
-  },
-  {
-    title: "API Integration v2",
-    description:
-      "Migrate all endpoints to the new REST API and add Webhook support for third-party apps.",
-    status: "Review",
-    progress: 88,
-    dueDate: "Apr 25",
-    tasksDone: 14,
-    tasksTotal: 16,
-    priority: "High",
-    avatars: [
-      { initials: "SR", bg: "bg-[#7C3AED]" },
-      { initials: "JK", bg: "bg-[#E8610A]" },
-      { initials: "TA", bg: "bg-[#B84A06]" },
-    ],
-  },
-  {
-    title: "Mobile App Onboarding",
-    description:
-      "Design and implement the new 4-step onboarding flow for iOS and Android users.",
-    status: "In Progress",
-    progress: 40,
-    dueDate: "May 10",
-    tasksDone: 4,
-    tasksTotal: 10,
-    priority: "Medium",
-    avatars: [{ initials: "ML", bg: "bg-[#B84A06]" }],
-  },
-  {
-    title: "Q2 Analytics Dashboard",
-    description:
-      "Build internal reporting views for the sales and marketing teams with real-time data.",
-    status: "On Hold",
-    progress: 20,
-    dueDate: "May 20",
-    tasksDone: 2,
-    tasksTotal: 9,
-    priority: "Low",
-    avatars: [
-      { initials: "TA", bg: "bg-[#B84A06]" },
-      { initials: "SR", bg: "bg-[#7C3AED]" },
-    ],
-  },
-  {
-    title: "Auth & Permissions Refactor",
-    description:
-      "Overhaul role-based access control and add SSO support across all workspaces.",
-    status: "In Progress",
-    progress: 55,
-    dueDate: "May 5",
-    tasksDone: 6,
-    tasksTotal: 11,
-    priority: "High",
-    avatars: [{ initials: "JK", bg: "bg-[#E8610A]" }],
-  },
-  {
-    title: "Documentation Site",
-    description:
-      "Write and publish developer docs, API reference, and tutorial guides.",
-    status: "Completed",
-    progress: 100,
-    dueDate: "Apr 15",
-    tasksDone: 18,
-    tasksTotal: 18,
-    priority: "Low",
-    avatars: [
-      { initials: "ML", bg: "bg-[#B84A06]" },
-      { initials: "JK", bg: "bg-[#E8610A]" },
-    ],
-  },
-];
+type FilterTab = "All" | Priority | ProjectType;
+
+const FILTER_TABS: FilterTab[] = ["All", "High", "Moderate", "Low"];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, authLoading } = useAuth();
+  const { projects, loading, error, deleteProject } = useProjects(
+    user,
+    authLoading,
+  );
+  const { toasts, remove, show } = useAlert();
+
+  const [activeTab, setActiveTab] = useState<FilterTab>("All");
+
+  useEffect(() => {
+    if (pathname !== "/dashboard") return;
+
+    const raw = sessionStorage.getItem("pendingToast");
+    if (!raw) return;
+
+    try {
+      const { type, title, message } = JSON.parse(raw);
+      show(type, message, title);
+      sessionStorage.removeItem("pendingToast");
+    } catch {}
+  }, [pathname, show]);
+
+  const filteredProjects = projects.filter((p) => {
+    if (activeTab === "All") return true;
+    return p.priority === activeTab || p.projectType === activeTab;
+  });
+
+  const handleDeleteProject = async (id: string) => {
+    const success = await deleteProject(id);
+    if (success) {
+      show("success", "Project removed successfully.", "Project deleted");
+      return true;
+    }
+    show("error", "Something went wrong. Please try again.", "Delete failed");
+    return false;
+  };
+
   return (
     <div
       className="flex h-screen overflow-hidden bg-[#F9F7F4]"
@@ -155,16 +108,20 @@ export default function DashboardPage() {
                     All Projects
                   </h2>
                   <p className="text-xs text-[#B0ADA7]">
-                    12 projects · 4 active
+                    {loading ?
+                      "Loading…"
+                    : `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""}`
+                    }
                   </p>
                 </div>
 
                 <div className="flex items-center gap-1 rounded-xl border border-[#EDE8E2] bg-white p-1 overflow-x-auto">
-                  {["All", "Active", "Review", "Completed"].map((tab, i) => (
+                  {FILTER_TABS.map((tab) => (
                     <button
                       key={tab}
+                      onClick={() => setActiveTab(tab)}
                       className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                        i === 0 ?
+                        activeTab === tab ?
                           "bg-[#E8610A] text-white"
                         : "text-[#72706A] hover:bg-[#F2EDE7] hover:text-[#1A1916]"
                       }`}>
@@ -174,17 +131,104 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {PROJECTS.map((project) => (
-                  <ProjectCard key={project.title} {...project} />
-                ))}
-              </div>
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              {(loading || authLoading) && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-48 animate-pulse rounded-2xl border border-[#EDE8E2] bg-white"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {!loading && !authLoading && !error && projects.length === 0 && (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#E8610A"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      <line x1="12" y1="11" x2="12" y2="17" />
+                      <line x1="9" y1="14" x2="15" y2="14" />
+                    </svg>
+                  </div>
+                  <h3
+                    className="mb-1 text-sm font-semibold text-[#1A1916]"
+                    style={{ fontFamily: "'Sora', sans-serif" }}>
+                    No projects yet
+                  </h3>
+                  <p className="mb-5 max-w-xs text-xs leading-relaxed text-[#B0ADA7]">
+                    Create your first project to start tracking tasks, progress,
+                    and your team&apos;s work.
+                  </p>
+                  <button
+                    onClick={() => router.push("/AddProjectPage")}
+                    className="flex items-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add your first project
+                  </button>
+                </div>
+              )}
+
+              {!loading &&
+                !authLoading &&
+                !error &&
+                projects.length > 0 &&
+                filteredProjects.length === 0 && (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-12 px-6 text-center">
+                    <p className="text-sm font-medium text-[#72706A]">
+                      No projects match this filter.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("All")}
+                      className="mt-3 text-xs font-semibold text-[#E8610A] hover:underline">
+                      Clear filter
+                    </button>
+                  </div>
+                )}
+
+              {!loading && !authLoading && filteredProjects.length > 0 && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredProjects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      {...project}
+                      onDeleteProject={handleDeleteProject}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
 
       <button
+        onClick={() => router.push("/AddProjectPage")}
         className="md:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#E8610A] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#E8610A]/30 transition-all hover:bg-[#D15508] active:scale-95"
         style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <svg
@@ -201,6 +245,8 @@ export default function DashboardPage() {
         </svg>
         Add Project
       </button>
+
+      <AlertContainer toasts={toasts} onRemove={remove} position="top-center" />
     </div>
   );
 }

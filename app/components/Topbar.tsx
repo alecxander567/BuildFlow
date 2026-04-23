@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+
 export default function TopBar() {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-[#EDE8E2] bg-white px-4 py-3 md:px-8 md:py-4">
@@ -43,7 +47,9 @@ export default function TopBar() {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-white" />
         </button>
 
-        <button className="hidden md:flex items-center justify-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+        <Link
+          href="/AddProjectPage"
+          className="hidden md:flex items-center justify-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
           <svg
             width="15"
             height="15"
@@ -57,7 +63,7 @@ export default function TopBar() {
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           <span>Add Project</span>
-        </button>
+        </Link>
       </div>
     </div>
   );
