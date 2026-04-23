@@ -37,6 +37,9 @@ export type Project = {
   projectUrl: string;
   userId: string;
   createdAt: Timestamp | null;
+  startDate: string | null; 
+  endDate: string | null;
+  progress: number;
 };
 
 export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;

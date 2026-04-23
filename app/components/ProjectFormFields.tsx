@@ -39,6 +39,10 @@ type Props = {
   onProjectTypeChange: (value: ProjectType) => void;
   onPriorityChange: (value: Priority) => void;
   onProjectUrlChange: (value: string) => void;
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
 };
 
 export default function ProjectFormFields({
@@ -53,6 +57,10 @@ export default function ProjectFormFields({
   onProjectTypeChange,
   onPriorityChange,
   onProjectUrlChange,
+  startDate, 
+  endDate, 
+  onStartDateChange, 
+  onEndDateChange, 
 }: Props) {
   return (
     <>
@@ -131,6 +139,46 @@ export default function ProjectFormFields({
               {p}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1 rounded-2xl border border-[#EDE8E2] bg-white p-5">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+            Start Date *
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => onStartDateChange(e.target.value)}
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] outline-none transition-colors focus:border-[#E8610A] ${
+              submitted && !startDate.trim() ?
+                "border-red-300 bg-red-50"
+              : "border-[#E8E4DE] bg-[#FDFCFB]"
+            }`}
+          />
+          {submitted && !startDate.trim() && (
+            <p className="mt-1 text-xs text-red-500">Start date is required.</p>
+          )}
+        </div>
+
+        <div className="flex-1 rounded-2xl border border-[#EDE8E2] bg-white p-5">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+            End Date *
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => onEndDateChange(e.target.value)}
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] outline-none transition-colors focus:border-[#E8610A] ${
+              submitted && !endDate.trim() ?
+                "border-red-300 bg-red-50"
+              : "border-[#E8E4DE] bg-[#FDFCFB]"
+            }`}
+          />
+          {submitted && !endDate.trim() && (
+            <p className="mt-1 text-xs text-red-500">End date is required.</p>
+          )}
         </div>
       </div>
 

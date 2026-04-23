@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/app/hooks/useAuth";
+import { type Project } from "@/app/hooks/useProject";
 
 function getDynamicDate() {
   const now = new Date();
@@ -31,12 +32,66 @@ function getGreetingEmoji() {
   return "🌙";
 }
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  projects?: Project[];
+}
+
+export default function HeroSection({ projects = [] }: HeroSectionProps) {
   const { user } = useAuth();
 
   const rawName = user?.displayName || user?.email?.split("@")[0] || "there";
   const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
   const email = user?.email ?? "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueTodayCount = projects.filter((p) => {
+    if (!p.endDate || p.progress >= 100) return false;
+    const end = new Date(p.endDate);
+    end.setHours(0, 0, 0, 0);
+    return end.getTime() === today.getTime();
+  }).length;
+
+  const needsAttentionCount = projects.filter((p) => {
+    if (p.progress >= 100) return false;
+    const isOverdue =
+      p.endDate && new Date(p.endDate).setHours(0, 0, 0, 0) < today.getTime();
+    const isHighPriority = p.priority === "High";
+    return isOverdue || isHighPriority;
+  }).length;
+
+  const overallProgress =
+    projects.length === 0 ?
+      0
+    : Math.round(
+        projects.reduce((sum, p) => sum + (p.progress ?? 0), 0) /
+          projects.length,
+      );
+
+  const circumference = 2 * Math.PI * 32;
+  const strokeDashoffset =
+    circumference - (circumference * overallProgress) / 100;
+
+  const summaryText = (): string => {
+    if (projects.length === 0)
+      return "No projects yet. Add one to get started!";
+
+    const parts: string[] = [];
+    if (dueTodayCount > 0)
+      parts.push(
+        `You have <strong>${dueTodayCount} project${dueTodayCount !== 1 ? "s" : ""}</strong> due today`,
+      );
+    if (needsAttentionCount > 0)
+      parts.push(
+        `<strong>${needsAttentionCount} project${needsAttentionCount !== 1 ? "s" : ""}</strong> need${needsAttentionCount === 1 ? "s" : ""} your attention`,
+      );
+
+    if (parts.length === 0)
+      return `All <strong>${projects.length} project${projects.length !== 1 ? "s" : ""}</strong> are on track. Great work!`;
+
+    return parts.join(" and ") + ".";
+  };
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-[#E8610A] px-5 py-6 sm:px-8 sm:py-8">
@@ -83,18 +138,17 @@ export default function HeroSection() {
                 {email}
               </p>
             )}
-            <p className="mt-1 text-xs text-white/70 sm:text-sm">
-              You have <span className="font-semibold text-white">5 tasks</span>{" "}
-              due today and{" "}
-              <span className="font-semibold text-white">2 projects</span> need
-              your attention.
-            </p>
+            <p
+              className="mt-1 text-xs text-white/70 sm:text-sm"
+              dangerouslySetInnerHTML={{ __html: summaryText() }}
+            />
           </div>
         </div>
 
         <div className="hidden md:flex flex-col items-center gap-1 shrink-0">
           <div className="relative flex h-20 w-20 items-center justify-center">
             <svg viewBox="0 0 80 80" className="h-20 w-20 -rotate-90">
+              {/* Background track */}
               <circle
                 cx="40"
                 cy="40"
@@ -103,6 +157,7 @@ export default function HeroSection() {
                 stroke="rgba(255,255,255,0.15)"
                 strokeWidth="7"
               />
+              {/* Progress arc driven by real overallProgress */}
               <circle
                 cx="40"
                 cy="40"
@@ -111,11 +166,14 @@ export default function HeroSection() {
                 stroke="white"
                 strokeWidth="7"
                 strokeLinecap="round"
-                strokeDasharray="201"
-                strokeDashoffset="60"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                style={{ transition: "stroke-dashoffset 0.5s ease" }}
               />
             </svg>
-            <span className="absolute text-lg font-bold text-white">70%</span>
+            <span className="absolute text-lg font-bold text-white">
+              {overallProgress}%
+            </span>
           </div>
           <p className="text-xs font-medium text-white/70">Overall Progress</p>
         </div>

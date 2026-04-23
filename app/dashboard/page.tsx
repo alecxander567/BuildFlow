@@ -97,8 +97,7 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
           <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
             <HeroSection />
-            <StatBoxes />
-
+            <StatBoxes projects={projects} />
             <div>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -229,7 +228,7 @@ export default function DashboardPage() {
 
       <button
         onClick={() => router.push("/AddProjectPage")}
-        className="md:hidden fixed bottom-6 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#E8610A] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#E8610A]/30 transition-all hover:bg-[#D15508] active:scale-95"
+        className="md:hidden fixed bottom-20 sm:bottom-12 right-5 z-50 flex items-center gap-2 rounded-2xl bg-[#E8610A] px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#E8610A]/30 transition-all hover:bg-[#D15508] active:scale-95"
         style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <svg
           width="16"

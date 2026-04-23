@@ -22,8 +22,53 @@ export interface ProjectCardProps {
   priority: Priority;
   imageUrl?: string;
   projectUrl?: string;
+  progress?: number;
+  startDate?: string | null;
+  endDate?: string | null;
   onDeleteProject?: (id: string) => Promise<boolean>;
 }
+
+
+function getDurationLabel(startDate?: string | null, endDate?: string | null) {
+  if (!startDate || !endDate) return null;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs <= 0) return null;
+  const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  if (days < 7) return `${days}d`;
+  const weeks = Math.floor(days / 7);
+  const rem = days % 7;
+  return rem > 0 ? `${weeks}w ${rem}d` : `${weeks}w`;
+}
+
+function getDaysRemaining(endDate?: string | null) {
+  if (!endDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  const diffMs = end.getTime() - today.getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function getProgressStatus(
+  progress: number,
+  endDate?: string | null,
+): { label: string; color: string; bg: string } {
+  const daysLeft = getDaysRemaining(endDate);
+  if (progress >= 100)
+    return { label: "Complete", color: "text-[#16A34A]", bg: "bg-[#16A34A]" };
+  if (daysLeft !== null && daysLeft < 0)
+    return { label: "Overdue", color: "text-[#DC2626]", bg: "bg-[#DC2626]" };
+  if (progress > 0)
+    return {
+      label: "In Progress",
+      color: "text-[#7C3AED]",
+      bg: "bg-[#7C3AED]",
+    };
+  return { label: "Not started", color: "text-[#B0ADA7]", bg: "bg-[#D6D1CA]" };
+}
+
 
 const priorityConfig: Record<
   Priority,
@@ -203,6 +248,9 @@ export default function ProjectCard({
   priority,
   imageUrl,
   projectUrl,
+  progress = 0,
+  startDate,
+  endDate,
   onDeleteProject,
 }: ProjectCardProps) {
   const router = useRouter();
@@ -210,20 +258,22 @@ export default function ProjectCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
   const p = priorityConfig[priority];
   const t = typeConfig[projectType];
   const grad = placeholderGradients[projectType];
   const icon = placeholderIcons[projectType];
 
+  const durationLabel = getDurationLabel(startDate, endDate);
+  const daysLeft = getDaysRemaining(endDate);
+  const status = getProgressStatus(progress, endDate);
+  const clampedProgress = Math.min(100, Math.max(0, progress));
+
   useEffect(() => {
     if (!menuOpen) return;
-
     const onPointerDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
     };
-
     window.addEventListener("mousedown", onPointerDown);
     return () => window.removeEventListener("mousedown", onPointerDown);
   }, [menuOpen]);
@@ -243,6 +293,7 @@ export default function ProjectCard({
     <div
       onClick={() => router.push(`/projects/${id}`)}
       className="group flex flex-col rounded-2xl border border-[#EDE8E2] bg-white overflow-hidden cursor-pointer transition-all hover:shadow-md hover:shadow-[#E8610A]/10 hover:border-[#F5C89A]">
+      {/* Cover image / placeholder */}
       <div className="relative h-36 w-full overflow-hidden">
         {imageUrl ?
           <img
@@ -256,12 +307,14 @@ export default function ProjectCard({
           </div>
         }
 
+        {/* Priority badge */}
         <div
           className={`absolute top-2.5 right-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
           {p.label}
         </div>
 
+        {/* Menu */}
         <div className="absolute top-2.5 left-2.5" ref={menuRef}>
           <button
             onClick={(e) => {
@@ -336,6 +389,7 @@ export default function ProjectCard({
         </div>
       </div>
 
+      {/* Card body */}
       <div className="flex flex-1 flex-col gap-3 p-4">
         <span
           className={`inline-flex w-fit items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${t.bg} ${t.text}`}>
@@ -349,20 +403,68 @@ export default function ProjectCard({
             {title}
           </h3>
           {description && (
-            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#72706A]">
+            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#374151]">
               {description}
             </p>
           )}
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-1">
+        {/* ── Progress bar ─────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className={`text-[11px] font-semibold ${status.color}`}>
+              {status.label}
+            </span>
+            <span className="text-[11px] font-bold text-[#1A1916]">
+              {clampedProgress}%
+            </span>
+          </div>
+
+          {/* Track */}
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2EDE7]">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${status.bg}`}
+              style={{ width: `${clampedProgress}%` }}
+            />
+          </div>
+
+          {/* Date row */}
+          {(startDate || endDate) && (
+            <div className="flex items-center justify-between pt-0.5">
+              <span className="text-[10px] text-[#B0ADA7]">
+                {durationLabel ?
+                  `${durationLabel} total`
+                : endDate ?
+                  `Ends ${new Date(endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                : ""}
+              </span>
+              {daysLeft !== null && clampedProgress < 100 && (
+                <span
+                  className={`text-[10px] font-medium ${
+                    daysLeft < 0 ? "text-[#DC2626]"
+                    : daysLeft <= 3 ? "text-[#D97706]"
+                    : "text-[#72706A]"
+                  }`}>
+                  {daysLeft < 0 ?
+                    `${Math.abs(daysLeft)}d overdue`
+                  : daysLeft === 0 ?
+                    "Due today"
+                  : `${daysLeft}d left`}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {/* ─────────────────────────────────────────────────────────────── */}
+
+        <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 pt-1">
           {projectUrl ?
             <a
               href={projectUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-[#B0ADA7] transition-colors hover:text-[#E8610A]">
+              className="flex items-center gap-1.5 text-[11px] font-medium text-[#4B5563] transition-colors hover:text-[#E8610A]">
               <svg
                 width="11"
                 height="11"
@@ -379,14 +481,14 @@ export default function ProjectCard({
                 {new URL(projectUrl).hostname.replace("www.", "")}
               </span>
             </a>
-          : <span className="text-[11px] text-[#D6D1CA]">No link added</span>}
+          : <span className="text-[11px] text-[#6B7280]">No link added</span>}
 
           <button
             onClick={(e) => {
               e.stopPropagation();
               router.push(`/projects/${id}`);
             }}
-            className="flex items-center gap-1 rounded-lg border border-[#EDE8E2] bg-[#F9F7F4] px-2.5 py-1 text-[11px] font-medium text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            className="flex w-full md:w-auto items-center justify-center gap-1 rounded-lg border border-[#E8610A] bg-[#FEF0E7] px-2.5 py-1 text-[11px] font-medium text-[#E8610A] transition-colors hover:bg-[#E8610A] hover:text-white hover:border-[#E8610A]">
             View
             <svg
               width="10"
@@ -396,7 +498,8 @@ export default function ProjectCard({
               stroke="currentColor"
               strokeWidth="2.5"
               strokeLinecap="round"
-              strokeLinejoin="round">
+              strokeLinejoin="round"
+              className="stroke-current">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
