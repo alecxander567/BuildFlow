@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/app/hooks/useAuth";
 
 const navItems = [
@@ -229,6 +230,7 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex h-screen w-[220px] shrink-0 flex-col border-r border-[#EDE8E2] bg-[#F9F7F4]">
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-[#EDE8E2]">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#E8610A]">
@@ -279,7 +281,9 @@ export default function Sidebar() {
         </div>
       </aside>
 
+      {/* ── Mobile top bar ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-[#EDE8E2] bg-[#F9F7F4] px-4 py-3 shadow-sm">
+        {/* Logo */}
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E8610A]">
             <svg
@@ -301,7 +305,27 @@ export default function Sidebar() {
           </span>
         </div>
 
+        {/* Right actions */}
         <div className="flex items-center gap-2">
+          {/* + Add Project */}
+          <Link
+            href="/AddProjectPage"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </Link>
+
+          {/* Notification bell */}
           <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
             <svg
               width="16"
@@ -318,6 +342,7 @@ export default function Sidebar() {
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-[#F9F7F4]" />
           </button>
 
+          {/* Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]"
@@ -353,6 +378,7 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* ── Mobile nav drawer ── */}
       {mobileOpen && (
         <>
           <div

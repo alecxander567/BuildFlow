@@ -27,6 +27,14 @@ export type ProjectType =
   | "Business"
   | "Others";
 
+export type DayTask = {
+  id: string;
+  text: string;
+  done: boolean;
+};
+
+export type DailyPlan = Record<string, DayTask[]>; 
+
 export type Project = {
   id: string;
   title: string;
@@ -40,14 +48,53 @@ export type Project = {
   startDate: string | null;
   endDate: string | null;
   progress: number;
-  // Projects only store WHICH tools are selected, not the full catalog.
-  // The catalog lives in users/{uid}.tools via useUserTools.
   selectedTools: Record<string, string[]>;
+  dailyPlan: DailyPlan;
 };
 
 export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;
 
+/** All "YYYY-MM-DD" strings between start and end inclusive. Capped at 366. */
+export function generateDateRange(start: string, end: string): string[] {
+  if (!start || !end) return [];
+  const dates: string[] = [];
+  const cur = new Date(start + "T00:00:00");
+  const last = new Date(end + "T00:00:00");
+  if (cur > last) return [];
+  while (cur <= last && dates.length <= 366) {
+    dates.push(cur.toISOString().split("T")[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+/**
+ * 0-100 progress derived entirely from dailyPlan over the project date range.
+ * - No tasks → 0
+ * - 100 only when every task on every day in the range is done
+ */
+export function computeProgress(
+  dailyPlan: DailyPlan,
+  startDate: string | null,
+  endDate: string | null,
+): number {
+  if (!startDate || !endDate) return 0;
+  const dates = generateDateRange(startDate, endDate);
+  let total = 0;
+  let done = 0;
+  for (const d of dates) {
+    const tasks = dailyPlan[d] ?? [];
+    total += tasks.length;
+    done += tasks.filter((t) => t.done).length;
+  }
+  if (total === 0) return 0;
+  return Math.round((done / total) * 100);
+}
+
 function toProject(id: string, raw: Record<string, unknown>): Project {
+  const dailyPlan = (raw.dailyPlan as DailyPlan) ?? {};
+  const startDate = (raw.startDate as string) ?? null;
+  const endDate = (raw.endDate as string) ?? null;
   return {
     id,
     title: (raw.title as string) ?? "",
@@ -58,10 +105,12 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
     projectUrl: (raw.projectUrl as string) ?? "",
     userId: (raw.userId as string) ?? "",
     createdAt: (raw.createdAt as Timestamp) ?? null,
-    startDate: (raw.startDate as string) ?? null,
-    endDate: (raw.endDate as string) ?? null,
-    progress: (raw.progress as number) ?? 0,
+    startDate,
+    endDate,
+    // Always recompute so a stale stored value never appears in the UI
+    progress: computeProgress(dailyPlan, startDate, endDate),
     selectedTools: (raw.selectedTools as Record<string, string[]>) ?? {},
+    dailyPlan,
   };
 }
 
@@ -81,10 +130,11 @@ export function useProjects(user: User | null, authLoading: boolean) {
         orderBy("createdAt", "desc"),
       );
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((d) =>
-        toProject(d.id, d.data() as Record<string, unknown>),
+      setProjects(
+        snapshot.docs.map((d) =>
+          toProject(d.id, d.data() as Record<string, unknown>),
+        ),
       );
-      setProjects(data);
     } catch (err) {
       setError("Failed to load projects.");
       console.error(err);
@@ -98,9 +148,17 @@ export function useProjects(user: User | null, authLoading: boolean) {
     setLoading(true);
     setError(null);
     try {
+      const dailyPlan = input.dailyPlan ?? {};
+      const progress = computeProgress(
+        dailyPlan,
+        input.startDate,
+        input.endDate,
+      );
       const docRef = await addDoc(collection(db, "projects"), {
         ...input,
         selectedTools: input.selectedTools ?? {},
+        dailyPlan,
+        progress,
         userId: user.uid,
         createdAt: serverTimestamp(),
       });
@@ -111,6 +169,8 @@ export function useProjects(user: User | null, authLoading: boolean) {
           userId: user.uid,
           createdAt: null,
           selectedTools: input.selectedTools ?? {},
+          dailyPlan,
+          progress,
         },
         ...prev,
       ]);
@@ -128,9 +188,25 @@ export function useProjects(user: User | null, authLoading: boolean) {
     setLoading(true);
     setError(null);
     try {
+      const current = projects.find((p) => p.id === id);
+      const mergedStart =
+        input.startDate !== undefined ?
+          input.startDate
+        : (current?.startDate ?? null);
+      const mergedEnd =
+        input.endDate !== undefined ?
+          input.endDate
+        : (current?.endDate ?? null);
+      const mergedPlan =
+        input.dailyPlan !== undefined ?
+          input.dailyPlan
+        : (current?.dailyPlan ?? {});
+
       const payload = {
         ...input,
-        selectedTools: input.selectedTools ?? {},
+        selectedTools: input.selectedTools ?? current?.selectedTools ?? {},
+        dailyPlan: mergedPlan,
+        progress: computeProgress(mergedPlan, mergedStart, mergedEnd),
       };
       await updateDoc(doc(db, "projects", id), payload);
       setProjects((prev) =>
@@ -141,6 +217,41 @@ export function useProjects(user: User | null, authLoading: boolean) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Lightweight patch — only writes `dailyPlan` + recomputed `progress`.
+   * Called by the task-toggle UI on ProjectCard for instant feedback.
+   * Optimistic update with rollback on failure.
+   */
+  const updateDailyPlan = async (
+    id: string,
+    dailyPlan: DailyPlan,
+  ): Promise<void> => {
+    const current = projects.find((p) => p.id === id);
+    if (!current) return;
+    const progress = computeProgress(
+      dailyPlan,
+      current.startDate,
+      current.endDate,
+    );
+    // Optimistic
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, dailyPlan, progress } : p)),
+    );
+    try {
+      await updateDoc(doc(db, "projects", id), { dailyPlan, progress });
+    } catch (err) {
+      // Rollback
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === id ?
+            { ...p, dailyPlan: current.dailyPlan, progress: current.progress }
+          : p,
+        ),
+      );
+      console.error(err);
     }
   };
 
@@ -162,9 +273,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
 
   useEffect(() => {
     if (authLoading || !user) return;
-
     let cancelled = false;
-
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -176,10 +285,11 @@ export function useProjects(user: User | null, authLoading: boolean) {
         );
         const snapshot = await getDocs(q);
         if (!cancelled) {
-          const data = snapshot.docs.map((d) =>
-            toProject(d.id, d.data() as Record<string, unknown>),
+          setProjects(
+            snapshot.docs.map((d) =>
+              toProject(d.id, d.data() as Record<string, unknown>),
+            ),
           );
-          setProjects(data);
         }
       } catch (err) {
         if (!cancelled) setError("Failed to load projects.");
@@ -188,7 +298,6 @@ export function useProjects(user: User | null, authLoading: boolean) {
         if (!cancelled) setLoading(false);
       }
     };
-
     load();
     return () => {
       cancelled = true;
@@ -201,6 +310,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
     error,
     addProject,
     updateProject,
+    updateDailyPlan,
     deleteProject,
     refetch: fetchProjects,
   };

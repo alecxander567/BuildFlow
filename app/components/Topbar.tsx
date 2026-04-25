@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function TopBar() {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#EDE8E2] bg-white px-4 py-3 md:px-8 md:py-4">
+    <div className="hidden md:flex items-center justify-between gap-3 border-b border-[#EDE8E2] bg-white px-8 py-4">
       <div className="relative min-w-0 flex-1 md:max-w-sm">
         <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
           <svg
@@ -31,6 +31,25 @@ export default function TopBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        {/* Mobile: icon-only + button */}
+        <Link
+          href="/AddProjectPage"
+          className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </Link>
+
+        {/* Notification bell */}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-[#F9F7F4] text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
           <svg
             width="16"
@@ -47,6 +66,7 @@ export default function TopBar() {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-white" />
         </button>
 
+        {/* Desktop: full Add Project button */}
         <Link
           href="/AddProjectPage"
           className="hidden md:flex items-center justify-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">

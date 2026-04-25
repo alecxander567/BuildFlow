@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
@@ -8,10 +8,12 @@ import {
   useProjects,
   type Priority,
   type ProjectType,
+  type DailyPlan,
 } from "@/app/hooks/useProject";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserTools } from "@/app/hooks/useUserTools";
 import ProjectFormFields from "../components/ProjectFormFields";
+import { useEffect } from "react";
 
 export default function AddProjectPage() {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function AddProjectPage() {
   const [selectedTools, setSelectedTools] = useState<Record<string, string[]>>(
     {},
   );
+  const [dailyPlan, setDailyPlan] = useState<DailyPlan>({});
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
@@ -67,6 +70,7 @@ export default function AddProjectPage() {
       setStartDate(target.startDate ?? "");
       setEndDate(target.endDate ?? "");
       setSelectedTools(target.selectedTools ?? {});
+      setDailyPlan(target.dailyPlan ?? {});
     }
     // In create mode there's nothing to seed — form starts blank
   }, [isReady, isEditMode, target]);
@@ -92,6 +96,7 @@ export default function AddProjectPage() {
         startDate: startDate || null,
         endDate: endDate || null,
         selectedTools,
+        dailyPlan,
       });
       sessionStorage.setItem(
         "pendingToast",
@@ -117,6 +122,7 @@ export default function AddProjectPage() {
       endDate: endDate || null,
       progress: 0,
       selectedTools,
+      dailyPlan,
     });
 
     if (!success) {
@@ -242,6 +248,8 @@ export default function AddProjectPage() {
                   onProjectUrlChange={setProjectUrl}
                   onStartDateChange={setStartDate}
                   onEndDateChange={setEndDate}
+                  dailyPlan={dailyPlan}
+                  onDailyPlanChange={setDailyPlan}
                   // The full permanent catalog — same for every project this user opens
                   catalog={userTools}
                   onCatalogChange={handleCatalogChange}

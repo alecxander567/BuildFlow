@@ -1,8 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { type Priority, type ProjectType } from "@/app/hooks/useProject";
+import {
+  type Priority,
+  type ProjectType,
+  type DailyPlan,
+} from "@/app/hooks/useProject";
 import ToolsField from "./ToolsField";
+import DailyTasksField from "./DailTasksField";
 
 export const PROJECT_TYPES: ProjectType[] = [
   "Engineering",
@@ -45,6 +50,9 @@ type Props = {
   endDate: string;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
+  // Daily plan — per-project
+  dailyPlan: DailyPlan;
+  onDailyPlanChange: (plan: DailyPlan) => void;
   // Global tool catalog (from useUserTools) — shared across all projects
   catalog: Record<string, string[]>;
   onCatalogChange: (catalog: Record<string, string[]>) => void;
@@ -74,6 +82,8 @@ export default function ProjectFormFields({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  dailyPlan,
+  onDailyPlanChange,
   catalog,
   onCatalogChange,
   selectedTools,
@@ -238,6 +248,14 @@ export default function ProjectFormFields({
           )}
         </div>
       </div>
+
+      {/* Daily Goals — unlocks once both dates are set */}
+      <DailyTasksField
+        startDate={startDate}
+        endDate={endDate}
+        dailyPlan={dailyPlan}
+        onChange={onDailyPlanChange}
+      />
 
       {/* Project Link */}
       <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
