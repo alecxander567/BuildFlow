@@ -37,12 +37,33 @@ export type Project = {
   projectUrl: string;
   userId: string;
   createdAt: Timestamp | null;
-  startDate: string | null; 
+  startDate: string | null;
   endDate: string | null;
   progress: number;
+  // Projects only store WHICH tools are selected, not the full catalog.
+  // The catalog lives in users/{uid}.tools via useUserTools.
+  selectedTools: Record<string, string[]>;
 };
 
 export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;
+
+function toProject(id: string, raw: Record<string, unknown>): Project {
+  return {
+    id,
+    title: (raw.title as string) ?? "",
+    description: (raw.description as string) ?? "",
+    projectType: (raw.projectType as ProjectType) ?? "Technology",
+    priority: (raw.priority as Priority) ?? "Moderate",
+    imageUrl: (raw.imageUrl as string) ?? "",
+    projectUrl: (raw.projectUrl as string) ?? "",
+    userId: (raw.userId as string) ?? "",
+    createdAt: (raw.createdAt as Timestamp) ?? null,
+    startDate: (raw.startDate as string) ?? null,
+    endDate: (raw.endDate as string) ?? null,
+    progress: (raw.progress as number) ?? 0,
+    selectedTools: (raw.selectedTools as Record<string, string[]>) ?? {},
+  };
+}
 
 export function useProjects(user: User | null, authLoading: boolean) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -60,10 +81,9 @@ export function useProjects(user: User | null, authLoading: boolean) {
         orderBy("createdAt", "desc"),
       );
       const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as Project[];
+      const data = snapshot.docs.map((d) =>
+        toProject(d.id, d.data() as Record<string, unknown>),
+      );
       setProjects(data);
     } catch (err) {
       setError("Failed to load projects.");
@@ -80,11 +100,18 @@ export function useProjects(user: User | null, authLoading: boolean) {
     try {
       const docRef = await addDoc(collection(db, "projects"), {
         ...input,
+        selectedTools: input.selectedTools ?? {},
         userId: user.uid,
         createdAt: serverTimestamp(),
       });
       setProjects((prev) => [
-        { id: docRef.id, ...input, userId: user.uid, createdAt: null },
+        {
+          ...input,
+          id: docRef.id,
+          userId: user.uid,
+          createdAt: null,
+          selectedTools: input.selectedTools ?? {},
+        },
         ...prev,
       ]);
       return true;
@@ -101,9 +128,13 @@ export function useProjects(user: User | null, authLoading: boolean) {
     setLoading(true);
     setError(null);
     try {
-      await updateDoc(doc(db, "projects", id), input);
+      const payload = {
+        ...input,
+        selectedTools: input.selectedTools ?? {},
+      };
+      await updateDoc(doc(db, "projects", id), payload);
       setProjects((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...input } : p)),
+        prev.map((p) => (p.id === id ? { ...p, ...payload } : p)),
       );
     } catch (err) {
       setError("Failed to update project.");
@@ -145,10 +176,9 @@ export function useProjects(user: User | null, authLoading: boolean) {
         );
         const snapshot = await getDocs(q);
         if (!cancelled) {
-          const data = snapshot.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          })) as Project[];
+          const data = snapshot.docs.map((d) =>
+            toProject(d.id, d.data() as Record<string, unknown>),
+          );
           setProjects(data);
         }
       } catch (err) {

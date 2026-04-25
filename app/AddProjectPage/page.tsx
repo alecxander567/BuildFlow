@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
@@ -10,6 +10,7 @@ import {
   type ProjectType,
 } from "@/app/hooks/useProject";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useUserTools } from "@/app/hooks/useUserTools";
 import ProjectFormFields from "../components/ProjectFormFields";
 
 export default function AddProjectPage() {
@@ -20,36 +21,44 @@ export default function AddProjectPage() {
     user,
     authLoading,
   );
+
+  // userTools = permanent catalog belonging to the user, not any single project
+  // loaded = true once Firestore has responded (even if the doc doesn't exist yet)
+  const { userTools, saveUserTools, loaded: toolsLoaded } = useUserTools(user);
+
   const editProjectId = searchParams.get("edit");
   const isEditMode = Boolean(editProjectId);
-
   const target =
     isEditMode ? projects.find((p) => p.id === editProjectId) : null;
 
+  // Don't show the form until auth, projects, AND the tool catalog are all ready.
+  // This is what prevents the "empty tools" flash — the form never renders with stale data.
   const isReady =
-    !isEditMode || (!authLoading && !loading && target !== undefined);
+    !authLoading &&
+    !loading &&
+    toolsLoaded &&
+    (!isEditMode || target !== undefined);
 
-  const [title, setTitle] = useState(target?.title ?? "");
-  const [description, setDescription] = useState(target?.description ?? "");
-  const [projectType, setProjectType] = useState<ProjectType>(
-    target?.projectType ?? "Technology",
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [projectType, setProjectType] = useState<ProjectType>("Technology");
+  const [priority, setPriority] = useState<Priority>("Moderate");
+  const [projectUrl, setProjectUrl] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedTools, setSelectedTools] = useState<Record<string, string[]>>(
+    {},
   );
-  const [priority, setPriority] = useState<Priority>(
-    target?.priority ?? "Moderate",
-  );
-  const [projectUrl, setProjectUrl] = useState(target?.projectUrl ?? "");
-  const [startDate, setStartDate] = useState(target?.startDate ?? "");
-  const [endDate, setEndDate] = useState(target?.endDate ?? "");
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
+  // Seed form fields from the project document once, when edit mode is ready
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (target) {
+    if (!isReady || seededRef.current) return;
+    seededRef.current = true;
+
+    if (isEditMode && target) {
       setTitle(target.title ?? "");
       setDescription(target.description ?? "");
       setProjectType(target.projectType ?? "Technology");
@@ -57,39 +66,21 @@ export default function AddProjectPage() {
       setProjectUrl(target.projectUrl ?? "");
       setStartDate(target.startDate ?? "");
       setEndDate(target.endDate ?? "");
+      setSelectedTools(target.selectedTools ?? {});
     }
-  }, [target]);
+    // In create mode there's nothing to seed — form starts blank
+  }, [isReady, isEditMode, target]);
 
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    setCoverFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setCoverPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-  };
-
-  const removeImage = () => {
-    setCoverFile(null);
-    setCoverPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  // When the user adds/removes categories or tools from the catalog,
+  // save it back to userTools/{uid} immediately so it persists across all projects.
+  const handleCatalogChange = (updatedCatalog: Record<string, string[]>) => {
+    saveUserTools(updatedCatalog);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
-    if (!title.trim()) return;
+    if (!title.trim() || !startDate.trim() || !endDate.trim()) return;
 
     if (isEditMode && editProjectId) {
       await updateProject(editProjectId, {
@@ -100,6 +91,7 @@ export default function AddProjectPage() {
         projectUrl: projectUrl.trim(),
         startDate: startDate || null,
         endDate: endDate || null,
+        selectedTools,
       });
       sessionStorage.setItem(
         "pendingToast",
@@ -124,6 +116,7 @@ export default function AddProjectPage() {
       startDate: startDate || null,
       endDate: endDate || null,
       progress: 0,
+      selectedTools,
     });
 
     if (!success) {
@@ -192,7 +185,7 @@ export default function AddProjectPage() {
             {/* Header */}
             <div className="mb-6 flex items-center gap-3">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push("/dashboard")}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#EDE8E2] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
                 <svg
                   width="16"
@@ -220,198 +213,47 @@ export default function AddProjectPage() {
               </div>
             </div>
 
-            {
-              !isReady ?
-                <div className="flex flex-col gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-16 animate-pulse rounded-2xl border border-[#EDE8E2] bg-white"
-                    />
-                  ))}
-                </div>
-                // key causes React to remount the form with correct initial state
-              : <form
-                  key={editProjectId ?? "new"}
-                  onSubmit={handleSubmit}
-                  className="flex flex-col gap-4">
-                  <ProjectFormFields
-                    title={title}
-                    description={description}
-                    projectType={projectType}
-                    priority={priority}
-                    projectUrl={projectUrl}
-                    startDate={startDate}
-                    endDate={endDate}
-                    submitted={submitted}
-                    onTitleChange={setTitle}
-                    onDescriptionChange={setDescription}
-                    onProjectTypeChange={setProjectType}
-                    onPriorityChange={setPriority}
-                    onProjectUrlChange={setProjectUrl}
-                    onStartDateChange={setStartDate}
-                    onEndDateChange={setEndDate}
+            {!isReady ?
+              <div className="flex flex-col gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 animate-pulse rounded-2xl border border-[#EDE8E2] bg-white"
                   />
-
-                  {/* Cover Image */}
-                  <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
-                    <div className="mb-3 flex items-center justify-between">
-                      <label className="block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
-                        Cover Image
-                      </label>
-                      <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
-                        Optional
-                      </span>
-                    </div>
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-
-                    {coverPreview ?
-                      <div className="relative overflow-hidden rounded-xl border border-[#EDE8E2]">
-                        <img
-                          src={coverPreview}
-                          alt="Cover preview"
-                          className="h-40 w-full object-cover"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1A1916] transition-colors hover:bg-white">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                              <polyline points="17 8 12 3 7 8" />
-                              <line x1="12" y1="3" x2="12" y2="15" />
-                            </svg>
-                            Replace
-                          </button>
-                          <button
-                            type="button"
-                            onClick={removeImage}
-                            className="flex items-center gap-1.5 rounded-lg bg-red-500/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18" />
-                              <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                            Remove
-                          </button>
-                        </div>
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1">
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="white"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                          <span className="max-w-[180px] truncate text-[10px] font-medium text-white">
-                            {coverFile?.name}
-                          </span>
-                        </div>
-                      </div>
-                    : <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setIsDragging(true);
-                        }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={handleFileDrop}
-                        className={`flex w-full flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-all ${
-                          isDragging ?
-                            "border-[#E8610A] bg-[#FEF0E7]"
-                          : "border-[#E8E4DE] bg-[#FDFCFB] hover:border-[#F5C89A] hover:bg-[#FEF0E7]"
-                        }`}>
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                            isDragging ?
-                              "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                            : "border-[#E8E4DE] bg-white text-[#B0ADA7]"
-                          }`}>
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.75"
-                            strokeLinecap="round"
-                            strokeLinejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p
-                            className={`text-sm font-medium transition-colors ${isDragging ? "text-[#E8610A]" : "text-[#72706A]"}`}>
-                            {isDragging ?
-                              "Drop image here"
-                            : "Click to upload or drag & drop"}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-[#B0ADA7]">
-                            PNG, JPG, WEBP · Max 10MB · Will be uploaded to
-                            Cloudinary
-                          </p>
-                        </div>
-                      </button>
-                    }
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pb-6">
-                    <button
-                      type="button"
-                      onClick={() => router.back()}
-                      className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-3 text-sm font-medium text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading || redirecting}
-                      className="flex-1 rounded-xl bg-[#E8610A] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987] disabled:opacity-60 disabled:cursor-not-allowed">
-                      {loading ?
-                        isEditMode ?
-                          "Saving..."
-                        : "Creating..."
-                      : redirecting ?
-                        "Redirecting..."
-                      : isEditMode ?
-                        "Save Changes"
-                      : "Create Project"}
-                    </button>
-                  </div>
-                </form>
-
+                ))}
+              </div>
+            : <form
+                key={editProjectId ?? "new"}
+                onSubmit={handleSubmit}
+                className="flex flex-col gap-4">
+                <ProjectFormFields
+                  title={title}
+                  description={description}
+                  projectType={projectType}
+                  priority={priority}
+                  projectUrl={projectUrl}
+                  startDate={startDate}
+                  endDate={endDate}
+                  submitted={submitted}
+                  onTitleChange={setTitle}
+                  onDescriptionChange={setDescription}
+                  onProjectTypeChange={setProjectType}
+                  onPriorityChange={setPriority}
+                  onProjectUrlChange={setProjectUrl}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  // The full permanent catalog — same for every project this user opens
+                  catalog={userTools}
+                  onCatalogChange={handleCatalogChange}
+                  // Only the selections for THIS project
+                  selectedTools={selectedTools}
+                  onSelectedToolsChange={setSelectedTools}
+                  isEditMode={isEditMode}
+                  loading={loading}
+                  redirecting={redirecting}
+                  onCancel={() => router.push("/dashboard")}
+                />
+              </form>
             }
           </div>
         </main>

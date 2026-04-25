@@ -25,9 +25,9 @@ export interface ProjectCardProps {
   progress?: number;
   startDate?: string | null;
   endDate?: string | null;
+  selectedTools?: Record<string, string[]>;
   onDeleteProject?: (id: string) => Promise<boolean>;
 }
-
 
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
   if (!startDate || !endDate) return null;
@@ -68,7 +68,6 @@ function getProgressStatus(
     };
   return { label: "Not started", color: "text-[#B0ADA7]", bg: "bg-[#D6D1CA]" };
 }
-
 
 const priorityConfig: Record<
   Priority,
@@ -240,6 +239,14 @@ const placeholderIcons: Record<ProjectType, React.ReactElement> = {
   ),
 };
 
+// Flatten selectedTools map into a single sorted list of tool names
+function flattenTools(selectedTools?: Record<string, string[]>): string[] {
+  if (!selectedTools) return [];
+  return Object.values(selectedTools).flat();
+}
+
+const PILL_LIMIT = 4;
+
 export default function ProjectCard({
   id,
   title,
@@ -251,6 +258,7 @@ export default function ProjectCard({
   progress = 0,
   startDate,
   endDate,
+  selectedTools,
   onDeleteProject,
 }: ProjectCardProps) {
   const router = useRouter();
@@ -268,6 +276,10 @@ export default function ProjectCard({
   const daysLeft = getDaysRemaining(endDate);
   const status = getProgressStatus(progress, endDate);
   const clampedProgress = Math.min(100, Math.max(0, progress));
+
+  const allTools = flattenTools(selectedTools);
+  const visibleTools = allTools.slice(0, PILL_LIMIT);
+  const overflowCount = allTools.length - PILL_LIMIT;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -409,7 +421,23 @@ export default function ProjectCard({
           )}
         </div>
 
-        {/* ── Progress bar ─────────────────────────────────────────────── */}
+        {allTools.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {visibleTools.map((tool) => (
+              <span
+                key={tool}
+                className="rounded-full border border-[#E8E4DE] bg-[#F9F7F4] px-2.5 py-0.5 text-[10px] font-medium text-[#72706A]">
+                {tool}
+              </span>
+            ))}
+            {overflowCount > 0 && (
+              <span className="rounded-full border border-[#F5C89A] bg-[#FEF0E7] px-2.5 py-0.5 text-[10px] font-semibold text-[#E8610A]">
+                +{overflowCount}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <span className={`text-[11px] font-semibold ${status.color}`}>
@@ -455,7 +483,6 @@ export default function ProjectCard({
             </div>
           )}
         </div>
-        {/* ─────────────────────────────────────────────────────────────── */}
 
         <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 pt-1">
           {projectUrl ?
