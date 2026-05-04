@@ -19,10 +19,10 @@ type ProjectOverviewModalProps = Pick<
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (id: string) => void;
-  dailyPlan?: DailyPlan; 
-  onToggleStar?: (id: string) => Promise<void>; 
-  starred?: boolean; 
-  isOwner?: boolean; 
+  dailyPlan?: DailyPlan;
+  onToggleStar?: (id: string) => Promise<void>;
+  starred?: boolean;
+  isOwner?: boolean;
 };
 
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
@@ -81,7 +81,10 @@ function getProgressStatus(progress: number, endDate?: string | null) {
   };
 }
 
-const priorityConfig = {
+const priorityConfig: Record<
+  string,
+  { dot: string; text: string; bg: string; border: string }
+> = {
   High: {
     dot: "bg-[#DC2626]",
     text: "text-[#DC2626]",
@@ -281,7 +284,6 @@ export default function ProjectOverviewModal({
 }: ProjectOverviewModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -291,7 +293,6 @@ export default function ProjectOverviewModal({
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll
   useEffect(() => {
     if (isOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
@@ -302,7 +303,7 @@ export default function ProjectOverviewModal({
 
   if (!isOpen) return null;
 
-  const p = priorityConfig[priority];
+  const p = priorityConfig[priority] ?? priorityConfig.Moderate;
   const t = typeConfig[projectType] ?? typeConfig["Others"];
   const grad =
     placeholderGradients[projectType] ?? placeholderGradients["Others"];
@@ -314,7 +315,6 @@ export default function ProjectOverviewModal({
   const toolsByCategory = flattenTools(selectedTools);
   const allTools = Object.values(toolsByCategory).flat();
 
-  // Calculate task stats from dailyPlan
   const getTotalTasks = () => {
     if (!dailyPlan) return 0;
     return Object.values(dailyPlan).reduce(
@@ -334,6 +334,15 @@ export default function ProjectOverviewModal({
   const totalTasks = getTotalTasks();
   const completedTasks = getCompletedTasks();
   const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  // Helper function to get hostname from URL
+  const getHostname = (url: string) => {
+    try {
+      return new URL(url).hostname.replace("www.", "");
+    } catch {
+      return url;
+    }
+  };
 
   return (
     <div
@@ -360,53 +369,56 @@ export default function ProjectOverviewModal({
           {/* Gradient fade bottom */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/60 to-transparent" />
 
-          {/* Star button */}
-          {onToggleStar && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleStar(id);
-              }}
-              className="absolute top-3 left-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 backdrop-blur-sm transition-colors hover:bg-[#FEF0E7]">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill={starred ? "#E8610A" : "none"}
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={starred ? "text-[#E8610A]" : "text-[#72706A]"}>
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
-            </button>
-          )}
+          {/* Top bar: star | priority badge + close — all in one row */}
+          <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2">
+            {/* Star button (left) */}
+            {onToggleStar ?
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleStar(id);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 backdrop-blur-sm transition-colors hover:bg-[#FEF0E7]">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill={starred ? "#E8610A" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={starred ? "text-[#E8610A]" : "text-[#72706A]"}>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </button>
+            : <div />}
 
-          {/* Priority badge */}
-          <div
-            className={`absolute top-3 right-3 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
-            {priority}
+            {/* Right side: priority badge + close button */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
+                {priority}
+              </div>
+              <button
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
         </div>
 
         {/* ── Scrollable body ── */}
@@ -452,7 +464,7 @@ export default function ProjectOverviewModal({
             </p>
           )}
 
-          {/* ── Tasks Overview (if there are tasks) ── */}
+          {/* ── Tasks Overview ── */}
           {totalTasks > 0 && (
             <div className="flex flex-col gap-2 p-3 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4]">
               <div className="flex items-center justify-between">
@@ -584,7 +596,7 @@ export default function ProjectOverviewModal({
             </div>
           )}
 
-          {/* ── Footer: project link + view button ── */}
+          {/* ── Footer ── */}
           <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t border-[#EDE8E2]">
             {projectUrl ?
               <a
@@ -605,14 +617,13 @@ export default function ProjectOverviewModal({
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                 </svg>
                 <span className="max-w-[160px] truncate">
-                  {new URL(projectUrl).hostname.replace("www.", "")}
+                  {getHostname(projectUrl)}
                 </span>
               </a>
             : <span className="text-xs font-medium text-[#9CA3AF]">
                 No link added
               </span>
             }
-
             <button
               onClick={onClose}
               className="flex items-center gap-1 rounded-lg border border-[#E8610A] bg-[#FEF0E7] px-3 py-1.5 text-xs font-semibold text-[#E8610A] transition-colors hover:bg-[#E8610A] hover:text-white">
