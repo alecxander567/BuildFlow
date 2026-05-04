@@ -6,13 +6,8 @@ import { createPortal } from "react-dom";
 type ToolsMap = Record<string, string[]>;
 
 type Props = {
-  // The user's global tool catalog (from useUserTools). ToolsField can ADD
-  // categories/tools to this catalog — those changes go back to Firestore
-  // via onCatalogChange so every project sees them.
   catalog: ToolsMap;
   onCatalogChange: (catalog: ToolsMap) => void;
-
-  // Per-project selection: which tools from the catalog are used here.
   selectedTools: ToolsMap;
   onSelectedToolsChange: (selected: ToolsMap) => void;
 };
@@ -232,15 +227,20 @@ export default function ToolsField({
 
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [toolModalOpen, setToolModalOpen] = useState(false);
+  const [editCategoryModalOpen, setEditCategoryModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newToolName, setNewToolName] = useState("");
+  const [editCategoryName, setEditCategoryName] = useState("");
   const [categoryError, setCategoryError] = useState("");
   const [toolError, setToolError] = useState("");
+  const [editCategoryError, setEditCategoryError] = useState("");
 
   const categoryInputRef = useRef<HTMLInputElement>(null);
   const toolInputRef = useRef<HTMLInputElement>(null);
+  const editCategoryInputRef = useRef<HTMLInputElement>(null);
 
   const hasCategories = Object.keys(safeCatalog).length > 0;
   const totalSelected = Object.values(safeSelected).reduce(
@@ -257,10 +257,22 @@ export default function ToolsField({
     if (toolModalOpen) setTimeout(() => toolInputRef.current?.focus(), 50);
   }, [toolModalOpen]);
 
+  useEffect(() => {
+    if (editCategoryModalOpen)
+      setTimeout(() => editCategoryInputRef.current?.focus(), 50);
+  }, [editCategoryModalOpen]);
+
   const openCategoryModal = () => {
     setNewCategoryName("");
     setCategoryError("");
     setCategoryModalOpen(true);
+  };
+
+  const openEditCategoryModal = (category: string) => {
+    setEditingCategory(category);
+    setEditCategoryName(category);
+    setEditCategoryError("");
+    setEditCategoryModalOpen(true);
   };
 
   const openAddTool = (category: string) => {
@@ -280,19 +292,55 @@ export default function ToolsField({
       setCategoryError("This category already exists.");
       return;
     }
-    // Write to global catalog
     onCatalogChange({ ...safeCatalog, [name]: [] });
     setNewCategoryName("");
     setCategoryError("");
     setCategoryModalOpen(false);
   };
 
+  const handleEditCategory = () => {
+    if (!editingCategory) return;
+    const newName = editCategoryName.trim();
+    if (!newName) {
+      setEditCategoryError("Category name cannot be empty.");
+      return;
+    }
+    if (newName === editingCategory) {
+      setEditCategoryModalOpen(false);
+      return;
+    }
+    if (safeCatalog[newName] !== undefined) {
+      setEditCategoryError("This category already exists.");
+      return;
+    }
+
+    const updatedCatalog: ToolsMap = {};
+    Object.keys(safeCatalog).forEach((key) => {
+      if (key === editingCategory) {
+        updatedCatalog[newName] = safeCatalog[key];
+      } else {
+        updatedCatalog[key] = safeCatalog[key];
+      }
+    });
+    onCatalogChange(updatedCatalog);
+
+    const updatedSelected = { ...safeSelected };
+    if (updatedSelected[editingCategory]) {
+      updatedSelected[newName] = updatedSelected[editingCategory];
+      delete updatedSelected[editingCategory];
+      onSelectedToolsChange(updatedSelected);
+    }
+
+    setEditCategoryModalOpen(false);
+    setEditingCategory(null);
+    setEditCategoryName("");
+  };
+
   const handleDeleteCategory = (category: string) => {
-    // Remove from global catalog
     const updatedCatalog = { ...safeCatalog };
     delete updatedCatalog[category];
     onCatalogChange(updatedCatalog);
-    // Also clean up this project's selections for that category
+
     const updatedSelected = { ...safeSelected };
     delete updatedSelected[category];
     onSelectedToolsChange(updatedSelected);
@@ -309,7 +357,6 @@ export default function ToolsField({
       setToolError("This tool already exists in the category.");
       return;
     }
-    // Write to global catalog
     onCatalogChange({
       ...safeCatalog,
       [activeCategory]: [...(safeCatalog[activeCategory] ?? []), name],
@@ -320,12 +367,12 @@ export default function ToolsField({
   };
 
   const handleDeleteTool = (category: string, tool: string) => {
-    // Remove from global catalog
-    onCatalogChange({
+    const updatedCatalog = {
       ...safeCatalog,
       [category]: safeCatalog[category].filter((t) => t !== tool),
-    });
-    // Clean up project selection if it was selected
+    };
+    onCatalogChange(updatedCatalog);
+
     const updatedSelected = { ...safeSelected };
     updatedSelected[category] = (updatedSelected[category] ?? []).filter(
       (t) => t !== tool,
@@ -366,7 +413,6 @@ export default function ToolsField({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Hint that catalog is shared */}
             <span
               title="Categories and tools are shared across all your projects. Selections are per-project."
               className="hidden sm:flex cursor-default items-center gap-1 rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
@@ -444,7 +490,7 @@ export default function ToolsField({
           <div className="flex flex-col gap-5">
             {Object.entries(safeCatalog).map(([category, categoryTools]) => (
               <div key={category}>
-                {/* Category row */}
+                {/* Category row with aligned buttons */}
                 <div className="mb-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-bold uppercase tracking-widest text-[#72706A]">
@@ -456,14 +502,16 @@ export default function ToolsField({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {/* Add button first */}
                     <button
                       type="button"
                       onClick={() => openAddTool(category)}
-                      className="flex items-center gap-1.5 rounded-lg border border-[#F5C89A] bg-[#FEF0E7] px-2.5 py-1 text-[11px] font-semibold text-[#E8610A] transition-colors hover:bg-[#FDDFBF]">
+                      title="Add tool to this category"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A] transition-colors hover:bg-[#FDDFBF]">
                       <svg
-                        width="10"
-                        height="10"
+                        width="12"
+                        height="12"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -473,16 +521,37 @@ export default function ToolsField({
                         <line x1="12" y1="5" x2="12" y2="19" />
                         <line x1="5" y1="12" x2="19" y2="12" />
                       </svg>
-                      Add item
                     </button>
+
+                    {/* Edit button second */}
+                    <button
+                      type="button"
+                      onClick={() => openEditCategoryModal(category)}
+                      title="Edit category name"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                    </button>
+
+                    {/* Delete button third */}
                     <button
                       type="button"
                       onClick={() => handleDeleteCategory(category)}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-500 transition-colors hover:bg-red-100"
-                      title="Removes this category from your catalog across all projects">
+                      title="Delete this category entirely"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 transition-colors hover:bg-red-100">
                       <svg
-                        width="10"
-                        height="10"
+                        width="12"
+                        height="12"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -493,12 +562,11 @@ export default function ToolsField({
                         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                         <path d="M10 11v6M14 11v6M9 6V4h6v2" />
                       </svg>
-                      Delete
                     </button>
                   </div>
                 </div>
 
-                {/* Tool chips — click to toggle selection for THIS project */}
+                {/* Tool chips */}
                 {categoryTools.length === 0 ?
                   <button
                     type="button"
@@ -546,7 +614,6 @@ export default function ToolsField({
                             )}
                             {tool}
                           </button>
-                          {/* Delete from catalog */}
                           <button
                             type="button"
                             onClick={() => handleDeleteTool(category, tool)}
@@ -597,6 +664,7 @@ export default function ToolsField({
         )}
       </div>
 
+      {/* Add Category Modal */}
       <Modal
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
@@ -678,6 +746,61 @@ export default function ToolsField({
         </div>
       </Modal>
 
+      {/* Edit Category Modal */}
+      <Modal
+        isOpen={editCategoryModalOpen}
+        onClose={() => setEditCategoryModalOpen(false)}
+        title="Edit Category"
+        subtitle="Rename this category across all your projects">
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+              Category Name
+            </label>
+            <input
+              ref={editCategoryInputRef}
+              type="text"
+              placeholder="New category name"
+              value={editCategoryName}
+              onChange={(e) => {
+                setEditCategoryName(e.target.value);
+                setEditCategoryError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleEditCategory();
+                }
+              }}
+              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
+                editCategoryError ?
+                  "border-red-300 bg-red-50"
+                : "border-[#E8E4DE] bg-[#FDFCFB]"
+              }`}
+            />
+            {editCategoryError && (
+              <p className="mt-1.5 text-xs text-red-500">{editCategoryError}</p>
+            )}
+          </div>
+
+          <div className="flex gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setEditCategoryModalOpen(false)}
+              className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleEditCategory}
+              className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Tool Modal */}
       <Modal
         isOpen={toolModalOpen}
         onClose={() => setToolModalOpen(false)}

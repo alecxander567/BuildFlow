@@ -33,7 +33,7 @@ export type DayTask = {
   done: boolean;
 };
 
-export type DailyPlan = Record<string, DayTask[]>; 
+export type DailyPlan = Record<string, DayTask[]>;
 
 export type Project = {
   id: string;
@@ -50,11 +50,12 @@ export type Project = {
   progress: number;
   selectedTools: Record<string, string[]>;
   dailyPlan: DailyPlan;
+  starred: boolean;
+  starredBy: string[];
 };
 
 export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;
 
-/** All "YYYY-MM-DD" strings between start and end inclusive. Capped at 366. */
 export function generateDateRange(start: string, end: string): string[] {
   if (!start || !end) return [];
   const dates: string[] = [];
@@ -68,11 +69,6 @@ export function generateDateRange(start: string, end: string): string[] {
   return dates;
 }
 
-/**
- * 0-100 progress derived entirely from dailyPlan over the project date range.
- * - No tasks → 0
- * - 100 only when every task on every day in the range is done
- */
 export function computeProgress(
   dailyPlan: DailyPlan,
   startDate: string | null,
@@ -107,10 +103,11 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
     createdAt: (raw.createdAt as Timestamp) ?? null,
     startDate,
     endDate,
-    // Always recompute so a stale stored value never appears in the UI
     progress: computeProgress(dailyPlan, startDate, endDate),
     selectedTools: (raw.selectedTools as Record<string, string[]>) ?? {},
     dailyPlan,
+    starred: (raw.starred as boolean) ?? false,
+    starredBy: (raw.starredBy as string[]) ?? [],
   };
 }
 
@@ -124,11 +121,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
     setLoading(true);
     setError(null);
     try {
-      const q = query(
-        collection(db, "projects"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc"),
-      );
+      const q = query(collection(db, "projects"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       setProjects(
         snapshot.docs.map((d) =>
@@ -161,6 +154,8 @@ export function useProjects(user: User | null, authLoading: boolean) {
         progress,
         userId: user.uid,
         createdAt: serverTimestamp(),
+        starred: false,
+        starredBy: [],
       });
       setProjects((prev) => [
         {
@@ -171,6 +166,8 @@ export function useProjects(user: User | null, authLoading: boolean) {
           selectedTools: input.selectedTools ?? {},
           dailyPlan,
           progress,
+          starred: false,
+          starredBy: [],
         },
         ...prev,
       ]);
@@ -220,11 +217,6 @@ export function useProjects(user: User | null, authLoading: boolean) {
     }
   };
 
-  /**
-   * Lightweight patch — only writes `dailyPlan` + recomputed `progress`.
-   * Called by the task-toggle UI on ProjectCard for instant feedback.
-   * Optimistic update with rollback on failure.
-   */
   const updateDailyPlan = async (
     id: string,
     dailyPlan: DailyPlan,
@@ -236,14 +228,12 @@ export function useProjects(user: User | null, authLoading: boolean) {
       current.startDate,
       current.endDate,
     );
-    // Optimistic
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, dailyPlan, progress } : p)),
     );
     try {
       await updateDoc(doc(db, "projects", id), { dailyPlan, progress });
     } catch (err) {
-      // Rollback
       setProjects((prev) =>
         prev.map((p) =>
           p.id === id ?
@@ -271,6 +261,109 @@ export function useProjects(user: User | null, authLoading: boolean) {
     }
   };
 
+  const starProject = async (
+    id: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!user) {
+      return {
+        success: false,
+        message: "You must be logged in to star projects",
+      };
+    }
+
+    try {
+      const projectRef = doc(db, "projects", id);
+      const project = projects.find((p) => p.id === id);
+
+      if (!project) return { success: false, message: "Project not found" };
+
+      const updatedStarredBy = [...(project.starredBy || []), user.uid];
+
+      await updateDoc(projectRef, {
+        starred: true,
+        starredBy: updatedStarredBy,
+      });
+
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === id ?
+            { ...p, starred: true, starredBy: updatedStarredBy }
+          : p,
+        ),
+      );
+
+      return {
+        success: true,
+        message: `✨ "${project.title}" has been starred!`,
+      };
+    } catch (err) {
+      console.error("Failed to star project:", err);
+      return {
+        success: false,
+        message: "Failed to star project. Please try again.",
+      };
+    }
+  };
+
+  const unstarProject = async (
+    id: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    if (!user) {
+      return {
+        success: false,
+        message: "You must be logged in to unstar projects",
+      };
+    }
+
+    try {
+      const projectRef = doc(db, "projects", id);
+      const project = projects.find((p) => p.id === id);
+
+      if (!project) return { success: false, message: "Project not found" };
+
+      const updatedStarredBy = (project.starredBy || []).filter(
+        (uid) => uid !== user.uid,
+      );
+
+      await updateDoc(projectRef, {
+        starred: updatedStarredBy.length > 0,
+        starredBy: updatedStarredBy,
+      });
+
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === id ?
+            {
+              ...p,
+              starred: updatedStarredBy.length > 0,
+              starredBy: updatedStarredBy,
+            }
+          : p,
+        ),
+      );
+
+      return {
+        success: true,
+        message: `⭐ "${project.title}" has been unstarred.`,
+      };
+    } catch (err) {
+      console.error("Failed to unstar project:", err);
+      return {
+        success: false,
+        message: "Failed to unstar project. Please try again.",
+      };
+    }
+  };
+
+  const toggleStar = async (
+    id: string,
+  ): Promise<{ success: boolean; message: string }> => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return { success: false, message: "Project not found" };
+
+    return project.starred ? unstarProject(id) : starProject(id);
+  };
+
   useEffect(() => {
     if (authLoading || !user) return;
     let cancelled = false;
@@ -280,7 +373,6 @@ export function useProjects(user: User | null, authLoading: boolean) {
       try {
         const q = query(
           collection(db, "projects"),
-          where("userId", "==", user.uid),
           orderBy("createdAt", "desc"),
         );
         const snapshot = await getDocs(q);
@@ -312,6 +404,9 @@ export function useProjects(user: User | null, authLoading: boolean) {
     updateProject,
     updateDailyPlan,
     deleteProject,
+    starProject,
+    unstarProject,
+    toggleStar,
     refetch: fetchProjects,
   };
 }

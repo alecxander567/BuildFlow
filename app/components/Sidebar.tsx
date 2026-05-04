@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 
 const navItems = [
@@ -23,7 +24,7 @@ const navItems = [
       </svg>
     ),
     label: "Dashboard",
-    active: true,
+    href: "/dashboard",
   },
   {
     icon: (
@@ -40,7 +41,7 @@ const navItems = [
       </svg>
     ),
     label: "Projects",
-    badge: "12",
+    href: "/projects",
   },
   {
     icon: (
@@ -58,6 +59,7 @@ const navItems = [
       </svg>
     ),
     label: "Tasks",
+    href: "/tasks",
   },
   {
     icon: (
@@ -77,6 +79,7 @@ const navItems = [
       </svg>
     ),
     label: "Team",
+    href: "/team",
   },
   {
     icon: (
@@ -95,6 +98,7 @@ const navItems = [
       </svg>
     ),
     label: "Analytics",
+    href: "/analytics",
   },
   {
     icon: (
@@ -111,6 +115,7 @@ const navItems = [
       </svg>
     ),
     label: "Tool Hub",
+    href: "/toolhub",
   },
 ];
 
@@ -131,6 +136,7 @@ const bottomItems = [
       </svg>
     ),
     label: "Settings",
+    href: "/settings",
   },
   {
     icon: (
@@ -149,6 +155,7 @@ const bottomItems = [
       </svg>
     ),
     label: "Help",
+    href: "/help",
   },
 ];
 
@@ -173,51 +180,53 @@ interface NavListProps {
 }
 
 function NavList({ onClose }: NavListProps) {
+  const pathname = usePathname();
+
   return (
     <div className="flex flex-col gap-0.5">
       <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
         Main
       </p>
-      {navItems.map((item) => (
-        <button
-          key={item.label}
-          onClick={onClose}
-          className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-            item.active ?
-              "bg-[#FEF0E7] text-[#E8610A]"
-            : "text-[#72706A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-          }`}>
-          <span
-            className={
-              item.active ? "text-[#E8610A]" : (
-                "text-[#B0ADA7] group-hover:text-[#E8610A]"
-              )
-            }>
-            {item.icon}
-          </span>
-          <span className="flex-1 text-left">{item.label}</span>
-          {item.badge && (
-            <span className="rounded-full bg-[#E8610A] px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">
-              {item.badge}
+      {navItems.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            onClick={onClose}
+            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              isActive ?
+                "bg-[#FEF0E7] text-[#E8610A]"
+              : "text-[#72706A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+            }`}>
+            <span
+              className={
+                isActive ? "text-[#E8610A]" : (
+                  "text-[#B0ADA7] group-hover:text-[#E8610A]"
+                )
+              }>
+              {item.icon}
             </span>
-          )}
-        </button>
-      ))}
+            <span className="flex-1 text-left">{item.label}</span>
+          </Link>
+        );
+      })}
 
       <div className="mt-3 pt-3 border-t border-[#EDE8E2]">
         <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
           Support
         </p>
         {bottomItems.map((item) => (
-          <button
+          <Link
             key={item.label}
+            href={item.href}
             onClick={onClose}
             className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
             <span className="text-[#B0ADA7] group-hover:text-[#E8610A]">
               {item.icon}
             </span>
             {item.label}
-          </button>
+          </Link>
         ))}
       </div>
     </div>
@@ -227,12 +236,15 @@ function NavList({ onClose }: NavListProps) {
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logOut, loading, user } = useAuth();
+  const pathname = usePathname();
 
   return (
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden md:flex h-screen w-[220px] shrink-0 flex-col border-r border-[#EDE8E2] bg-[#F9F7F4]">
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-[#EDE8E2]">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2.5 px-5 py-5 border-b border-[#EDE8E2] cursor-pointer">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#E8610A]">
             <svg
               width="18"
@@ -251,7 +263,7 @@ export default function Sidebar() {
             style={{ fontFamily: "'Sora', sans-serif" }}>
             BuildFlow
           </span>
-        </div>
+        </Link>
 
         <nav className="flex flex-1 flex-col px-3 py-4 overflow-y-auto">
           <NavList onClose={() => {}} />
@@ -284,7 +296,7 @@ export default function Sidebar() {
       {/* ── Mobile top bar ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-[#EDE8E2] bg-[#F9F7F4] px-4 py-3 shadow-sm">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E8610A]">
             <svg
               width="15"
@@ -303,13 +315,13 @@ export default function Sidebar() {
             style={{ fontFamily: "'Sora', sans-serif" }}>
             BuildFlow
           </span>
-        </div>
+        </Link>
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
           {/* + Add Project */}
           <Link
-            href="/AddProjectPage"
+            href="/add-project"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
             <svg
               width="16"

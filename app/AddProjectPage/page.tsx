@@ -34,7 +34,6 @@ export default function AddProjectPage() {
     isEditMode ? projects.find((p) => p.id === editProjectId) : null;
 
   // Don't show the form until auth, projects, AND the tool catalog are all ready.
-  // This is what prevents the "empty tools" flash — the form never renders with stale data.
   const isReady =
     !authLoading &&
     !loading &&
@@ -54,6 +53,17 @@ export default function AddProjectPage() {
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>({});
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  // Add local catalog state to manage updates
+  const [localCatalog, setLocalCatalog] = useState<Record<string, string[]>>(
+    {},
+  );
+
+  // Sync local catalog with userTools from Firebase
+  useEffect(() => {
+    if (toolsLoaded) {
+      setLocalCatalog(userTools);
+    }
+  }, [userTools, toolsLoaded]);
 
   // Seed form fields from the project document once, when edit mode is ready
   const seededRef = useRef(false);
@@ -72,12 +82,12 @@ export default function AddProjectPage() {
       setSelectedTools(target.selectedTools ?? {});
       setDailyPlan(target.dailyPlan ?? {});
     }
-    // In create mode there's nothing to seed — form starts blank
   }, [isReady, isEditMode, target]);
 
   // When the user adds/removes categories or tools from the catalog,
   // save it back to userTools/{uid} immediately so it persists across all projects.
   const handleCatalogChange = (updatedCatalog: Record<string, string[]>) => {
+    setLocalCatalog(updatedCatalog);
     saveUserTools(updatedCatalog);
   };
 
@@ -250,8 +260,8 @@ export default function AddProjectPage() {
                   onEndDateChange={setEndDate}
                   dailyPlan={dailyPlan}
                   onDailyPlanChange={setDailyPlan}
-                  // The full permanent catalog — same for every project this user opens
-                  catalog={userTools}
+                  // Use localCatalog instead of userTools directly
+                  catalog={localCatalog}
                   onCatalogChange={handleCatalogChange}
                   // Only the selections for THIS project
                   selectedTools={selectedTools}

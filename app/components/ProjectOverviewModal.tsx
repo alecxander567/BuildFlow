@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { type ProjectCardProps } from "./ProjectCard";
+import type { DailyPlan } from "@/app/hooks/useProject";
 
 type ProjectOverviewModalProps = Pick<
   ProjectCardProps,
@@ -18,6 +19,10 @@ type ProjectOverviewModalProps = Pick<
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (id: string) => void;
+  dailyPlan?: DailyPlan; 
+  onToggleStar?: (id: string) => Promise<void>; 
+  starred?: boolean; 
+  isOwner?: boolean; 
 };
 
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
@@ -269,6 +274,10 @@ export default function ProjectOverviewModal({
   isOpen,
   onClose,
   onEdit,
+  dailyPlan,
+  onToggleStar,
+  starred = false,
+  isOwner = false,
 }: ProjectOverviewModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -305,6 +314,27 @@ export default function ProjectOverviewModal({
   const toolsByCategory = flattenTools(selectedTools);
   const allTools = Object.values(toolsByCategory).flat();
 
+  // Calculate task stats from dailyPlan
+  const getTotalTasks = () => {
+    if (!dailyPlan) return 0;
+    return Object.values(dailyPlan).reduce(
+      (total, tasks) => total + tasks.length,
+      0,
+    );
+  };
+
+  const getCompletedTasks = () => {
+    if (!dailyPlan) return 0;
+    return Object.values(dailyPlan).reduce(
+      (total, tasks) => total + tasks.filter((t) => t.done).length,
+      0,
+    );
+  };
+
+  const totalTasks = getTotalTasks();
+  const completedTasks = getCompletedTasks();
+  const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
   return (
     <div
       ref={overlayRef}
@@ -330,6 +360,29 @@ export default function ProjectOverviewModal({
           {/* Gradient fade bottom */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/60 to-transparent" />
 
+          {/* Star button */}
+          {onToggleStar && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStar(id);
+              }}
+              className="absolute top-3 left-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 backdrop-blur-sm transition-colors hover:bg-[#FEF0E7]">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill={starred ? "#E8610A" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={starred ? "text-[#E8610A]" : "text-[#72706A]"}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </button>
+          )}
+
           {/* Priority badge */}
           <div
             className={`absolute top-3 right-3 flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
@@ -340,7 +393,7 @@ export default function ProjectOverviewModal({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-3 left-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
             <svg
               width="13"
               height="13"
@@ -371,7 +424,7 @@ export default function ProjectOverviewModal({
                 {title}
               </h2>
             </div>
-            {onEdit && (
+            {isOwner && onEdit && (
               <button
                 onClick={() => onEdit(id)}
                 className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[#EDE8E2] px-3 py-1.5 text-xs font-semibold text-[#374151] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
@@ -397,6 +450,26 @@ export default function ProjectOverviewModal({
             <p className="text-sm leading-relaxed text-[#374151]">
               {description}
             </p>
+          )}
+
+          {/* ── Tasks Overview (if there are tasks) ── */}
+          {totalTasks > 0 && (
+            <div className="flex flex-col gap-2 p-3 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4]">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#1A1916]">
+                  Tasks Overview
+                </span>
+                <span className="text-xs font-semibold text-[#1A1916]">
+                  {completedTasks}/{totalTasks}
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#E8E4DE]">
+                <div
+                  className="h-full rounded-full bg-[#16A34A] transition-all duration-500"
+                  style={{ width: `${taskProgress}%` }}
+                />
+              </div>
+            </div>
           )}
 
           {/* ── Progress section ── */}

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
@@ -34,8 +36,13 @@ export interface ProjectCardProps {
   endDate?: string | null;
   selectedTools?: Record<string, string[]>;
   dailyPlan?: DailyPlan;
+  starred?: boolean;
+  starCount?: number;
+  userId?: string;
+  currentUserId?: string;
   onDeleteProject?: (id: string) => Promise<boolean>;
   onUpdateDailyPlan?: (id: string, plan: DailyPlan) => Promise<void>;
+  onToggleStar?: (id: string) => Promise<void>;
 }
 
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
@@ -260,6 +267,7 @@ const placeholderIcons: Record<ProjectType, React.ReactElement> = {
 };
 
 const PILL_LIMIT = 4;
+
 interface DayTaskModalProps {
   dateStr: string;
   tasks: DayTask[];
@@ -297,11 +305,9 @@ function DayTaskModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
       <div
         className="relative w-full max-w-sm rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div
           className={`flex items-center justify-between rounded-t-2xl px-5 py-4 ${today ? "bg-[#FEF0E7]" : "bg-[#F9F7F4]"}`}>
           <div>
@@ -342,8 +348,6 @@ function DayTaskModal({
             </button>
           </div>
         </div>
-
-        {/* Progress bar */}
         {tasks.length > 0 && (
           <div className="px-5 pt-3">
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2EDE7]">
@@ -356,8 +360,6 @@ function DayTaskModal({
             </div>
           </div>
         )}
-
-        {/* Task list */}
         <div className="max-h-72 overflow-y-auto px-4 py-3">
           {tasks.length === 0 ?
             <p className="py-6 text-center text-sm text-[#D6D1CA]">
@@ -371,11 +373,7 @@ function DayTaskModal({
                     onClick={() => onToggle(task.id)}
                     className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#F9F7F4]">
                     <span
-                      className={`mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                        task.done ?
-                          "border-[#16A34A] bg-[#16A34A]"
-                        : "border-[#D6D1CA] hover:border-[#E8610A]"
-                      }`}>
+                      className={`mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${task.done ? "border-[#16A34A] bg-[#16A34A]" : "border-[#D6D1CA] hover:border-[#E8610A]"}`}>
                       {task.done && (
                         <svg
                           width="9"
@@ -400,8 +398,6 @@ function DayTaskModal({
             </ul>
           }
         </div>
-
-        {/* Footer */}
         <div className="border-t border-[#F2EDE7] px-5 py-3">
           <button
             type="button"
@@ -414,181 +410,139 @@ function DayTaskModal({
     </div>
   );
 }
+
 interface DayStripProps {
-  startDate: string;
-  endDate: string;
+  dateRange: string[];
   dailyPlan: DailyPlan;
-  onToggleTask: (dateStr: string, taskId: string) => void;
+  onDayClick: (dateStr: string) => void;
 }
 
-function DayStrip({
-  startDate,
-  endDate,
-  dailyPlan,
-  onToggleTask,
-}: DayStripProps) {
-  const dates = generateDateRange(startDate, endDate);
-  const [openDate, setOpenDate] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const stripRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const dragMoved = useRef(false);
 
-  const hasTasks = dates.some((d) => (dailyPlan[d]?.length ?? 0) > 0);
-  if (!hasTasks) return null;
-
-  const openTasks = openDate ? (dailyPlan[openDate] ?? []) : [];
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragMoved.current = false;
+    startX.current = e.pageX - (stripRef.current?.offsetLeft ?? 0);
+    scrollLeft.current = stripRef.current?.scrollLeft ?? 0;
+    if (stripRef.current) stripRef.current.style.cursor = "grabbing";
+  };
 
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = stripRef.current;
     if (!el) return;
 
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-
-    const onMouseDown = (e: MouseEvent) => {
-      isDown = true;
-      el.classList.add("cursor-grabbing");
-      startX = e.pageX - el.offsetLeft;
-      scrollLeft = el.scrollLeft;
-    };
-
-    const onMouseLeave = () => {
-      isDown = false;
-      el.classList.remove("cursor-grabbing");
-    };
-
-    const onMouseUp = () => {
-      isDown = false;
-      el.classList.remove("cursor-grabbing");
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
+    const onMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
       e.preventDefault();
-
       const x = e.pageX - el.offsetLeft;
-      const walk = (x - startX) * 1.2;
-      el.scrollLeft = scrollLeft - walk;
+      const walk = x - startX.current;
+      if (Math.abs(walk) > 4) dragMoved.current = true;
+      el.scrollLeft = scrollLeft.current - walk;
     };
 
-    el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mouseleave", onMouseLeave);
-    el.addEventListener("mouseup", onMouseUp);
-    el.addEventListener("mousemove", onMouseMove);
+    const onUp = () => {
+      isDragging.current = false;
+      if (el) el.style.cursor = "grab";
+    };
 
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      el.removeEventListener("mousedown", onMouseDown);
-      el.removeEventListener("mouseleave", onMouseLeave);
-      el.removeEventListener("mouseup", onMouseUp);
-      el.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
   }, []);
 
   return (
-    <>
-      {/*
-        Outer wrapper: negative horizontal margin pulls it to the card edge,
-        matching padding restores content alignment. overflow-hidden on the
-        card won't clip this because the scroll happens inside this wrapper.
-      */}
-      <div
-        className="relative"
-        style={{ margin: "0 -16px" }}
-        onClick={(e) => e.stopPropagation()}>
-        {/* Scroll container */}
-        <div
-          ref={scrollRef}
-          className="flex gap-1.5 overflow-x-auto"
-          style={{
-            padding: "2px 16px 8px",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-          }}>
-          {dates.map((dateStr) => {
-            const tasks = dailyPlan[dateStr] ?? [];
-            if (tasks.length === 0) return null;
-
-            const doneCount = tasks.filter((t) => t.done).length;
-            const allDone = doneCount === tasks.length;
-            const today = isTodayStr(dateStr);
-            const isOpen = openDate === dateStr;
-            const dayNum = new Date(dateStr + "T00:00:00").getDate();
-            const { weekday } = formatDayLabel(dateStr);
-
-            return (
-              <button
-                key={dateStr}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenDate(isOpen ? null : dateStr);
-                }}
-                className={`flex shrink-0 flex-col items-center rounded-xl border px-2.5 py-2 transition-all ${
-                  isOpen ? "border-[#E8610A] bg-[#FEF0E7]"
-                  : allDone ? "border-[#BBF7D0] bg-[#F0FDF4]"
-                  : today ? "border-[#F5C89A] bg-[#FEF9F5]"
-                  : "border-[#EDE8E2] bg-[#F9F7F4] hover:border-[#F5C89A] hover:bg-[#FEF0E7]"
-                }`}>
-                <span
-                  className={`text-[9px] font-semibold uppercase tracking-wider ${
-                    isOpen ? "text-[#E8610A]"
-                    : allDone ? "text-[#16A34A]"
-                    : today ? "text-[#E8610A]"
-                    : "text-[#B0ADA7]"
-                  }`}>
-                  {weekday}
-                </span>
-                <span
-                  className={`text-sm font-bold leading-tight ${
-                    isOpen ? "text-[#E8610A]"
-                    : allDone ? "text-[#16A34A]"
-                    : today ? "text-[#E8610A]"
-                    : "text-[#1A1916]"
-                  }`}>
-                  {dayNum}
-                </span>
-                <span className="mt-1 flex items-center gap-0.5">
-                  {allDone ?
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#16A34A"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  : <span
-                      className={`text-[9px] font-semibold ${isOpen ? "text-[#E8610A]" : "text-[#72706A]"}`}>
-                      {doneCount}/{tasks.length}
-                    </span>
-                  }
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Fade hint on the right edge so users know it scrolls */}
-        <div
-          className="pointer-events-none absolute right-0 top-0 h-full w-8"
-          style={{
-            background: "linear-gradient(to right, transparent, white)",
-          }}
-        />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          Daily Plan
+        </p>
+        <p className="text-[10px] text-[#B0ADA7]">
+          {dateRange.length} day{dateRange.length !== 1 ? "s" : ""}
+        </p>
       </div>
 
-      {openDate && (
-        <DayTaskModal
-          dateStr={openDate}
-          tasks={openTasks}
-          onClose={() => setOpenDate(null)}
-          onToggle={(taskId) => onToggleTask(openDate, taskId)}
-        />
-      )}
-    </>
+      {/* Drag-scrollable pill row — no visible scrollbar */}
+      <div
+        ref={stripRef}
+        className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ cursor: "grab", userSelect: "none" }}
+        onMouseDown={handleMouseDown}>
+        {dateRange.map((dateStr) => {
+          const tasks = dailyPlan[dateStr] ?? [];
+          const isToday = dateStr === todayStr;
+          const isPast = dateStr < todayStr;
+          const doneCount = tasks.filter((t) => t.done).length;
+          const totalCount = tasks.length;
+          const allDone = totalCount > 0 && doneCount === totalCount;
+          const partial = doneCount > 0 && doneCount < totalCount;
+          const hasTasks = totalCount > 0;
+
+          let dotBg = "bg-[#E8E4DE]";
+          if (allDone) dotBg = "bg-[#16A34A]";
+          else if (partial) dotBg = "bg-[#D97706]";
+          else if (hasTasks && isPast) dotBg = "bg-[#DC2626]";
+          else if (hasTasks) dotBg = "bg-[#B0ADA7]";
+
+          let pillCls = "border-[#EDE8E2] bg-[#F9F7F4] text-[#B0ADA7]";
+          if (isToday)
+            pillCls = "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A] font-bold";
+          else if (allDone)
+            pillCls = "border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]";
+          else if (partial)
+            pillCls = "border-[#FDE68A] bg-[#FFFBEB] text-[#D97706]";
+          else if (hasTasks && isPast)
+            pillCls = "border-[#FECACA] bg-[#FEF2F2] text-[#DC2626]";
+
+          const { weekday } = formatDayLabel(dateStr);
+
+          return (
+            <button
+              key={dateStr}
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Only fire click if the user wasn't dragging
+                if (!dragMoved.current) onDayClick(dateStr);
+              }}
+              title={`${dateStr} · ${doneCount}/${totalCount} tasks done`}
+              className={`flex shrink-0 flex-col items-center gap-1 rounded-xl border px-2.5 py-1.5 transition-all hover:scale-105 hover:shadow-sm ${pillCls}`}>
+              <span className="text-[9px] font-medium uppercase tracking-wide leading-none">
+                {weekday}
+              </span>
+              <span className="text-[11px] leading-none">
+                {new Date(dateStr + "T00:00:00").getDate()}
+              </span>
+              <span className={`h-1.5 w-1.5 rounded-full ${dotBg}`} />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 pt-0.5">
+        {[
+          { dot: "bg-[#16A34A]", label: "Done" },
+          { dot: "bg-[#D97706]", label: "Partial" },
+          { dot: "bg-[#DC2626]", label: "Missed" },
+          { dot: "bg-[#E8E4DE]", label: "No tasks" },
+        ].map(({ dot, label }) => (
+          <div key={label} className="flex items-center gap-1">
+            <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+            <span className="text-[9px] text-[#B0ADA7]">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -605,8 +559,13 @@ export default function ProjectCard({
   endDate,
   selectedTools,
   dailyPlan: dailyPlanProp,
+  starred = false,
+  starCount = 0,
+  userId,
+  currentUserId,
   onDeleteProject,
   onUpdateDailyPlan,
+  onToggleStar,
 }: ProjectCardProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -614,28 +573,35 @@ export default function ProjectCard({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const isOwner = currentUserId === userId;
+  const canEdit = isOwner;
 
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
-  useEffect(() => {
-    setDailyPlan(dailyPlanProp ?? {});
-  }, [dailyPlanProp]);
 
-  const hasDailyTasks =
-    startDate &&
-    endDate &&
-    generateDateRange(startDate, endDate).some(
-      (d) => (dailyPlan[d]?.length ?? 0) > 0,
-    );
+  const dateRange = React.useMemo(
+    () => (startDate && endDate ? generateDateRange(startDate, endDate) : []),
+    [startDate, endDate],
+  );
 
-  const progress =
-    hasDailyTasks ?
-      computeProgress(dailyPlan, startDate ?? null, endDate ?? null)
-    : progressProp;
+  const hasDailyTasks = React.useMemo(
+    () => dateRange.some((d) => (dailyPlan[d]?.length ?? 0) > 0),
+    [dateRange, dailyPlan],
+  );
 
-  const p = priorityConfig[priority];
-  const t = typeConfig[projectType];
-  const grad = placeholderGradients[projectType];
-  const icon = placeholderIcons[projectType];
+  const progress = React.useMemo(
+    () =>
+      hasDailyTasks ?
+        computeProgress(dailyPlan, startDate ?? null, endDate ?? null)
+      : progressProp,
+    [hasDailyTasks, dailyPlan, startDate, endDate, progressProp],
+  );
+
+  const p = priorityConfig[priority] || priorityConfig.Moderate;
+  const t = typeConfig[projectType] || typeConfig.Others;
+  const grad = placeholderGradients[projectType] || placeholderGradients.Others;
+  const icon = placeholderIcons[projectType] || placeholderIcons.Others;
 
   const durationLabel = getDurationLabel(startDate, endDate);
   const daysLeft = getDaysRemaining(endDate);
@@ -668,32 +634,30 @@ export default function ProjectCard({
 
   const handleToggleTask = useCallback(
     (dateStr: string, taskId: string) => {
-      const currentTasks = dailyPlan[dateStr] ?? [];
+      setDailyPlan((prevPlan) => {
+        const currentTasks = prevPlan[dateStr] ?? [];
+        const updatedTasks = currentTasks.map((task) =>
+          task.id === taskId ? { ...task, done: !task.done } : task,
+        );
+        const next = { ...prevPlan, [dateStr]: updatedTasks };
 
-      const updatedTasks = currentTasks.map((task) =>
-        task.id === taskId ? { ...task, done: !task.done } : task,
-      );
+        // Use setTimeout to move the update out of render phase
+        setTimeout(() => {
+          onUpdateDailyPlan?.(id, next);
+        }, 0);
 
-      const next = { ...dailyPlan, [dateStr]: updatedTasks };
-
-      setDailyPlan(next);
-
-      onUpdateDailyPlan?.(id, next);
+        return next;
+      });
     },
-    [dailyPlan, id, onUpdateDailyPlan],
+    [id, onUpdateDailyPlan],
   );
 
   return (
     <>
-      {/*
-        NOTE: removed `overflow-hidden` from this wrapper — it was clipping
-        the horizontally scrollable DayStrip. The card's rounded corners are
-        preserved via the child cover image's own overflow-hidden.
-      */}
       <div
         onClick={() => setOverviewOpen(true)}
         className="group flex flex-col rounded-2xl border border-[#EDE8E2] bg-white cursor-pointer transition-all hover:shadow-md hover:shadow-[#E8610A]/10 hover:border-[#F5C89A]">
-        {/* Cover image — has its own overflow-hidden to keep rounded top corners */}
+        {/* ── Cover image ── */}
         <div className="relative h-36 w-full overflow-hidden rounded-t-2xl">
           {imageUrl ?
             <img
@@ -703,97 +667,103 @@ export default function ProjectCard({
             />
           : <div
               className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
-              <div className={`${t.text} opacity-60`}>{icon}</div>
+              <div className={`${t?.text || "text-gray-500"} opacity-60`}>
+                {icon}
+              </div>
             </div>
           }
 
           {/* Priority badge */}
           <div
-            className={`absolute top-2.5 right-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
-            {p.label}
+            className={`absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm ${p?.bg || "bg-gray-100"} ${p?.text || "text-gray-600"} ${p?.border || "border-gray-200"}`}>
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${p?.dot || "bg-gray-400"}`}
+            />
+            {p?.label || priority}
           </div>
 
-          {/* Menu */}
-          <div className="absolute top-2.5 left-2.5" ref={menuRef}>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen((prev) => !prev);
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-            </button>
+          {/* Menu button — owner only */}
+          {canEdit && (
+            <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen((prev) => !prev);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+                </svg>
+              </button>
 
-            {menuOpen && (
-              <div className="absolute left-0 mt-1.5 w-40 rounded-xl border border-[#EDE8E2] bg-white p-1.5 shadow-lg shadow-black/10">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    router.push(`/AddProjectPage?edit=${id}`);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#1A1916] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                  </svg>
-                  Edit project
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMenuOpen(false);
-                    setConfirmDeleteOpen(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#DC2626] transition-colors hover:bg-[#FEF2F2]">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14H6L5 6" />
-                    <path d="M10 11v6" />
-                    <path d="M14 11v6" />
-                    <path d="M9 6V4h6v2" />
-                  </svg>
-                  Delete project
-                </button>
-              </div>
-            )}
-          </div>
+              {menuOpen && (
+                <div className="absolute right-0 mt-1.5 w-40 rounded-xl border border-[#EDE8E2] bg-white p-1.5 shadow-lg shadow-black/10 z-20">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      router.push(`/AddProjectPage?edit=${id}`);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#1A1916] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
+                    Edit project
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      setConfirmDeleteOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#DC2626] transition-colors hover:bg-[#FEF2F2]">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M9 6V4h6v2" />
+                    </svg>
+                    Delete project
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Card body */}
+        {/* ── Card body ── */}
         <div className="flex flex-1 flex-col gap-3 p-4">
           <span
-            className={`inline-flex w-fit items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${t.bg} ${t.text}`}>
-            {projectType}
+            className={`inline-flex w-fit items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${t?.bg || "bg-gray-100"} ${t?.text || "text-gray-600"}`}>
+            {projectType || "Others"}
           </span>
 
           <div>
@@ -802,14 +772,19 @@ export default function ProjectCard({
               style={{ fontFamily: "'Sora', sans-serif" }}>
               {title}
             </h3>
-            {description && (
+            {/* Description or placeholder */}
+            {description ?
               <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#374151]">
                 {description}
               </p>
-            )}
+            : <p className="mt-1 text-xs italic text-[#D6D1CA]">
+                No description provided
+              </p>
+            }
           </div>
 
-          {allTools.length > 0 && (
+          {/* Tools or placeholder */}
+          {allTools.length > 0 ?
             <div className="flex flex-wrap gap-1.5">
               {visibleTools.map((tool) => (
                 <span
@@ -824,19 +799,14 @@ export default function ProjectCard({
                 </span>
               )}
             </div>
-          )}
+          : <div className="flex flex-wrap gap-1.5">
+              <span className="rounded-full border border-dashed border-[#E8E4DE] px-2.5 py-0.5 text-[10px] text-[#D6D1CA]">
+                No tools added
+              </span>
+            </div>
+          }
 
-          {/* Day strip */}
-          {startDate && endDate && (
-            <DayStrip
-              startDate={startDate}
-              endDate={endDate}
-              dailyPlan={dailyPlan}
-              onToggleTask={handleToggleTask}
-            />
-          )}
-
-          {/* Progress */}
+          {/* ── Progress ── */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <span className={`text-[11px] font-semibold ${status.color}`}>
@@ -852,7 +822,8 @@ export default function ProjectCard({
                 style={{ width: `${clampedProgress}%` }}
               />
             </div>
-            {(startDate || endDate) && (
+            {/* Date row or placeholder */}
+            {startDate || endDate ?
               <div className="flex items-center justify-between pt-0.5">
                 <span className="text-[10px] text-[#B0ADA7]">
                   {durationLabel ?
@@ -876,10 +847,60 @@ export default function ProjectCard({
                   </span>
                 )}
               </div>
-            )}
+            : <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] italic text-[#D6D1CA]">
+                  No dates set
+                </span>
+              </div>
+            }
           </div>
 
-          <div className="mt-auto flex flex-col md:flex-row md:items-center md:justify-between gap-2 pt-1">
+          {/* ── Day Strip — owner only ── */}
+          {isOwner && dateRange.length > 0 && (
+            <div
+              className="rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] p-3"
+              onClick={(e) => e.stopPropagation()}>
+              {hasDailyTasks ?
+                <DayStrip
+                  dateRange={dateRange}
+                  dailyPlan={dailyPlan}
+                  onDayClick={(dateStr) => setSelectedDay(dateStr)}
+                />
+              : <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+                      Daily Plan
+                    </p>
+                    <p className="text-[10px] text-[#B0ADA7]">
+                      {dateRange.length} day{dateRange.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#E8E4DE] py-3">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#D6D1CA"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span className="text-[10px] italic text-[#D6D1CA]">
+                      No tasks added yet
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          )}
+
+          {/* ── Bottom row: URL + Star ── */}
+          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
             {projectUrl ?
               <a
                 href={projectUrl}
@@ -903,31 +924,55 @@ export default function ProjectCard({
                   {new URL(projectUrl).hostname.replace("www.", "")}
                 </span>
               </a>
-            : <span className="text-[11px] text-[#6B7280]">No link added</span>}
+            : <span className="text-[11px] italic text-[#D6D1CA]">
+                No link added
+              </span>
+            }
 
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setOverviewOpen(true);
+                onToggleStar?.(id);
               }}
-              className="flex w-full md:w-auto items-center justify-center gap-1 rounded-lg border border-[#E8610A] bg-[#FEF0E7] px-2.5 py-1 text-[11px] font-medium text-[#E8610A] transition-colors hover:bg-[#E8610A] hover:text-white hover:border-[#E8610A]">
-              View
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                starred ?
+                  "border-[#E8610A] bg-[#E8610A] text-white hover:bg-[#D15508]"
+                : "border-[#EDE8E2] bg-[#F9F7F4] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+              }`}>
               <svg
-                width="10"
-                height="10"
+                width="13"
+                height="13"
                 viewBox="0 0 24 24"
-                fill="none"
+                fill={starred ? "currentColor" : "none"}
                 stroke="currentColor"
-                strokeWidth="2.5"
+                strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
-                className="stroke-current">
-                <polyline points="9 18 15 12 9 6" />
+                strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
+              <span>
+                {starCount > 0 ?
+                  starCount
+                : starred ?
+                  "Starred"
+                : "Star"}
+              </span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── Day Task Modal (opened from strip) ── */}
+      {selectedDay && isOwner && (
+        <DayTaskModal
+          dateStr={selectedDay}
+          tasks={dailyPlan[selectedDay] ?? []}
+          onClose={() => setSelectedDay(null)}
+          onToggle={(taskId) => {
+            handleToggleTask(selectedDay, taskId);
+          }}
+        />
+      )}
 
       <ProjectOverviewModal
         isOpen={overviewOpen}
@@ -947,6 +992,10 @@ export default function ProjectCard({
         startDate={startDate}
         endDate={endDate}
         selectedTools={selectedTools}
+        dailyPlan={dailyPlan}
+        onToggleStar={onToggleStar}
+        starred={starred}
+        isOwner={canEdit}
       />
 
       <ConfirmationModal

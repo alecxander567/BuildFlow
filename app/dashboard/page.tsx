@@ -8,6 +8,7 @@ import HeroSection from "../components/HeroSection";
 import StatBoxes from "../components/StatBoxes";
 import ProjectCard from "../components/ProjectCard";
 import { AlertContainer, useAlert } from "../components/Alert";
+import LoadingSpinner, { SkeletonCard } from "../components/LoadingSpinner";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
   useProjects,
@@ -23,8 +24,14 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, authLoading } = useAuth();
-  const { projects, loading, error, deleteProject, updateDailyPlan } =
-    useProjects(user, authLoading);
+  const {
+    projects,
+    loading,
+    error,
+    deleteProject,
+    updateDailyPlan,
+    toggleStar,
+  } = useProjects(user, authLoading);
 
   const { toasts, remove, show } = useAlert();
 
@@ -56,6 +63,8 @@ export default function DashboardPage() {
     return false;
   };
 
+  const isLoading = loading || authLoading;
+
   return (
     <div
       className="flex h-screen overflow-hidden bg-[#F9F7F4]"
@@ -67,8 +76,12 @@ export default function DashboardPage() {
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
           <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
-            <HeroSection />
+            {/* Pass projects to HeroSection */}
+            <HeroSection projects={projects} />
+
+            {/* Pass projects to StatBoxes */}
             <StatBoxes projects={projects} />
+
             <div>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -78,7 +91,7 @@ export default function DashboardPage() {
                     All Projects
                   </h2>
                   <p className="text-xs text-[#B0ADA7]">
-                    {loading ?
+                    {isLoading ?
                       "Loading…"
                     : `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""}`
                     }
@@ -107,18 +120,15 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {(loading || authLoading) && (
+              {/* ── Loading state ── */}
+              {isLoading && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-48 animate-pulse rounded-2xl border border-[#EDE8E2] bg-white"
-                    />
-                  ))}
+                  <SkeletonCard count={3} />
                 </div>
               )}
 
-              {!loading && !authLoading && !error && projects.length === 0 && (
+              {/* ── Empty: no projects ── */}
+              {!isLoading && !error && projects.length === 0 && (
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
                     <svg
@@ -164,8 +174,8 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {!loading &&
-                !authLoading &&
+              {/* ── Empty: filter has no results ── */}
+              {!isLoading &&
                 !error &&
                 projects.length > 0 &&
                 filteredProjects.length === 0 && (
@@ -181,7 +191,8 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-              {!loading && !authLoading && filteredProjects.length > 0 && (
+              {/* ── Project grid ── */}
+              {!isLoading && filteredProjects.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProjects.map((project) => (
                     <ProjectCard
@@ -198,8 +209,14 @@ export default function DashboardPage() {
                       endDate={project.endDate}
                       selectedTools={project.selectedTools}
                       dailyPlan={project.dailyPlan}
+                      starred={project.starred}
+                      userId={project.userId}
+                      currentUserId={user?.uid}
                       onDeleteProject={handleDeleteProject}
                       onUpdateDailyPlan={updateDailyPlan}
+                      onToggleStar={async (id) => {
+                        await toggleStar(id);
+                      }}
                     />
                   ))}
                 </div>
