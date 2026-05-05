@@ -30,8 +30,8 @@ export default function TopBar() {
         </kbd>
       </div>
 
+      {/* Desktop only: bell + Add Project */}
       <div className="hidden md:flex shrink-0 items-center gap-3">
-        {/* Notification bell */}
         <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-[#F9F7F4] text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
           <svg
             width="16"
@@ -48,7 +48,6 @@ export default function TopBar() {
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-white" />
         </button>
 
-        {/* Add Project button */}
         <Link
           href="/AddProjectPage"
           className="flex items-center justify-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">

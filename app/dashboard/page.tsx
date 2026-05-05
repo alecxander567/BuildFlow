@@ -8,7 +8,6 @@ import HeroSection from "../components/HeroSection";
 import StatBoxes from "../components/StatBoxes";
 import ProjectCard from "../components/ProjectCard";
 import { AlertContainer, useAlert } from "../components/Alert";
-import LoadingSpinner, { SkeletonCard } from "../components/LoadingSpinner";
 import { useAuth } from "@/app/hooks/useAuth";
 import {
   useProjects,
@@ -76,10 +75,7 @@ export default function DashboardPage() {
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
           <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
-            {/* Pass projects to HeroSection */}
             <HeroSection projects={projects} />
-
-            {/* Pass projects to StatBoxes */}
             <StatBoxes projects={projects} />
 
             <div>
@@ -122,8 +118,13 @@ export default function DashboardPage() {
 
               {/* ── Loading state ── */}
               {isLoading && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  <SkeletonCard count={3} />
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#E8610A] border-t-transparent" />
+                    <p className="mt-2 text-sm text-[#72706A]">
+                      Loading projects...
+                    </p>
+                  </div>
                 </div>
               )}
 

@@ -7,13 +7,13 @@ import {
   deleteDoc,
   doc,
   query,
-  where,
   orderBy,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { db } from "@/app/lib/firebase";
+import { updateUserStat } from "../lib/firebase/statsUpdater";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -157,6 +157,10 @@ export function useProjects(user: User | null, authLoading: boolean) {
         starred: false,
         starredBy: [],
       });
+
+      // Update achievements - increment projects created
+      await updateUserStat(user.uid, "projectsCreated", 1);
+
       setProjects((prev) => [
         {
           ...input,
@@ -222,18 +226,49 @@ export function useProjects(user: User | null, authLoading: boolean) {
     dailyPlan: DailyPlan,
   ): Promise<void> => {
     const current = projects.find((p) => p.id === id);
-    if (!current) return;
+    if (!current || !user) return;
+
+    // Count newly completed tasks before updating
+    let newlyCompletedTasks = 0;
+
+    // Compare old and new tasks to find newly completed ones
+    for (const date in dailyPlan) {
+      const newTasks = dailyPlan[date] || [];
+      const oldTasks = current.dailyPlan[date] || [];
+
+      for (const newTask of newTasks) {
+        const oldTask = oldTasks.find((t) => t.id === newTask.id);
+        // If task is now done but wasn't done before
+        if (newTask.done && (!oldTask || !oldTask.done)) {
+          newlyCompletedTasks++;
+        }
+      }
+    }
+
     const progress = computeProgress(
       dailyPlan,
       current.startDate,
       current.endDate,
     );
+
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, dailyPlan, progress } : p)),
     );
+
     try {
       await updateDoc(doc(db, "projects", id), { dailyPlan, progress });
+
+      // Update achievements for completed tasks
+      if (newlyCompletedTasks > 0) {
+        await updateUserStat(user.uid, "tasksCompleted", newlyCompletedTasks);
+      }
+
+      // Check if project is now completed (100% progress)
+      if (progress === 100 && current.progress !== 100) {
+        await updateUserStat(user.uid, "projectsCompleted", 1);
+      }
     } catch (err) {
+      // Rollback on error
       setProjects((prev) =>
         prev.map((p) =>
           p.id === id ?

@@ -3,7 +3,6 @@
 import { AlertContainer, useAlert } from "@/app/components/Alert";
 import { useProjectsView, type SortOption } from "@/app/hooks/useProjectsView";
 import ProjectCard from "@/app/components/ProjectCard";
-import { SkeletonCard } from "@/app/components/LoadingSpinner";
 import { useAuth } from "@/app/hooks/useAuth";
 import Sidebar from "@/app/components/Sidebar";
 import TopBar from "@/app/components/Topbar";
@@ -179,8 +178,20 @@ export default function ProjectsPage() {
             position="top-right"
           />
 
-          {error ?
-            /* ── Error state ── */
+          {/* ── Loading State ── */}
+          {loading && (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#E8610A] border-t-transparent" />
+                <p className="mt-2 text-sm text-[#72706A]">
+                  Loading projects...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Error State ── */}
+          {error && !loading && (
             <div className="flex h-full flex-col items-center justify-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
                 <svg
@@ -209,22 +220,22 @@ export default function ProjectsPage() {
                 Try Again
               </button>
             </div>
-          : /* ── Main content ── */
+          )}
+
+          {/* ── Main Content ── */}
+          {!loading && !error && (
             <div className="px-4 py-5 sm:px-6 md:px-8 md:py-7">
               <div className="mx-auto max-w-6xl flex flex-col gap-6 md:gap-7">
                 {/* ── Page header ── */}
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h1
-                      className="text-xl font-bold text-[#1A1916] sm:text-2xl"
+                      className="text-base font-bold text-[#1A1916] sm:text-lg"
                       style={{ fontFamily: "'Sora', sans-serif" }}>
                       Projects
                     </h1>
-                    <p className="mt-0.5 text-sm text-[#B0ADA7]">
-                      {loading ?
-                        "Loading your projects…"
-                      : `${projects.length} project${projects.length !== 1 ? "s" : ""} total`
-                      }
+                    <p className="mt-0.5 text-xs text-[#B0ADA7]">
+                      {`${projects.length} project${projects.length !== 1 ? "s" : ""} total`}
                     </p>
                   </div>
 
@@ -430,15 +441,8 @@ export default function ProjectsPage() {
                   </div>
                 )}
 
-                {/* ── Loading skeleton ── */}
-                {loading && (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <SkeletonCard count={6} />
-                  </div>
-                )}
-
                 {/* ── Empty: no projects at all ── */}
-                {!loading && projects.length === 0 && (
+                {projects.length === 0 && (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
                     <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
                       <svg
@@ -483,7 +487,7 @@ export default function ProjectsPage() {
                 )}
 
                 {/* ── My Projects ── */}
-                {!loading && myProjects.length > 0 && (
+                {myProjects.length > 0 && (
                   <section>
                     <SectionHeader
                       title="My Projects"
@@ -532,7 +536,7 @@ export default function ProjectsPage() {
                 )}
 
                 {/* ── Other Users' Projects ── */}
-                {!loading && otherProjects.length > 0 && (
+                {otherProjects.length > 0 && (
                   <section>
                     <SectionHeader
                       title="From Other Users"
@@ -583,7 +587,7 @@ export default function ProjectsPage() {
                 )}
               </div>
             </div>
-          }
+          )}
         </main>
       </div>
     </div>

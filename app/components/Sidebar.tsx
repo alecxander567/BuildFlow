@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useAchievements } from "@/app/hooks/useAchievements";
 
 const navItems = [
   {
@@ -54,12 +55,15 @@ const navItems = [
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round">
-        <polyline points="9 11 12 14 22 4" />
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        <path d="M6 9H4a2 2 0 0 0-2 2v1a4 4 0 0 0 4 4h.5" />
+        <path d="M18 9h2a2 2 0 0 1 2 2v1a4 4 0 0 1-4 4h-.5" />
+        <path d="M6 3h12v10a6 6 0 0 1-12 0V3z" />
+        <path d="M9 21h6" />
+        <path d="M12 17v4" />
       </svg>
     ),
-    label: "Tasks",
-    href: "/tasks",
+    label: "Achievements",
+    href: "/achievements",
   },
   {
     icon: (
@@ -181,6 +185,40 @@ interface NavListProps {
 
 function NavList({ onClose }: NavListProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const {
+    unlockedCount,
+    lastViewedAchievements,
+    markAchievementsAsViewed,
+    refreshAchievements,
+    forceSyncAchievements,
+    userAchievements,
+  } = useAchievements();
+
+  // Calculate unviewed count
+  const unviewedCount = Math.max(
+    0,
+    (unlockedCount || 0) - (lastViewedAchievements || 0),
+  );
+
+  // Refresh achievements when component mounts
+  useEffect(() => {
+    refreshAchievements();
+  }, [refreshAchievements]);
+
+  // Auto-sync when no achievements but user has stats
+  useEffect(() => {
+    if (user && unlockedCount === 0 && userAchievements.length === 0) {
+      forceSyncAchievements();
+    }
+  }, [user, unlockedCount, userAchievements.length, forceSyncAchievements]);
+
+  const handleAchievementsClick = () => {
+    if (unviewedCount > 0) {
+      markAchievementsAsViewed();
+    }
+    onClose();
+  };
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -193,8 +231,10 @@ function NavList({ onClose }: NavListProps) {
           <Link
             key={item.label}
             href={item.href}
-            onClick={onClose}
-            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            onClick={
+              item.label === "Achievements" ? handleAchievementsClick : onClose
+            }
+            className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors overflow-visible ${
               isActive ?
                 "bg-[#FEF0E7] text-[#E8610A]"
               : "text-[#72706A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
@@ -208,6 +248,15 @@ function NavList({ onClose }: NavListProps) {
               {item.icon}
             </span>
             <span className="flex-1 text-left">{item.label}</span>
+
+            {/* Red Badge for NEW Achievements */}
+            {item.label === "Achievements" && unviewedCount > 0 && (
+              <div className="absolute -right-2 -top-2 z-50">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-lg ring-2 ring-white">
+                  {unviewedCount > 99 ? "99+" : unviewedCount}
+                </span>
+              </div>
+            )}
           </Link>
         );
       })}
@@ -236,7 +285,6 @@ function NavList({ onClose }: NavListProps) {
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logOut, loading, user } = useAuth();
-  const pathname = usePathname();
 
   return (
     <>
@@ -295,7 +343,6 @@ export default function Sidebar() {
 
       {/* ── Mobile top bar ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-[#EDE8E2] bg-[#F9F7F4] px-4 py-3 shadow-sm">
-        {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E8610A]">
             <svg
@@ -317,11 +364,9 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        {/* Right actions */}
         <div className="flex items-center gap-2">
-          {/* + Add Project */}
           <Link
-            href="/add-project"
+            href="/AddProjectPage"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
             <svg
               width="16"
@@ -337,7 +382,6 @@ export default function Sidebar() {
             </svg>
           </Link>
 
-          {/* Notification bell */}
           <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
             <svg
               width="16"
@@ -354,7 +398,6 @@ export default function Sidebar() {
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-[#F9F7F4]" />
           </button>
 
-          {/* Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]"

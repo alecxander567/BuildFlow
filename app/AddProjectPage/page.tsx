@@ -14,6 +14,7 @@ import { useAuth } from "@/app/hooks/useAuth";
 import { useUserTools } from "@/app/hooks/useUserTools";
 import ProjectFormFields from "../components/ProjectFormFields";
 import { useEffect } from "react";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function AddProjectPage() {
   const router = useRouter();
@@ -230,14 +231,13 @@ export default function AddProjectPage() {
             </div>
 
             {!isReady ?
-              <div className="flex flex-col gap-4">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-16 animate-pulse rounded-2xl border border-[#EDE8E2] bg-white"
-                  />
-                ))}
-              </div>
+              // Replaced inline skeleton divs with LoadingSpinner
+              <LoadingSpinner
+                variant="spinner"
+                size="md"
+                label="Loading…"
+                fullScreen
+              />
             : <form
                 key={editProjectId ?? "new"}
                 onSubmit={handleSubmit}
@@ -277,26 +277,14 @@ export default function AddProjectPage() {
         </main>
       </div>
 
+      {/* Replaced inline redirect overlay with LoadingSpinner */}
       {redirecting && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-[#F9F7F4]/80 backdrop-blur-sm">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FEF0E7]">
-            <svg
-              className="animate-spin"
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#E8610A"
-              strokeWidth="2.5"
-              strokeLinecap="round">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-            </svg>
-          </div>
-          <p
-            className="text-sm font-medium text-[#72706A]"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            Redirecting to dashboard…
-          </p>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F9F7F4]/80 backdrop-blur-sm">
+          <LoadingSpinner
+            variant="spinner"
+            size="lg"
+            label="Redirecting to dashboard…"
+          />
         </div>
       )}
     </div>
