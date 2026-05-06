@@ -15,7 +15,7 @@ export function useUserTools(user: User | null) {
       return;
     }
 
-    setLoaded(false); // ← reset so spinner shows while Firestore fetches
+    setLoaded(false);
     let cancelled = false;
 
     const load = async () => {

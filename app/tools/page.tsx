@@ -51,7 +51,6 @@ export default function UserToolsPage() {
   } | null>(null);
   const [editingToolValue, setEditingToolValue] = useState("");
 
-  // ── Add Tool Modal state ──
   const [addToolModalOpen, setAddToolModalOpen] = useState(false);
   const [addToolCategory, setAddToolCategory] = useState<string | null>(null);
   const [newToolName, setNewToolName] = useState("");
