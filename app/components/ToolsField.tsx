@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { AddCategoryModal } from "./AddCategoryModal";
 import { EditCategoryModal } from "./EditCategoryModal";
+import { AddToolModal } from "./AddToolModal";
 
 type ToolsMap = Record<string, string[]>;
 
@@ -12,197 +12,6 @@ type Props = {
   onCatalogChange: (catalog: ToolsMap) => void;
   selectedTools: ToolsMap;
   onSelectedToolsChange: (selected: ToolsMap) => void;
-};
-
-type ModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-};
-
-function Modal({ isOpen, onClose, title, subtitle, children }: ModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center px-4"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl shadow-black/10"
-        style={{
-          animation: "modalIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
-        }}>
-        <div className="flex items-start justify-between border-b border-[#F3F0EB] px-6 py-5">
-          <div>
-            <h2
-              className="text-base font-bold text-[#1A1916]"
-              style={{ fontFamily: "'Sora', sans-serif" }}>
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="mt-0.5 text-xs text-[#B0ADA7]">{subtitle}</p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#EDE8E2] text-[#B0ADA7] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
-      <style>{`
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.94) translateY(6px); }
-          to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
-    </div>,
-    document.body,
-  );
-}
-
-const TOOL_SUGGESTIONS: Record<string, string[]> = {
-  Software: [
-    "Python",
-    "MATLAB",
-    "R",
-    "JavaScript",
-    "Excel",
-    "SPSS",
-    "AutoCAD",
-    "SolidWorks",
-  ],
-  Hardware: [
-    "Arduino",
-    "Raspberry Pi",
-    "Oscilloscope",
-    "Multimeter",
-    "3D Printer",
-    "CNC Machine",
-    "Soldering Station",
-  ],
-  Research: [
-    "Google Scholar",
-    "Zotero",
-    "Mendeley",
-    "EndNote",
-    "JSTOR",
-    "PubMed",
-    "ResearchGate",
-    "Overleaf",
-  ],
-  Design: [
-    "Figma",
-    "AutoCAD",
-    "Adobe Illustrator",
-    "Blender",
-    "SketchUp",
-    "Canva",
-    "Photoshop",
-    "InDesign",
-  ],
-  Writing: [
-    "Microsoft Word",
-    "Google Docs",
-    "LaTeX",
-    "Notion",
-    "Grammarly",
-    "Scrivener",
-    "Obsidian",
-  ],
-  "Data & Analytics": [
-    "Excel",
-    "Google Sheets",
-    "Tableau",
-    "Power BI",
-    "SPSS",
-    "R",
-    "Python",
-    "MATLAB",
-  ],
-  Communication: [
-    "Slack",
-    "Microsoft Teams",
-    "Zoom",
-    "Google Meet",
-    "Email",
-    "Trello",
-    "Notion",
-    "Discord",
-  ],
-  Management: [
-    "Trello",
-    "Jira",
-    "Asana",
-    "Notion",
-    "Microsoft Project",
-    "ClickUp",
-    "Monday.com",
-    "Linear",
-  ],
-  Laboratory: [
-    "Microscope",
-    "Spectrophotometer",
-    "PCR Machine",
-    "Centrifuge",
-    "pH Meter",
-    "Autoclave",
-    "Pipettes",
-  ],
-  "Field Work": [
-    "GPS Device",
-    "Drone",
-    "Survey Equipment",
-    "Camera",
-    "Field Notebook",
-    "Soil Kit",
-    "Weather Station",
-  ],
-  _default: [
-    "Notion",
-    "Google Drive",
-    "Microsoft Office",
-    "Zoom",
-    "Slack",
-    "Trello",
-    "Email",
-    "Canva",
-  ],
 };
 
 export default function ToolsField({
@@ -223,17 +32,12 @@ export default function ToolsField({
 
   const [newToolName, setNewToolName] = useState("");
   const [toolError, setToolError] = useState("");
-  const toolInputRef = useRef<HTMLInputElement>(null);
 
   const hasCategories = Object.keys(safeCatalog).length > 0;
   const totalSelected = Object.values(safeSelected).reduce(
     (sum, arr) => sum + arr.length,
     0,
   );
-
-  useEffect(() => {
-    if (toolModalOpen) setTimeout(() => toolInputRef.current?.focus(), 50);
-  }, [toolModalOpen]);
 
   const openCategoryModal = () => setCategoryModalOpen(true);
 
@@ -591,7 +395,7 @@ export default function ToolsField({
         )}
       </div>
 
-      {/* ── Add Category Modal (extracted) ── */}
+      {/* ── Add Category Modal ── */}
       <AddCategoryModal
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
@@ -599,7 +403,7 @@ export default function ToolsField({
         onAdd={handleAddCategory}
       />
 
-      {/* ── Edit Category Modal (extracted) ── */}
+      {/* ── Edit Category Modal ── */}
       <EditCategoryModal
         isOpen={editCategoryModalOpen}
         onClose={() => {
@@ -611,97 +415,18 @@ export default function ToolsField({
         onEdit={handleEditCategory}
       />
 
-      {/* ── Add Tool Modal (still local) ── */}
-      <Modal
+      {/* ── Add Tool Modal (extracted) ── */}
+      <AddToolModal
         isOpen={toolModalOpen}
         onClose={() => setToolModalOpen(false)}
-        title="Add Item"
-        subtitle={
-          activeCategory ?
-            `Adding to "${activeCategory}" — shared across all projects`
-          : undefined
-        }>
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
-              Item Name
-            </label>
-            <input
-              ref={toolInputRef}
-              type="text"
-              placeholder="e.g. MATLAB, Microscope, Figma…"
-              value={newToolName}
-              onChange={(e) => {
-                setNewToolName(e.target.value);
-                setToolError("");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddTool();
-                }
-              }}
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
-                toolError ?
-                  "border-red-300 bg-red-50"
-                : "border-[#E8E4DE] bg-[#FDFCFB]"
-              }`}
-            />
-            {toolError && (
-              <p className="mt-1.5 text-xs text-red-500">{toolError}</p>
-            )}
-          </div>
-
-          {activeCategory && (
-            <div>
-              <p className="mb-2 text-[11px] text-[#B0ADA7]">Quick pick</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(
-                  TOOL_SUGGESTIONS[activeCategory] ??
-                  TOOL_SUGGESTIONS["_default"]
-                ).map((suggestion) => {
-                  const alreadyAdded =
-                    safeCatalog[activeCategory]?.includes(suggestion);
-                  return (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      disabled={alreadyAdded}
-                      onClick={() => {
-                        setNewToolName(suggestion);
-                        setToolError("");
-                      }}
-                      className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
-                        alreadyAdded ?
-                          "cursor-not-allowed border-[#E8E4DE] bg-[#F3F4F6] text-[#C4C2BE] line-through"
-                        : newToolName === suggestion ?
-                          "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                        : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-                      }`}>
-                      {suggestion}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => setToolModalOpen(false)}
-              className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleAddTool}
-              className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
-              Add Item
-            </button>
-          </div>
-        </div>
-      </Modal>
+        activeCategory={activeCategory}
+        catalog={safeCatalog}
+        newToolName={newToolName}
+        onToolNameChange={setNewToolName}
+        toolError={toolError}
+        onToolErrorChange={setToolError}
+        onAdd={handleAddTool}
+      />
     </>
   );
 }

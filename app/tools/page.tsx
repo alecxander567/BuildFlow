@@ -17,6 +17,7 @@ import TopBar from "../components/Topbar";
 import { AlertContainer, useAlert } from "../components/Alert";
 import { AddCategoryModal } from "../components/AddCategoryModal";
 import { EditCategoryModal } from "../components/EditCategoryModal";
+import { AddToolModal } from "../components/AddToolModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 
 export default function UserToolsPage() {
@@ -50,8 +51,11 @@ export default function UserToolsPage() {
   } | null>(null);
   const [editingToolValue, setEditingToolValue] = useState("");
 
-  const [addingToolTo, setAddingToolTo] = useState<string | null>(null);
+  // ── Add Tool Modal state ──
+  const [addToolModalOpen, setAddToolModalOpen] = useState(false);
+  const [addToolCategory, setAddToolCategory] = useState<string | null>(null);
   const [newToolName, setNewToolName] = useState("");
+  const [newToolError, setNewToolError] = useState("");
 
   const isLoading = authLoading || !loaded;
 
@@ -120,15 +124,28 @@ export default function UserToolsPage() {
     setDeletingCategory(null);
   };
 
-  const handleAddTool = async (categoryName: string) => {
-    if (!newToolName.trim()) return;
-    const success = await addTool(categoryName, newToolName.trim());
+  const openAddToolModal = (categoryName: string) => {
+    setAddToolCategory(categoryName);
+    setNewToolName("");
+    setNewToolError("");
+    setAddToolModalOpen(true);
+  };
+
+  const handleAddTool = async () => {
+    if (!addToolCategory) return;
+    const name = newToolName.trim();
+    if (!name) {
+      setNewToolError("Tool name cannot be empty.");
+      return;
+    }
+    const success = await addTool(addToolCategory, name);
     if (success) {
       setNewToolName("");
-      setAddingToolTo(null);
+      setNewToolError("");
+      setAddToolModalOpen(false);
       show("success", "Tool added successfully.", "Tool added");
     } else {
-      show("error", "Tool already exists in this category.", "Error");
+      setNewToolError("Tool already exists in this category.");
     }
   };
 
@@ -155,9 +172,6 @@ export default function UserToolsPage() {
   };
 
   const hasTools = Object.keys(userTools).length > 0;
-
-  const inputCls =
-    "flex-1 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] px-3 py-1.5 text-sm text-[#1A1916] placeholder-[#B0ADA7] focus:border-[#E8610A] focus:outline-none focus:ring-1 focus:ring-[#E8610A]";
 
   return (
     <div
@@ -280,7 +294,7 @@ export default function UserToolsPage() {
                       </div>
                     </div>
 
-                    {/* Pills + add input */}
+                    {/* Pills + add button */}
                     <div className="px-5 py-4">
                       <div className="flex flex-wrap gap-2">
                         {(tools as string[]).map((tool) =>
@@ -348,41 +362,13 @@ export default function UserToolsPage() {
                             </div>,
                         )}
 
-                        {/* Add tool inline */}
-                        {addingToolTo === categoryName ?
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="text"
-                              value={newToolName}
-                              onChange={(e) => setNewToolName(e.target.value)}
-                              placeholder="Tool name"
-                              className="h-8 rounded-full border border-[#E8610A] bg-[#FEF0E7] px-3 text-xs text-[#1A1916] placeholder-[#B0ADA7] focus:outline-none focus:ring-1 focus:ring-[#E8610A] w-32"
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && handleAddTool(categoryName)
-                              }
-                              autoFocus
-                            />
-                            <button
-                              onClick={() => handleAddTool(categoryName)}
-                              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8610A] text-white hover:bg-[#D15508]">
-                              <CheckIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setAddingToolTo(null);
-                                setNewToolName("");
-                              }}
-                              className="flex h-7 w-7 items-center justify-center rounded-full border border-[#EDE8E2] bg-white text-[#72706A] hover:bg-[#F2EDE7]">
-                              <XMarkIcon className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        : <button
-                            onClick={() => setAddingToolTo(categoryName)}
-                            className="flex h-8 items-center gap-1.5 rounded-full border border-dashed border-[#D6D1CA] px-3 text-xs font-medium text-[#B0ADA7] transition-colors hover:border-[#E8610A] hover:text-[#E8610A]">
-                            <PlusIcon className="h-3.5 w-3.5" />
-                            Add Tool
-                          </button>
-                        }
+                        {/* Add Tool button → opens modal */}
+                        <button
+                          onClick={() => openAddToolModal(categoryName)}
+                          className="flex h-8 items-center gap-1.5 rounded-full border border-dashed border-[#D6D1CA] px-3 text-xs font-medium text-[#B0ADA7] transition-colors hover:border-[#E8610A] hover:text-[#E8610A]">
+                          <PlusIcon className="h-3.5 w-3.5" />
+                          Add Tool
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -413,6 +399,19 @@ export default function UserToolsPage() {
         categoryName={editingCategory}
         existingCategories={userTools}
         onEdit={handleEditCategory}
+      />
+
+      {/* ── Add Tool Modal ── */}
+      <AddToolModal
+        isOpen={addToolModalOpen}
+        onClose={() => setAddToolModalOpen(false)}
+        activeCategory={addToolCategory}
+        catalog={userTools}
+        newToolName={newToolName}
+        onToolNameChange={setNewToolName}
+        toolError={newToolError}
+        onToolErrorChange={setNewToolError}
+        onAdd={handleAddTool}
       />
 
       {/* ── Delete Confirmation Modal ── */}
