@@ -14,6 +14,8 @@ export function useUserTools(user: User | null) {
       setLoaded(true);
       return;
     }
+
+    setLoaded(false); // ← reset so spinner shows while Firestore fetches
     let cancelled = false;
 
     const load = async () => {
@@ -49,8 +51,6 @@ export function useUserTools(user: User | null) {
     };
   }, [user]);
 
-  // Always overwrites the full document — NO merge — so deleted keys are
-  // actually removed from Firestore instead of being re-merged back in.
   const persist = async (tools: Record<string, string[]>) => {
     if (!user) return false;
     try {

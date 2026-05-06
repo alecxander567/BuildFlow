@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { AddCategoryModal } from "./AddCategoryModal";
+import { EditCategoryModal } from "./EditCategoryModal";
 
 type ToolsMap = Record<string, string[]>;
 
@@ -93,19 +95,6 @@ function Modal({ isOpen, onClose, title, subtitle, children }: ModalProps) {
     document.body,
   );
 }
-
-const CATEGORY_SUGGESTIONS = [
-  "Software",
-  "Hardware",
-  "Research",
-  "Design",
-  "Writing",
-  "Data & Analytics",
-  "Communication",
-  "Management",
-  "Laboratory",
-  "Field Work",
-];
 
 const TOOL_SUGGESTIONS: Record<string, string[]> = {
   Software: [
@@ -226,21 +215,15 @@ export default function ToolsField({
   const safeSelected = selectedTools ?? {};
 
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [toolModalOpen, setToolModalOpen] = useState(false);
   const [editCategoryModalOpen, setEditCategoryModalOpen] = useState(false);
+  const [toolModalOpen, setToolModalOpen] = useState(false);
+
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
 
-  const [newCategoryName, setNewCategoryName] = useState("");
   const [newToolName, setNewToolName] = useState("");
-  const [editCategoryName, setEditCategoryName] = useState("");
-  const [categoryError, setCategoryError] = useState("");
   const [toolError, setToolError] = useState("");
-  const [editCategoryError, setEditCategoryError] = useState("");
-
-  const categoryInputRef = useRef<HTMLInputElement>(null);
   const toolInputRef = useRef<HTMLInputElement>(null);
-  const editCategoryInputRef = useRef<HTMLInputElement>(null);
 
   const hasCategories = Object.keys(safeCatalog).length > 0;
   const totalSelected = Object.values(safeSelected).reduce(
@@ -249,29 +232,13 @@ export default function ToolsField({
   );
 
   useEffect(() => {
-    if (categoryModalOpen)
-      setTimeout(() => categoryInputRef.current?.focus(), 50);
-  }, [categoryModalOpen]);
-
-  useEffect(() => {
     if (toolModalOpen) setTimeout(() => toolInputRef.current?.focus(), 50);
   }, [toolModalOpen]);
 
-  useEffect(() => {
-    if (editCategoryModalOpen)
-      setTimeout(() => editCategoryInputRef.current?.focus(), 50);
-  }, [editCategoryModalOpen]);
-
-  const openCategoryModal = () => {
-    setNewCategoryName("");
-    setCategoryError("");
-    setCategoryModalOpen(true);
-  };
+  const openCategoryModal = () => setCategoryModalOpen(true);
 
   const openEditCategoryModal = (category: string) => {
     setEditingCategory(category);
-    setEditCategoryName(category);
-    setEditCategoryError("");
     setEditCategoryModalOpen(true);
   };
 
@@ -282,58 +249,23 @@ export default function ToolsField({
     setToolModalOpen(true);
   };
 
-  const handleAddCategory = () => {
-    const name = newCategoryName.trim();
-    if (!name) {
-      setCategoryError("Category name cannot be empty.");
-      return;
-    }
-    if (safeCatalog[name] !== undefined) {
-      setCategoryError("This category already exists.");
-      return;
-    }
+  const handleAddCategory = (name: string) => {
     onCatalogChange({ ...safeCatalog, [name]: [] });
-    setNewCategoryName("");
-    setCategoryError("");
-    setCategoryModalOpen(false);
   };
 
-  const handleEditCategory = () => {
-    if (!editingCategory) return;
-    const newName = editCategoryName.trim();
-    if (!newName) {
-      setEditCategoryError("Category name cannot be empty.");
-      return;
-    }
-    if (newName === editingCategory) {
-      setEditCategoryModalOpen(false);
-      return;
-    }
-    if (safeCatalog[newName] !== undefined) {
-      setEditCategoryError("This category already exists.");
-      return;
-    }
-
+  const handleEditCategory = (oldName: string, newName: string) => {
     const updatedCatalog: ToolsMap = {};
     Object.keys(safeCatalog).forEach((key) => {
-      if (key === editingCategory) {
-        updatedCatalog[newName] = safeCatalog[key];
-      } else {
-        updatedCatalog[key] = safeCatalog[key];
-      }
+      updatedCatalog[key === oldName ? newName : key] = safeCatalog[key];
     });
     onCatalogChange(updatedCatalog);
 
     const updatedSelected = { ...safeSelected };
-    if (updatedSelected[editingCategory]) {
-      updatedSelected[newName] = updatedSelected[editingCategory];
-      delete updatedSelected[editingCategory];
+    if (updatedSelected[oldName]) {
+      updatedSelected[newName] = updatedSelected[oldName];
+      delete updatedSelected[oldName];
       onSelectedToolsChange(updatedSelected);
     }
-
-    setEditCategoryModalOpen(false);
-    setEditingCategory(null);
-    setEditCategoryName("");
   };
 
   const handleDeleteCategory = (category: string) => {
@@ -490,7 +422,7 @@ export default function ToolsField({
           <div className="flex flex-col gap-5">
             {Object.entries(safeCatalog).map(([category, categoryTools]) => (
               <div key={category}>
-                {/* Category row with aligned buttons */}
+                {/* Category row */}
                 <div className="mb-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-bold uppercase tracking-widest text-[#72706A]">
@@ -503,7 +435,6 @@ export default function ToolsField({
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {/* Add button first */}
                     <button
                       type="button"
                       onClick={() => openAddTool(category)}
@@ -522,8 +453,6 @@ export default function ToolsField({
                         <line x1="5" y1="12" x2="19" y2="12" />
                       </svg>
                     </button>
-
-                    {/* Edit button second */}
                     <button
                       type="button"
                       onClick={() => openEditCategoryModal(category)}
@@ -542,8 +471,6 @@ export default function ToolsField({
                         <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                       </svg>
                     </button>
-
-                    {/* Delete button third */}
                     <button
                       type="button"
                       onClick={() => handleDeleteCategory(category)}
@@ -664,143 +591,27 @@ export default function ToolsField({
         )}
       </div>
 
-      {/* Add Category Modal */}
-      <Modal
+      {/* ── Add Category Modal (extracted) ── */}
+      <AddCategoryModal
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
-        title="New Category"
-        subtitle="Added to your shared catalog — available in all projects">
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
-              Category Name
-            </label>
-            <input
-              ref={categoryInputRef}
-              type="text"
-              placeholder="e.g. Software, Laboratory, Writing…"
-              value={newCategoryName}
-              onChange={(e) => {
-                setNewCategoryName(e.target.value);
-                setCategoryError("");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleAddCategory();
-                }
-              }}
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
-                categoryError ?
-                  "border-red-300 bg-red-50"
-                : "border-[#E8E4DE] bg-[#FDFCFB]"
-              }`}
-            />
-            {categoryError && (
-              <p className="mt-1.5 text-xs text-red-500">{categoryError}</p>
-            )}
-          </div>
+        existingCategories={safeCatalog}
+        onAdd={handleAddCategory}
+      />
 
-          <div>
-            <p className="mb-2 text-[11px] text-[#B0ADA7]">Quick pick</p>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORY_SUGGESTIONS.map((suggestion) => {
-                const taken = safeCatalog[suggestion] !== undefined;
-                return (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    disabled={taken}
-                    onClick={() => {
-                      setNewCategoryName(suggestion);
-                      setCategoryError("");
-                    }}
-                    className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
-                      taken ?
-                        "cursor-not-allowed border-[#E8E4DE] bg-[#F3F4F6] text-[#C4C2BE] line-through"
-                      : newCategoryName === suggestion ?
-                        "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                      : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-                    }`}>
-                    {suggestion}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => setCategoryModalOpen(false)}
-              className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleAddCategory}
-              className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
-              Add Category
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Edit Category Modal */}
-      <Modal
+      {/* ── Edit Category Modal (extracted) ── */}
+      <EditCategoryModal
         isOpen={editCategoryModalOpen}
-        onClose={() => setEditCategoryModalOpen(false)}
-        title="Edit Category"
-        subtitle="Rename this category across all your projects">
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
-              Category Name
-            </label>
-            <input
-              ref={editCategoryInputRef}
-              type="text"
-              placeholder="New category name"
-              value={editCategoryName}
-              onChange={(e) => {
-                setEditCategoryName(e.target.value);
-                setEditCategoryError("");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleEditCategory();
-                }
-              }}
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
-                editCategoryError ?
-                  "border-red-300 bg-red-50"
-                : "border-[#E8E4DE] bg-[#FDFCFB]"
-              }`}
-            />
-            {editCategoryError && (
-              <p className="mt-1.5 text-xs text-red-500">{editCategoryError}</p>
-            )}
-          </div>
+        onClose={() => {
+          setEditCategoryModalOpen(false);
+          setEditingCategory(null);
+        }}
+        categoryName={editingCategory}
+        existingCategories={safeCatalog}
+        onEdit={handleEditCategory}
+      />
 
-          <div className="flex gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => setEditCategoryModalOpen(false)}
-              className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleEditCategory}
-              className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Add Tool Modal */}
+      {/* ── Add Tool Modal (still local) ── */}
       <Modal
         isOpen={toolModalOpen}
         onClose={() => setToolModalOpen(false)}

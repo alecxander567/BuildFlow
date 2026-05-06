@@ -119,7 +119,7 @@ const navItems = [
       </svg>
     ),
     label: "Tool Hub",
-    href: "/toolhub",
+    href: "/tools",
   },
 ];
 
