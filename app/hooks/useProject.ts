@@ -59,13 +59,24 @@ export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;
 export function generateDateRange(start: string, end: string): string[] {
   if (!start || !end) return [];
   const dates: string[] = [];
-  const cur = new Date(start + "T00:00:00");
-  const last = new Date(end + "T00:00:00");
-  if (cur > last) return [];
-  while (cur <= last && dates.length <= 366) {
-    dates.push(cur.toISOString().split("T")[0]);
-    cur.setDate(cur.getDate() + 1);
+
+  // Use noon UTC to avoid day boundary issues
+  const startDate = new Date(start + "T12:00:00Z");
+  const endDate = new Date(end + "T12:00:00Z");
+
+  if (startDate > endDate) return [];
+
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate && dates.length <= 366) {
+    const year = currentDate.getUTCFullYear();
+    const month = String(currentDate.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(currentDate.getUTCDate()).padStart(2, "0");
+    dates.push(`${year}-${month}-${day}`);
+
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
+
   return dates;
 }
 
