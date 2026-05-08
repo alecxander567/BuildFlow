@@ -43,7 +43,10 @@ export interface ProductivityMetrics {
 
 export function useAnalytics() {
   const { user, authLoading } = useAuth();
-  const { projects, loading: projectsLoading } = useProjects(user, authLoading);
+  const { projects: allProjects, loading: projectsLoading } = useProjects(
+    user,
+    authLoading,
+  );
   const { userStats, totalPoints, unlockedCount, totalAchievements } =
     useAchievements();
   const { userTools, loaded: toolsLoaded } = useUserTools(user);
@@ -52,6 +55,11 @@ export function useAnalytics() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const isLoading = projectsLoading || authLoading || !toolsLoaded;
+
+  const projects = useMemo(
+    () => allProjects.filter((p) => p.userId === user?.uid),
+    [allProjects, user],
+  );
 
   const filteredProjects = useMemo(() => {
     if (timeRange === "all") return projects;

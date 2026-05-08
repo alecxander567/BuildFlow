@@ -9,6 +9,7 @@ import StatBoxes from "../components/StatBoxes";
 import ProjectCard from "../components/ProjectCard";
 import { AlertContainer, useAlert } from "../components/Alert";
 import { useAuth } from "@/app/hooks/useAuth";
+import { useUsers } from "@/app/hooks/useUsers";
 import {
   useProjects,
   type Priority,
@@ -24,13 +25,16 @@ export default function DashboardPage() {
   const pathname = usePathname();
   const { user, authLoading } = useAuth();
   const {
-    projects,
+    projects: allProjects,
     loading,
     error,
     deleteProject,
     updateDailyPlan,
     toggleStar,
   } = useProjects(user, authLoading);
+
+  const { getUserById } = useUsers();
+  const projects = allProjects.filter((p) => p.userId === user?.uid);
 
   const { toasts, remove, show } = useAlert();
 
@@ -211,10 +215,12 @@ export default function DashboardPage() {
                       selectedTools={project.selectedTools}
                       dailyPlan={project.dailyPlan}
                       starred={project.starred}
+                      starredBy={project.starredBy}
                       userId={project.userId}
                       currentUserId={user?.uid}
                       onDeleteProject={handleDeleteProject}
                       onUpdateDailyPlan={updateDailyPlan}
+                      ownerEmail={getUserById(project.userId)?.email}
                       onToggleStar={async (id) => {
                         await toggleStar(id);
                       }}

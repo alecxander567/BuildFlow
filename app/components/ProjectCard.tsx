@@ -38,7 +38,9 @@ export interface ProjectCardProps {
   dailyPlan?: DailyPlan;
   starred?: boolean;
   starCount?: number;
+  starredBy?: string[];
   userId?: string;
+  ownerEmail?: string;
   currentUserId?: string;
   onDeleteProject?: (id: string) => Promise<boolean>;
   onUpdateDailyPlan?: (id: string, plan: DailyPlan) => Promise<void>;
@@ -559,13 +561,14 @@ export default function ProjectCard({
   endDate,
   selectedTools,
   dailyPlan: dailyPlanProp,
-  starred = false,
   starCount = 0,
   userId,
   currentUserId,
   onDeleteProject,
   onUpdateDailyPlan,
   onToggleStar,
+  starredBy = [],
+  ownerEmail,
 }: ProjectCardProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -577,6 +580,9 @@ export default function ProjectCard({
 
   const isOwner = currentUserId === userId;
   const canEdit = isOwner;
+
+  const starred = !!currentUserId && starredBy.includes(currentUserId);
+  const totalStars = starredBy.length;
 
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
 
@@ -781,6 +787,26 @@ export default function ProjectCard({
                 No description provided
               </p>
             }
+
+            {!isOwner && ownerEmail && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#1A1916"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-[10px] font-bold text-[#1A1916] truncate">
+                  {ownerEmail}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Tools or placeholder */}
@@ -951,8 +977,8 @@ export default function ProjectCard({
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
               <span>
-                {starCount > 0 ?
-                  starCount
+                {totalStars > 0 ?
+                  totalStars
                 : starred ?
                   "Starred"
                 : "Star"}

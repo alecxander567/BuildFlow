@@ -1,3 +1,4 @@
+// app/hooks/useAuth.ts (updated version)
 import { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -10,13 +11,46 @@ import {
   type User,
 } from "firebase/auth";
 import { FirebaseError } from "firebase/app";
-import { auth } from "@/app/lib/firebase";
+import { auth, db } from "@/app/lib/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
 export type AuthStatus = {
   type: "success" | "error";
   message: string;
 } | null;
+
+// Helper function to create/update user in Firestore
+async function syncUserToFirestore(user: User) {
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  const userDoc = await getDoc(userRef);
+
+  if (!userDoc.exists()) {
+    // Create new user document
+    await setDoc(userRef, {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || user.email?.split("@")[0] || "User",
+      photoURL: user.photoURL || "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  } else {
+    // Update existing user document with latest info
+    await setDoc(
+      userRef,
+      {
+        email: user.email,
+        displayName: user.displayName || userDoc.data().displayName,
+        photoURL: user.photoURL || userDoc.data().photoURL,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+  }
+}
 
 export function useAuth() {
   const router = useRouter();
@@ -26,8 +60,14 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+
+      // Sync user to Firestore when they log in
+      if (firebaseUser) {
+        await syncUserToFirestore(firebaseUser);
+      }
+
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -54,7 +94,22 @@ export function useAuth() {
     setStatus(null);
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        uid: userCredential.user.uid,
+        email: email,
+        displayName: email.split("@")[0], 
+        photoURL: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
       setStatus({
         type: "success",
         message: "Account created successfully! Welcome to BuildFlow.",
@@ -78,7 +133,15 @@ export function useAuth() {
     setStatus(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+
+      // Ensure user exists in Firestore
+      await syncUserToFirestore(userCredential.user);
+
       setStatus({ type: "success", message: "Signed in successfully!" });
       router.push("/dashboard");
     } catch (err) {
@@ -101,7 +164,25 @@ export function useAuth() {
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      // Create/update user in Firestore with Google data
+      await setDoc(
+        doc(db, "users", result.user.uid),
+        {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName:
+            result.user.displayName ||
+            result.user.email?.split("@")[0] ||
+            "User",
+          photoURL: result.user.photoURL || "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+
       router.push("/dashboard");
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
@@ -123,7 +204,25 @@ export function useAuth() {
 
     try {
       const provider = new GithubAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+
+      // Create/update user in Firestore with GitHub data
+      await setDoc(
+        doc(db, "users", result.user.uid),
+        {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName:
+            result.user.displayName ||
+            result.user.email?.split("@")[0] ||
+            "User",
+          photoURL: result.user.photoURL || "",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+
       router.push("/dashboard");
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";

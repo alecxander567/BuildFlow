@@ -35,6 +35,15 @@ export type DayTask = {
 
 export type DailyPlan = Record<string, DayTask[]>;
 
+export type TeamMember = {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  role: "owner" | "member";
+  joinedAt: string;
+};
+
 export type Project = {
   id: string;
   title: string;
@@ -52,6 +61,7 @@ export type Project = {
   dailyPlan: DailyPlan;
   starred: boolean;
   starredBy: string[];
+  teamMembers?: TeamMember[];
 };
 
 export type ProjectInput = Omit<Project, "id" | "userId" | "createdAt">;
@@ -60,7 +70,6 @@ export function generateDateRange(start: string, end: string): string[] {
   if (!start || !end) return [];
   const dates: string[] = [];
 
-  // Use noon UTC to avoid day boundary issues
   const startDate = new Date(start + "T12:00:00Z");
   const endDate = new Date(end + "T12:00:00Z");
 
@@ -73,7 +82,6 @@ export function generateDateRange(start: string, end: string): string[] {
     const month = String(currentDate.getUTCMonth() + 1).padStart(2, "0");
     const day = String(currentDate.getUTCDate()).padStart(2, "0");
     dates.push(`${year}-${month}-${day}`);
-
     currentDate.setUTCDate(currentDate.getUTCDate() + 1);
   }
 
@@ -119,6 +127,8 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
     dailyPlan,
     starred: (raw.starred as boolean) ?? false,
     starredBy: (raw.starredBy as string[]) ?? [],
+    // include teamMembers so Team page can filter membership without waiting
+    teamMembers: (raw.teamMembers as TeamMember[]) ?? [],
   };
 }
 
@@ -127,13 +137,16 @@ export function useProjects(user: User | null, authLoading: boolean) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch ALL projects — Projects page needs to see everyone's projects
+  const allProjectsQuery = () =>
+    query(collection(db, "projects"), orderBy("createdAt", "desc"));
+
   const fetchProjects = async () => {
     if (!user) return;
     setLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "projects"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(allProjectsQuery());
       setProjects(
         snapshot.docs.map((d) =>
           toProject(d.id, d.data() as Record<string, unknown>),
@@ -169,7 +182,6 @@ export function useProjects(user: User | null, authLoading: boolean) {
         starredBy: [],
       });
 
-      // Update achievements - increment projects created
       await updateUserStat(user.uid, "projectsCreated", 1);
 
       setProjects((prev) => [
@@ -183,6 +195,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
           progress,
           starred: false,
           starredBy: [],
+          teamMembers: [],
         },
         ...prev,
       ]);
@@ -239,17 +252,14 @@ export function useProjects(user: User | null, authLoading: boolean) {
     const current = projects.find((p) => p.id === id);
     if (!current || !user) return;
 
-    // Count newly completed tasks before updating
     let newlyCompletedTasks = 0;
 
-    // Compare old and new tasks to find newly completed ones
     for (const date in dailyPlan) {
       const newTasks = dailyPlan[date] || [];
       const oldTasks = current.dailyPlan[date] || [];
 
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id);
-        // If task is now done but wasn't done before
         if (newTask.done && (!oldTask || !oldTask.done)) {
           newlyCompletedTasks++;
         }
@@ -269,17 +279,14 @@ export function useProjects(user: User | null, authLoading: boolean) {
     try {
       await updateDoc(doc(db, "projects", id), { dailyPlan, progress });
 
-      // Update achievements for completed tasks
       if (newlyCompletedTasks > 0) {
         await updateUserStat(user.uid, "tasksCompleted", newlyCompletedTasks);
       }
 
-      // Check if project is now completed (100% progress)
       if (progress === 100 && current.progress !== 100) {
         await updateUserStat(user.uid, "projectsCompleted", 1);
       }
     } catch (err) {
-      // Rollback on error
       setProjects((prev) =>
         prev.map((p) =>
           p.id === id ?
@@ -417,11 +424,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
       setLoading(true);
       setError(null);
       try {
-        const q = query(
-          collection(db, "projects"),
-          orderBy("createdAt", "desc"),
-        );
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(allProjectsQuery());
         if (!cancelled) {
           setProjects(
             snapshot.docs.map((d) =>

@@ -6,6 +6,7 @@ import ProjectCard from "@/app/components/ProjectCard";
 import { useAuth } from "@/app/hooks/useAuth";
 import Sidebar from "@/app/components/Sidebar";
 import TopBar from "@/app/components/Topbar";
+import { useUsers } from "@/app/hooks/useUsers";
 
 interface StatCardProps {
   label: string;
@@ -154,6 +155,7 @@ export default function ProjectsPage() {
     refetch,
   } = useProjectsView();
 
+  const { getUserById } = useUsers();
   const myProjects = projects.filter((p) => p.userId === user?.uid);
   const otherProjects = projects.filter((p) => p.userId !== user?.uid);
 
@@ -524,11 +526,13 @@ export default function ProjectsPage() {
                           selectedTools={project.selectedTools}
                           dailyPlan={project.dailyPlan}
                           starred={project.starred}
+                          starredBy={project.starredBy}
                           userId={project.userId}
                           currentUserId={user?.uid}
                           onDeleteProject={deleteProject}
                           onUpdateDailyPlan={updateDailyPlan}
                           onToggleStar={toggleStar}
+                          ownerEmail={getUserById(project.userId)?.email}
                         />
                       ))}
                     </div>
@@ -575,11 +579,13 @@ export default function ProjectsPage() {
                           selectedTools={project.selectedTools}
                           dailyPlan={project.dailyPlan}
                           starred={project.starred}
+                          starredBy={project.starredBy}
                           userId={project.userId}
                           currentUserId={user?.uid}
                           onDeleteProject={deleteProject}
                           onUpdateDailyPlan={updateDailyPlan}
                           onToggleStar={toggleStar}
+                          ownerEmail={getUserById(project.userId)?.email}
                         />
                       ))}
                     </div>

@@ -114,12 +114,15 @@ export function useProjectsView() {
   }, [filteredProjects, sortBy]);
 
   const stats = useMemo(() => {
-    const total = projects.length;
-    const active = projects.filter((p) => p.progress < 100).length;
-    const completed = projects.filter((p) => p.progress === 100).length;
+    // Stats only reflect the current user's own projects
+    const myProjects = projects.filter((p) => p.userId === user?.uid);
+
+    const total = myProjects.length;
+    const active = myProjects.filter((p) => p.progress < 100).length;
+    const completed = myProjects.filter((p) => p.progress === 100).length;
     const averageProgress =
       total > 0 ?
-        Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / total)
+        Math.round(myProjects.reduce((sum, p) => sum + p.progress, 0) / total)
       : 0;
 
     const byType = {} as Record<ProjectType, number>;
@@ -136,7 +139,7 @@ export function useProjectsView() {
     projectTypes.forEach((type) => {
       byType[type] = 0;
     });
-    projects.forEach((p) => {
+    myProjects.forEach((p) => {
       byType[p.projectType] = (byType[p.projectType] || 0) + 1;
     });
 
@@ -145,19 +148,12 @@ export function useProjectsView() {
       Moderate: 0,
       Low: 0,
     };
-    projects.forEach((p) => {
+    myProjects.forEach((p) => {
       byPriority[p.priority]++;
     });
 
-    return {
-      total,
-      active,
-      completed,
-      averageProgress,
-      byType,
-      byPriority,
-    };
-  }, [projects]);
+    return { total, active, completed, averageProgress, byType, byPriority };
+  }, [projects, user]);
 
   const selectedProject = useMemo(() => {
     if (!selectedProjectId) return null;
