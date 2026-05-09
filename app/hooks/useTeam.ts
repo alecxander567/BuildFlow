@@ -9,6 +9,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { db } from "@/app/lib/firebase";
+import { updateStatsAndCheckAchievements } from "@/app/lib/firebase/achievementService";
 
 export type TeamMember = {
   uid: string;
@@ -16,7 +17,7 @@ export type TeamMember = {
   displayName: string;
   photoURL: string;
   role: "owner" | "member";
-  joinedAt: string; 
+  joinedAt: string;
 };
 
 type UseTeamProps = {
@@ -128,6 +129,19 @@ export function useTeam({ user, projects, alertFns }: UseTeamProps) {
           teamMembers: updatedTeam,
         });
         setProjectTeams((prev) => ({ ...prev, [projectId]: updatedTeam }));
+
+        // Update achievement for team members added
+        const unlocked = await updateStatsAndCheckAchievements(
+          user.uid,
+          "teamMembersAdded",
+          1,
+        );
+        if (unlocked.length > 0) {
+          alertFns.success(
+            `🎉 ${unlocked.map((a) => a.title).join(", ")} unlocked!`,
+          );
+        }
+
         alertFns.success(`${newMember.displayName} added to team!`);
       } catch (err) {
         console.error("Error adding team member:", err);

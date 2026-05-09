@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { db } from "@/app/lib/firebase";
+import { updateStatsAndCheckAchievements } from "@/app/lib/firebase/achievementService";
 
 export function useUserTools(user: User | null) {
   const [userTools, setUserTools] = useState<Record<string, string[]>>({});
@@ -85,12 +86,29 @@ export function useUserTools(user: User | null) {
   const addTool = async (categoryName: string, toolName: string) => {
     if (!user || !userTools[categoryName]) return false;
     if (userTools[categoryName].includes(toolName)) return false;
+
     const next = {
       ...userTools,
       [categoryName]: [...userTools[categoryName], toolName],
     };
+
+    // Calculate unique tools count across all categories
+    const allTools = Object.values(next).flat();
+    const uniqueToolsCount = new Set(allTools).size;
+
     setUserTools(next);
-    return persist(next);
+    const success = await persist(next);
+
+    if (success && user) {
+      // Update achievement for tools used
+      await updateStatsAndCheckAchievements(
+        user.uid,
+        "toolsUsed",
+        uniqueToolsCount,
+      );
+    }
+
+    return success;
   };
 
   const deleteTool = async (categoryName: string, toolName: string) => {

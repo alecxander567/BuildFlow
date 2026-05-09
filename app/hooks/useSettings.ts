@@ -30,21 +30,26 @@ const applyThemeToDocument = (theme: ThemeMode) => {
   } else {
     document.documentElement.classList.remove("dark");
   }
-
-  // Also save to localStorage as a backup
-  localStorage.setItem("theme_preference", theme);
 };
 
-// Function to initialize theme on app load
-export const initializeTheme = () => {
-  if (typeof window === "undefined") return;
+// Get user-specific storage keys
+const getSettingsKey = (userEmail: string) => `app_settings_${userEmail}`;
+const getActivityLogsKey = (userEmail: string) => `activity_logs_${userEmail}`;
+const getThemePreferenceKey = (userEmail: string) =>
+  `theme_preference_${userEmail}`;
 
-  const savedSettings = localStorage.getItem("app_settings");
+// Function to initialize theme on app load (requires user email)
+export const initializeThemeForUser = (userEmail?: string | null) => {
+  if (typeof window === "undefined" || !userEmail) return;
+
+  const settingsKey = getSettingsKey(userEmail);
+  const savedSettings = localStorage.getItem(settingsKey);
   if (savedSettings) {
     const parsed = JSON.parse(savedSettings);
     applyThemeToDocument(parsed.theme);
   } else {
-    const savedTheme = localStorage.getItem("theme_preference");
+    const themeKey = getThemePreferenceKey(userEmail);
+    const savedTheme = localStorage.getItem(themeKey);
     if (savedTheme === "dark" || savedTheme === "light") {
       applyThemeToDocument(savedTheme as ThemeMode);
     }
@@ -66,17 +71,32 @@ export function useSettings(userEmail?: string | null) {
     applyThemeToDocument(theme);
   };
 
-  // Load settings and logs from localStorage on mount
+  // Save settings to localStorage (internal function)
+  const persistSettings = (newSettings: Settings) => {
+    if (!userEmail) return;
+    const settingsKey = getSettingsKey(userEmail);
+    localStorage.setItem(settingsKey, JSON.stringify(newSettings));
+  };
+
+  // Load settings and logs from localStorage on mount (user-specific)
   useEffect(() => {
+    if (!userEmail) {
+      setLoading(false);
+      return;
+    }
+
     const loadSettings = () => {
-      const savedSettings = localStorage.getItem("app_settings");
+      const settingsKey = getSettingsKey(userEmail);
+      const savedSettings = localStorage.getItem(settingsKey);
+
       if (savedSettings) {
         const parsed: Settings = JSON.parse(savedSettings);
         setSettings(parsed);
         applyTheme(parsed.theme);
       } else {
-        // Check for standalone theme preference
-        const savedTheme = localStorage.getItem("theme_preference");
+        // Check for standalone theme preference for this user
+        const themeKey = getThemePreferenceKey(userEmail);
+        const savedTheme = localStorage.getItem(themeKey);
         if (savedTheme === "dark") {
           applyTheme("dark");
           setSettings((prev) => ({ ...prev, theme: "dark" }));
@@ -85,39 +105,46 @@ export function useSettings(userEmail?: string | null) {
         }
       }
 
-      const savedLogs = localStorage.getItem("activity_logs");
+      const logsKey = getActivityLogsKey(userEmail);
+      const savedLogs = localStorage.getItem(logsKey);
       setActivityLogs(savedLogs ? JSON.parse(savedLogs) : []);
       setLoading(false);
     };
 
     loadSettings();
-  }, []);
+  }, [userEmail]);
 
-  // Log an activity entry
+  // Log an activity entry (user-specific)
   const logActivity = (action: string, details?: string) => {
+    if (!userEmail) return;
+
     const newLog: ActivityLog = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       action,
       timestamp: new Date().toISOString(),
       userEmail: userEmail ?? null,
       details,
     };
+
     setActivityLogs((prev) => {
       const updated = [newLog, ...prev];
       // Keep only last 100 logs to prevent localStorage bloat
       const trimmed = updated.slice(0, 100);
-      localStorage.setItem("activity_logs", JSON.stringify(trimmed));
+      const logsKey = getActivityLogsKey(userEmail);
+      localStorage.setItem(logsKey, JSON.stringify(trimmed));
       return trimmed;
     });
   };
 
-  // Persist settings
+  // Persist settings (user-specific) - called only when Save button is clicked
   const saveSettings = async () => {
+    if (!userEmail) return;
+
     setSaving(true);
     setSaveStatus(null);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      localStorage.setItem("app_settings", JSON.stringify(settings));
+      persistSettings(settings);
       applyTheme(settings.theme);
 
       logActivity("Settings Updated", `Theme: ${settings.theme}`);
@@ -137,20 +164,27 @@ export function useSettings(userEmail?: string | null) {
     }
   };
 
-  // Clear all logs
+  // Clear all logs (user-specific)
   const clearActivityLogs = () => {
+    if (!userEmail) return;
+
     setActivityLogs([]);
-    localStorage.setItem("activity_logs", JSON.stringify([]));
+    const logsKey = getActivityLogsKey(userEmail);
+    localStorage.setItem(logsKey, JSON.stringify([]));
     logActivity("Cleared Activity Logs");
   };
 
-  // Toggle light/dark
+  // Toggle light/dark - NOW SAVES IMMEDIATELY
   const toggleTheme = () => {
     const newTheme: ThemeMode = settings.theme === "light" ? "dark" : "light";
-    // Apply immediately
+    // Apply immediately to document
     applyTheme(newTheme);
-    // Update state
-    setSettings((prev) => ({ ...prev, theme: newTheme }));
+    // Update state with new theme
+    const newSettings = { ...settings, theme: newTheme };
+    setSettings(newSettings);
+    // Save to localStorage immediately
+    persistSettings(newSettings);
+    // Log the activity
     logActivity("Theme Changed", `Changed to ${newTheme} mode`);
   };
 

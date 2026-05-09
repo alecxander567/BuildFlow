@@ -12,41 +12,24 @@ interface StatCardProps {
   label: string;
   value: string | number;
   icon: React.ReactNode;
-  accent?: boolean;
 }
 
-function StatCard({ label, value, icon, accent }: StatCardProps) {
+function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border p-5 transition-shadow hover:shadow-md ${
-        accent ?
-          "border-[var(--accent)] bg-gradient-to-br from-[var(--bg-accent-soft)] to-[var(--bg-card)]"
-        : "border-[var(--border)] bg-[var(--bg-card)]"
-      }`}>
-      <div
-        className={`absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-10 ${
-          accent ? "bg-[var(--accent)]" : "bg-[var(--text-muted)]"
-        }`}
-      />
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)] bg-gradient-to-br from-[var(--bg-accent-soft)] to-[var(--bg-card)] p-5 transition-shadow hover:shadow-md">
+      <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[var(--accent)] opacity-10" />
       <div className="relative flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
             {label}
           </p>
           <p
-            className={`mt-1.5 text-3xl font-bold tracking-tight ${
-              accent ? "text-[var(--accent)]" : "text-[var(--text-primary)]"
-            }`}
+            className="mt-1.5 text-3xl font-bold tracking-tight text-[var(--accent)]"
             style={{ fontFamily: "'Sora', sans-serif" }}>
             {value}
           </p>
         </div>
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-            accent ?
-              "bg-[var(--accent)] text-white"
-            : "bg-[var(--bg-hover)] text-[var(--text-secondary)]"
-          }`}>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-white">
           {icon}
         </div>
       </div>
@@ -327,7 +310,6 @@ export default function ProjectsPage() {
                     <StatCard
                       label="Total Projects"
                       value={stats.total}
-                      accent
                       icon={
                         <svg
                           width="18"

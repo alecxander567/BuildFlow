@@ -48,7 +48,7 @@ function isPast(dateStr: string): boolean {
 }
 
 function uid(): string {
-  return Math.random().toString(36).slice(2, 9);
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 interface DayCardProps {
@@ -380,7 +380,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
             </ul>
           )}
 
-          {/* Add task input */}
+          {/* Add task input - FIXED: Removed invalid placeholderColor */}
           <div className="flex items-center gap-2">
             <div
               className="flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors focus-within:border-[var(--accent)]"
@@ -416,10 +416,9 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Add a task for this day…"
-                className="flex-1 bg-transparent text-sm outline-none"
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]"
                 style={{
                   color: "var(--text-primary)",
-                  placeholderColor: "var(--border-dashed)",
                 }}
               />
             </div>

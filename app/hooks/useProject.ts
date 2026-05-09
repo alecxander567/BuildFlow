@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { type User } from "firebase/auth";
 import { db } from "@/app/lib/firebase";
-import { updateUserStat } from "../lib/firebase/statsUpdater";
+import { updateStatsAndCheckAchievements } from "@/app/lib/firebase/achievementService";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -127,7 +127,6 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
     dailyPlan,
     starred: (raw.starred as boolean) ?? false,
     starredBy: (raw.starredBy as string[]) ?? [],
-    // include teamMembers so Team page can filter membership without waiting
     teamMembers: (raw.teamMembers as TeamMember[]) ?? [],
   };
 }
@@ -137,7 +136,6 @@ export function useProjects(user: User | null, authLoading: boolean) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch ALL projects — Projects page needs to see everyone's projects
   const allProjectsQuery = () =>
     query(collection(db, "projects"), orderBy("createdAt", "desc"));
 
@@ -182,7 +180,8 @@ export function useProjects(user: User | null, authLoading: boolean) {
         starredBy: [],
       });
 
-      await updateUserStat(user.uid, "projectsCreated", 1);
+      // Update achievement for project created
+      await updateStatsAndCheckAchievements(user.uid, "projectsCreated", 1);
 
       setProjects((prev) => [
         {
@@ -253,15 +252,26 @@ export function useProjects(user: User | null, authLoading: boolean) {
     if (!current || !user) return;
 
     let newlyCompletedTasks = 0;
+    let newlyCreatedTasks = 0;
 
+    // Calculate differences
     for (const date in dailyPlan) {
       const newTasks = dailyPlan[date] || [];
       const oldTasks = current.dailyPlan[date] || [];
 
+      // Check for newly completed tasks
       for (const newTask of newTasks) {
         const oldTask = oldTasks.find((t) => t.id === newTask.id);
         if (newTask.done && (!oldTask || !oldTask.done)) {
           newlyCompletedTasks++;
+        }
+      }
+
+      // Check for newly created tasks (new IDs not in old plan)
+      for (const newTask of newTasks) {
+        const oldTask = oldTasks.find((t) => t.id === newTask.id);
+        if (!oldTask) {
+          newlyCreatedTasks++;
         }
       }
     }
@@ -272,6 +282,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
       current.endDate,
     );
 
+    // Optimistic update
     setProjects((prev) =>
       prev.map((p) => (p.id === id ? { ...p, dailyPlan, progress } : p)),
     );
@@ -279,14 +290,30 @@ export function useProjects(user: User | null, authLoading: boolean) {
     try {
       await updateDoc(doc(db, "projects", id), { dailyPlan, progress });
 
+      // Update tasks completed achievement
       if (newlyCompletedTasks > 0) {
-        await updateUserStat(user.uid, "tasksCompleted", newlyCompletedTasks);
+        await updateStatsAndCheckAchievements(
+          user.uid,
+          "tasksCompleted",
+          newlyCompletedTasks,
+        );
       }
 
+      // Update tasks created achievement
+      if (newlyCreatedTasks > 0) {
+        await updateStatsAndCheckAchievements(
+          user.uid,
+          "tasksCreated",
+          newlyCreatedTasks,
+        );
+      }
+
+      // Update projects completed achievement
       if (progress === 100 && current.progress !== 100) {
-        await updateUserStat(user.uid, "projectsCompleted", 1);
+        await updateStatsAndCheckAchievements(user.uid, "projectsCompleted", 1);
       }
     } catch (err) {
+      // Rollback on error
       setProjects((prev) =>
         prev.map((p) =>
           p.id === id ?

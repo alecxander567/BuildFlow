@@ -47,8 +47,6 @@ export interface ProjectCardProps {
   onToggleStar?: (id: string) => Promise<void>;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
   if (!startDate || !endDate) return null;
   const start = new Date(startDate);
@@ -96,8 +94,6 @@ function flattenTools(selectedTools?: Record<string, string[]>) {
   return Object.values(selectedTools).flat();
 }
 
-// ─── useIsDark — reads .dark class on <html>, no Tailwind needed ──────────────
-
 function useIsDark() {
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
@@ -113,8 +109,6 @@ function useIsDark() {
   }, []);
   return isDark;
 }
-
-// ─── Theme maps (explicit light + dark hex) ───────────────────────────────────
 
 type Pair = { bg: string; border: string; text: string };
 
@@ -349,8 +343,6 @@ const placeholderIcons: Record<ProjectType, React.ReactElement> = {
 
 const PILL_LIMIT = 4;
 
-// ─── DayTaskModal ─────────────────────────────────────────────────────────────
-
 interface DayTaskModalProps {
   dateStr: string;
   tasks: DayTask[];
@@ -561,8 +553,6 @@ function DayTaskModal({
   );
 }
 
-// ─── DayStrip ─────────────────────────────────────────────────────────────────
-
 interface DayStripProps {
   dateRange: string[];
   dailyPlan: DailyPlan;
@@ -709,8 +699,6 @@ function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
     </div>
   );
 }
-
-// ─── ProjectCard ──────────────────────────────────────────────────────────────
 
 export default function ProjectCard({
   id,

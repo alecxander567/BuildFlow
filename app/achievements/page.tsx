@@ -241,10 +241,7 @@ const IconLeaderboard = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Semantic color categories kept as Tailwind named colors since they
-// aren't in the CSS token set, but get dark: variants for dark mode.
-// Semantic color categories kept as Tailwind named colors since they
-// aren't in the CSS token set, but get dark: variants for dark mode.
+// Semantic color categories
 const categoryInfo: Record<
   string,
   { name: string; Icon: React.ElementType; color: string; bg: string }
@@ -281,6 +278,37 @@ const categoryInfo: Record<
   },
 };
 
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)] bg-gradient-to-br from-[var(--bg-accent-soft)] to-[var(--bg-card)] p-5 transition-shadow hover:shadow-md">
+      <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[var(--accent)] opacity-10" />
+      <div className="relative flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
+            {label}
+          </p>
+          <p
+            className="mt-1.5 text-3xl font-bold tracking-tight text-[var(--accent)]"
+            style={{ fontFamily: "'Sora', sans-serif" }}>
+            {value}
+          </p>
+        </div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-white">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const iconComponentMap: Record<string, React.ElementType> = {
   ProjectIcon: IconFolder,
   TaskIcon: IconCheck,
@@ -302,7 +330,6 @@ const FallbackIcon = IconTrophy;
 export default function AchievementsPage() {
   const {
     achievements,
-    userStats,
     loading,
     error,
     getAchievementProgress,
@@ -383,33 +410,86 @@ export default function AchievementsPage() {
                         BuildFlow
                       </p>
                     </div>
+                  </div>
 
-                    <div className="flex gap-3">
-                      {/* Points Card */}
-                      <div className="rounded-2xl bg-gradient-to-br from-[#E8610A] to-[#F59E0B] px-4 py-2 text-center shadow-sm">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <IconStar className="text-white/80 text-sm" />
-                          <span className="text-2xl font-bold text-white">
-                            {totalPoints}
-                          </span>
-                        </div>
-                        <div className="text-[10px] font-medium uppercase tracking-wider text-white/80">
-                          Total Points
-                        </div>
-                      </div>
-                      {/* Unlocked Card */}
-                      <div className="rounded-2xl bg-[var(--bg-card)] px-4 py-2 text-center shadow-sm ring-1 ring-[var(--border)]">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <IconTrophy className="text-[var(--accent)] text-sm" />
-                          <span className="text-2xl font-bold text-[var(--accent)]">
-                            {unlockedCount}
-                          </span>
-                        </div>
-                        <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-                          / {totalAchievements} Unlocked
-                        </div>
-                      </div>
-                    </div>
+                  {/* Stats Row */}
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                    <StatCard
+                      label="Total Points"
+                      value={totalPoints}
+                      icon={
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      }
+                    />
+                    <StatCard
+                      label="Unlocked"
+                      value={`${unlockedCount} / ${totalAchievements}`}
+                      icon={
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round">
+                          <polyline points="8 21 12 17 16 21" />
+                          <line x1="12" y1="17" x2="12" y2="11" />
+                          <path d="M7 4h10l1 7a5 5 0 0 1-5 5 5 5 0 0 1-5-5L7 4z" />
+                          <path d="M7 4H4l1 4a3 3 0 0 0 2 1" />
+                          <path d="M17 4h3l-1 4a3 3 0 0 1-2 1" />
+                        </svg>
+                      }
+                    />
+                    <StatCard
+                      label="Completion"
+                      value={`${Math.round((unlockedCount / (totalAchievements || 1)) * 100)}%`}
+                      icon={
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                      }
+                    />
+                    <StatCard
+                      label="Categories"
+                      value={Object.keys(groupedAchievements).length}
+                      icon={
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round">
+                          <rect x="3" y="3" width="7" height="7" />
+                          <rect x="14" y="3" width="7" height="7" />
+                          <rect x="14" y="14" width="7" height="7" />
+                          <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                      }
+                    />
                   </div>
 
                   {/* Overall Progress Bar */}
@@ -449,47 +529,6 @@ export default function AchievementsPage() {
                           {recentUnlocked.map((a) => a.title).join(", ")}
                         </p>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── User Stats ── */}
-                {userStats && (
-                  <div className="rounded-2xl bg-[var(--bg-card)] p-4 shadow-sm ring-1 ring-[var(--border)]">
-                    <h3
-                      className="mb-3 text-sm font-bold text-[var(--text-primary)]"
-                      style={{ fontFamily: "'Sora', sans-serif" }}>
-                      Your Stats
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <StatBadge
-                        label="Projects"
-                        value={userStats.projectsCreated}
-                        Icon={IconFolder}
-                        iconColor="text-blue-500"
-                        iconBg="bg-blue-50 dark:bg-blue-950/40"
-                      />
-                      <StatBadge
-                        label="Tasks Completed"
-                        value={userStats.tasksCompleted}
-                        Icon={IconCheck}
-                        iconColor="text-green-500"
-                        iconBg="bg-green-50 dark:bg-green-950/40"
-                      />
-                      <StatBadge
-                        label="Days Active"
-                        value={userStats.daysActive}
-                        Icon={IconCalendar}
-                        iconColor="text-[var(--accent)]"
-                        iconBg="bg-[var(--bg-accent-soft)]"
-                      />
-                      <StatBadge
-                        label="Team Members"
-                        value={userStats.teamMembersAdded}
-                        Icon={IconUsers}
-                        iconColor="text-purple-500"
-                        iconBg="bg-purple-50 dark:bg-purple-950/40"
-                      />
                     </div>
                   </div>
                 )}
@@ -564,33 +603,6 @@ export default function AchievementsPage() {
             )}
           </div>
         </main>
-      </div>
-    </div>
-  );
-}
-
-function StatBadge({
-  label,
-  value,
-  Icon,
-  iconColor,
-  iconBg,
-}: {
-  label: string;
-  value: number;
-  Icon: React.ElementType;
-  iconColor: string;
-  iconBg: string;
-}) {
-  return (
-    <div className="rounded-xl bg-[var(--bg-base)] p-3 text-center">
-      <div
-        className={`mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg ${iconBg}`}>
-        <Icon className={`text-base ${iconColor}`} />
-      </div>
-      <div className="text-xl font-bold text-[var(--accent)]">{value}</div>
-      <div className="text-[10px] font-medium text-[var(--text-muted)]">
-        {label}
       </div>
     </div>
   );
