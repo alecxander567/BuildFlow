@@ -23,15 +23,27 @@ export const PROJECT_TYPES: ProjectType[] = [
 export const PRIORITY_OPTIONS: Priority[] = ["High", "Moderate", "Low"];
 
 const priorityStyles: Record<Priority, string> = {
-  High: "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
-  Moderate: "bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]",
-  Low: "bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]",
+  High: "border-red-200 dark:border-red-800",
+  Moderate: "border-amber-200 dark:border-amber-800",
+  Low: "border-green-200 dark:border-green-800",
+};
+
+const priorityTextColors: Record<Priority, string> = {
+  High: "text-[#DC2626] dark:text-[#f87171]",
+  Moderate: "text-[#D97706] dark:text-[#fbbf24]",
+  Low: "text-[#16A34A] dark:text-[#4ade80]",
+};
+
+const priorityBgColors: Record<Priority, string> = {
+  High: "bg-[#FEF2F2] dark:bg-[#2a0f0f]",
+  Moderate: "bg-[#FFFBEB] dark:bg-[#271a00]",
+  Low: "bg-[#F0FDF4] dark:bg-[#0a1f0f]",
 };
 
 const priorityDot: Record<Priority, string> = {
-  High: "bg-[#DC2626]",
-  Moderate: "bg-[#D97706]",
-  Low: "bg-[#16A34A]",
+  High: "bg-[#DC2626] dark:bg-[#f87171]",
+  Moderate: "bg-[#D97706] dark:bg-[#fbbf24]",
+  Low: "bg-[#16A34A] dark:bg-[#4ade80]",
 };
 
 type Props = {
@@ -127,8 +139,15 @@ export default function ProjectFormFields({
   return (
     <>
       {/* Title */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
+        <label
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Project Title *
         </label>
         <input
@@ -136,20 +155,33 @@ export default function ProjectFormFields({
           placeholder="e.g. Redesign Landing Page"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
+          className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] ${
             submitted && !title.trim() ?
-              "border-red-300 bg-red-50"
-            : "border-[#E8E4DE] bg-[#FDFCFB]"
+              "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+            : "border-[var(--border)] bg-[var(--bg-base)]"
           }`}
+          style={{
+            color: "var(--text-primary)",
+            placeholderColor: "var(--text-muted)",
+          }}
         />
         {submitted && !title.trim() && (
-          <p className="mt-1 text-xs text-red-500">Title is required.</p>
+          <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+            Title is required.
+          </p>
         )}
       </div>
 
       {/* Description */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
-        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
+        <label
+          className="mb-1.5 block text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Description
         </label>
         <textarea
@@ -157,13 +189,26 @@ export default function ProjectFormFields({
           placeholder="What is this project about?"
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
-          className="w-full resize-none rounded-xl border border-[#E8E4DE] bg-[#FDFCFB] px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A]"
+          className="w-full resize-none rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)]"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-base)",
+            color: "var(--text-primary)",
+            placeholderColor: "var(--text-muted)",
+          }}
         />
       </div>
 
       {/* Project Type */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
-        <label className="mb-3 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
+        <label
+          className="mb-3 block text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Project Type
         </label>
         <div className="flex flex-wrap gap-2">
@@ -174,8 +219,8 @@ export default function ProjectFormFields({
               onClick={() => onProjectTypeChange(type)}
               className={`rounded-xl border px-3.5 py-1.5 text-xs font-medium transition-all ${
                 projectType === type ?
-                  "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+                  "border-[var(--accent)] bg-[var(--bg-accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]"
               }`}>
               {type}
             </button>
@@ -184,8 +229,15 @@ export default function ProjectFormFields({
       </div>
 
       {/* Priority */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
-        <label className="mb-3 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
+        <label
+          className="mb-3 block text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Priority Level
         </label>
         <div className="flex gap-2">
@@ -196,11 +248,11 @@ export default function ProjectFormFields({
               onClick={() => onPriorityChange(p)}
               className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-all ${
                 priority === p ?
-                  priorityStyles[p]
-                : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:bg-[#F9F7F4]"
+                  `${priorityBgColors[p]} ${priorityTextColors[p]} ${priorityStyles[p]}`
+                : "border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
               }`}>
               <span
-                className={`h-2 w-2 rounded-full ${priority === p ? priorityDot[p] : "bg-[#D1D5DB]"}`}
+                className={`h-2 w-2 rounded-full ${priority === p ? priorityDot[p] : "bg-[var(--text-muted)]"}`}
               />
               {p}
             </button>
@@ -210,41 +262,61 @@ export default function ProjectFormFields({
 
       {/* Start & End Date */}
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 rounded-2xl border border-[#EDE8E2] bg-white p-5">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+        <div
+          className="flex-1 rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-card)",
+          }}>
+          <label
+            className="mb-1.5 block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             Start Date *
           </label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => onStartDateChange(e.target.value)}
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] outline-none transition-colors focus:border-[#E8610A] ${
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] ${
               submitted && !startDate.trim() ?
-                "border-red-300 bg-red-50"
-              : "border-[#E8E4DE] bg-[#FDFCFB]"
+                "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+              : "border-[var(--border)] bg-[var(--bg-base)]"
             }`}
+            style={{ color: "var(--text-primary)" }}
           />
           {submitted && !startDate.trim() && (
-            <p className="mt-1 text-xs text-red-500">Start date is required.</p>
+            <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+              Start date is required.
+            </p>
           )}
         </div>
 
-        <div className="flex-1 rounded-2xl border border-[#EDE8E2] bg-white p-5">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+        <div
+          className="flex-1 rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-card)",
+          }}>
+          <label
+            className="mb-1.5 block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             End Date *
           </label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] outline-none transition-colors focus:border-[#E8610A] ${
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] ${
               submitted && !endDate.trim() ?
-                "border-red-300 bg-red-50"
-              : "border-[#E8E4DE] bg-[#FDFCFB]"
+                "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+              : "border-[var(--border)] bg-[var(--bg-base)]"
             }`}
+            style={{ color: "var(--text-primary)" }}
           />
           {submitted && !endDate.trim() && (
-            <p className="mt-1 text-xs text-red-500">End date is required.</p>
+            <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+              End date is required.
+            </p>
           )}
         </div>
       </div>
@@ -258,17 +330,31 @@ export default function ProjectFormFields({
       />
 
       {/* Project Link */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          <label
+            className="block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             Project Link
           </label>
-          <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+          <span
+            className="rounded-md px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: "var(--bg-hover)",
+              color: "var(--text-muted)",
+            }}>
             Optional
           </span>
         </div>
         <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
+          <span
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2"
+            style={{ color: "var(--text-muted)" }}>
             <svg
               width="14"
               height="14"
@@ -287,10 +373,18 @@ export default function ProjectFormFields({
             placeholder="GitHub repo, published paper, live site…"
             value={projectUrl}
             onChange={(e) => onProjectUrlChange(e.target.value)}
-            className="w-full rounded-xl border border-[#E8E4DE] bg-[#FDFCFB] py-2.5 pl-9 pr-3.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A]"
+            className="w-full rounded-xl border py-2.5 pl-9 pr-3.5 text-sm outline-none transition-colors focus:border-[var(--accent)]"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-base)",
+              color: "var(--text-primary)",
+              placeholderColor: "var(--text-muted)",
+            }}
           />
         </div>
-        <p className="mt-1.5 text-[11px] text-[#B0ADA7]">
+        <p
+          className="mt-1.5 text-[11px]"
+          style={{ color: "var(--text-muted)" }}>
           GitHub, paper DOI, Figma link, deployment URL, etc.
         </p>
       </div>
@@ -304,12 +398,24 @@ export default function ProjectFormFields({
       />
 
       {/* Cover Image */}
-      <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+        }}>
         <div className="mb-3 flex items-center justify-between">
-          <label className="block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          <label
+            className="block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             Cover Image
           </label>
-          <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+          <span
+            className="rounded-md px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: "var(--bg-hover)",
+              color: "var(--text-muted)",
+            }}>
             Optional
           </span>
         </div>
@@ -323,7 +429,9 @@ export default function ProjectFormFields({
         />
 
         {coverPreview ?
-          <div className="relative overflow-hidden rounded-xl border border-[#EDE8E2]">
+          <div
+            className="relative overflow-hidden rounded-xl border"
+            style={{ borderColor: "var(--border)" }}>
             <img
               src={coverPreview}
               alt="Cover preview"
@@ -333,7 +441,7 @@ export default function ProjectFormFields({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1A1916] transition-colors hover:bg-white">
+                className="flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1A1916] dark:text-[#1A1916] transition-colors hover:bg-white">
                 <svg
                   width="12"
                   height="12"
@@ -398,14 +506,14 @@ export default function ProjectFormFields({
             onDrop={handleFileDrop}
             className={`flex w-full flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-all ${
               isDragging ?
-                "border-[#E8610A] bg-[#FEF0E7]"
-              : "border-[#E8E4DE] bg-[#FDFCFB] hover:border-[#F5C89A] hover:bg-[#FEF0E7]"
+                "border-[var(--accent)] bg-[var(--bg-accent-soft)]"
+              : "border-[var(--border-dashed)] bg-[var(--bg-base)] hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)]"
             }`}>
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
                 isDragging ?
-                  "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                : "border-[#E8E4DE] bg-white text-[#B0ADA7]"
+                  "border-[var(--accent)] bg-[var(--bg-accent-soft)] text-[var(--accent)]"
+                : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)]"
               }`}>
               <svg
                 width="18"
@@ -423,12 +531,17 @@ export default function ProjectFormFields({
             </div>
             <div>
               <p
-                className={`text-sm font-medium transition-colors ${isDragging ? "text-[#E8610A]" : "text-[#72706A]"}`}>
+                className={`text-sm font-medium transition-colors ${isDragging ? "text-[var(--accent)]" : ""}`}
+                style={
+                  !isDragging ? { color: "var(--text-secondary)" } : undefined
+                }>
                 {isDragging ?
                   "Drop image here"
                 : "Click to upload or drag & drop"}
               </p>
-              <p className="mt-0.5 text-[11px] text-[#B0ADA7]">
+              <p
+                className="mt-0.5 text-[11px]"
+                style={{ color: "var(--text-muted)" }}>
                 PNG, JPG, WEBP · Max 10MB · Will be uploaded to Cloudinary
               </p>
             </div>
@@ -441,13 +554,41 @@ export default function ProjectFormFields({
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-3 text-sm font-medium text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+          className="flex-1 rounded-xl border py-3 text-sm font-medium transition-colors"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-card)",
+            color: "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.backgroundColor = "var(--bg-accent-soft)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.backgroundColor = "var(--bg-card)";
+            e.currentTarget.style.color = "var(--text-secondary)";
+          }}>
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading || redirecting}
-          className="flex-1 rounded-xl bg-[#E8610A] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987] disabled:opacity-60 disabled:cursor-not-allowed">
+          className="flex-1 rounded-xl py-3 text-sm font-semibold text-white transition-colors active:scale-[0.987] disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: "var(--accent)",
+          }}
+          onMouseEnter={(e) => {
+            if (!loading && !redirecting) {
+              e.currentTarget.style.backgroundColor = "var(--accent-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading && !redirecting) {
+              e.currentTarget.style.backgroundColor = "var(--accent)";
+            }
+          }}>
           {loading ?
             isEditMode ?
               "Saving..."

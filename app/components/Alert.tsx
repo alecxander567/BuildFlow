@@ -24,36 +24,36 @@ const config: Record<
   }
 > = {
   success: {
-    bg: "bg-white",
-    border: "border-[#F5C89A]",
-    icon: "text-[#E8610A]",
-    iconBg: "bg-[#FEF0E7]",
-    title: "text-[#E8610A]",
-    bar: "bg-[#E8610A]",
+    bg: "var(--bg-card)",
+    border: "var(--border)",
+    icon: "var(--accent)",
+    iconBg: "var(--bg-accent-soft)",
+    title: "var(--accent)",
+    bar: "var(--accent)",
   },
   error: {
-    bg: "bg-white",
-    border: "border-[#FECACA]",
-    icon: "text-[#DC2626]",
-    iconBg: "bg-[#FEF2F2]",
-    title: "text-[#B91C1C]",
-    bar: "bg-[#DC2626]",
+    bg: "var(--bg-card)",
+    border: "var(--border)",
+    icon: "var(--accent)",
+    iconBg: "var(--bg-accent-soft)",
+    title: "var(--accent)",
+    bar: "var(--accent)",
   },
   warning: {
-    bg: "bg-white",
-    border: "border-[#FDE68A]",
-    icon: "text-[#D97706]",
-    iconBg: "bg-[#FFFBEB]",
-    title: "text-[#B45309]",
-    bar: "bg-[#D97706]",
+    bg: "var(--bg-card)",
+    border: "var(--border)",
+    icon: "var(--accent)",
+    iconBg: "var(--bg-accent-soft)",
+    title: "var(--accent)",
+    bar: "var(--accent)",
   },
   info: {
-    bg: "bg-white",
-    border: "border-[#BAE6FD]",
-    icon: "text-[#0284C7]",
-    iconBg: "bg-[#F0F9FF]",
-    title: "text-[#0369A1]",
-    bar: "bg-[#0284C7]",
+    bg: "var(--bg-card)",
+    border: "var(--border)",
+    icon: "var(--accent)",
+    iconBg: "var(--bg-accent-soft)",
+    title: "var(--accent)",
+    bar: "var(--accent)",
   },
 };
 
@@ -158,32 +158,56 @@ export function Alert({
 
   return (
     <div
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-      className={`relative flex w-full max-w-sm overflow-hidden rounded-2xl border shadow-lg shadow-black/5 transition-all duration-300 ${c.bg} ${c.border} ${
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        backgroundColor: c.bg,
+        borderColor: c.border,
+        boxShadow:
+          "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      }}
+      className={`relative flex w-full max-w-sm overflow-hidden rounded-2xl border shadow-lg transition-all duration-300 ${
         visible ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"
       }`}>
-      <div className={`w-1 shrink-0 ${c.bar}`} />
+      <div className="w-1 shrink-0" style={{ backgroundColor: c.bar }} />
 
       <div className="flex flex-1 items-start gap-3 px-4 py-3.5">
         <div
-          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl ${c.iconBg} ${c.icon}`}>
+          className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            backgroundColor: c.iconBg,
+            color: c.icon,
+          }}>
           {icons[type]}
         </div>
 
         <div className="flex-1 min-w-0">
           <p
-            className={`text-xs font-bold ${c.title}`}
-            style={{ fontFamily: "'Sora', sans-serif" }}>
+            className="text-xs font-bold"
+            style={{
+              color: c.title,
+              fontFamily: "'Sora', sans-serif",
+            }}>
             {title ?? defaultTitles[type]}
           </p>
-          <p className="mt-0.5 text-xs leading-relaxed text-[#72706A]">
+          <p
+            className="mt-0.5 text-xs leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}>
             {message}
           </p>
         </div>
 
         <button
           onClick={dismiss}
-          className="mt-0.5 shrink-0 rounded-lg p-1 text-[#B0ADA7] transition-colors hover:bg-[#F2EDE7] hover:text-[#72706A]">
+          className="mt-0.5 shrink-0 rounded-lg p-1 transition-colors"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--bg-hover)";
+            e.currentTarget.style.color = "var(--text-secondary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.color = "var(--text-muted)";
+          }}>
           <svg
             width="12"
             height="12"

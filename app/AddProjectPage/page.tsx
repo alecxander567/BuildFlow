@@ -163,8 +163,11 @@ export default function AddProjectPage() {
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-[#F9F7F4]"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      className="flex h-screen overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-base)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
@@ -173,9 +176,14 @@ export default function AddProjectPage() {
         </div>
 
         {/* Mobile search bar */}
-        <div className="md:hidden border-b border-[#EDE8E2] bg-white px-4 pt-4 pb-3">
+        <div
+          className="md:hidden border-b px-4 pt-4 pb-3"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-card)",
+          }}>
           <div className="relative w-full">
-            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
               <svg
                 width="14"
                 height="14"
@@ -184,7 +192,8 @@ export default function AddProjectPage() {
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+                style={{ color: "var(--text-muted)" }}>
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -192,7 +201,21 @@ export default function AddProjectPage() {
             <input
               type="text"
               placeholder="Search projects, tasks…"
-              className="w-full rounded-xl border border-[#E8E4DE] bg-[#F9F7F4] py-2 pl-9 pr-4 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none focus:border-[#E8610A] focus:bg-white"
+              className="w-full rounded-xl border py-2 pl-9 pr-4 text-sm outline-none transition-colors"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg-base)",
+                color: "var(--text-primary)",
+                placeholderColor: "var(--text-muted)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.backgroundColor = "var(--bg-card)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.backgroundColor = "var(--bg-base)";
+              }}
             />
           </div>
         </div>
@@ -203,7 +226,23 @@ export default function AddProjectPage() {
             <div className="mb-6 flex items-center gap-3">
               <button
                 onClick={() => router.push("/dashboard")}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#EDE8E2] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--bg-card)",
+                  color: "var(--text-secondary)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                  e.currentTarget.style.backgroundColor =
+                    "var(--bg-accent-soft)";
+                  e.currentTarget.style.color = "var(--accent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.backgroundColor = "var(--bg-card)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }}>
                 <svg
                   width="16"
                   height="16"
@@ -218,11 +257,14 @@ export default function AddProjectPage() {
               </button>
               <div>
                 <h1
-                  className="text-lg font-bold text-[#1A1916]"
-                  style={{ fontFamily: "'Sora', sans-serif" }}>
+                  className="text-lg font-bold"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: "'Sora', sans-serif",
+                  }}>
                   {isEditMode ? "Edit Project" : "New Project"}
                 </h1>
-                <p className="text-xs text-[#B0ADA7]">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {isEditMode ?
                     "Update the details below to edit your project"
                   : "Fill in the details below to create a project"}
@@ -279,7 +321,9 @@ export default function AddProjectPage() {
 
       {/* Replaced inline redirect overlay with LoadingSpinner */}
       {redirecting && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F9F7F4]/80 backdrop-blur-sm">
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm"
+          style={{ backgroundColor: "var(--bg-base)/80" }}>
           <LoadingSpinner
             variant="spinner"
             size="lg"

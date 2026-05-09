@@ -8,7 +8,7 @@ export type DayTask = {
   done: boolean;
 };
 
-export type DailyPlan = Record<string, DayTask[]>; 
+export type DailyPlan = Record<string, DayTask[]>;
 
 interface Props {
   startDate: string;
@@ -116,10 +116,16 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
   return (
     <div
       className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-        today ? "border-[#F5C89A] bg-white shadow-sm shadow-[#E8610A]/10"
-        : past ? "border-[#EDE8E2] bg-[#FDFCFB]"
-        : "border-[#EDE8E2] bg-white"
-      }`}>
+        today ? "shadow-sm" : ""
+      }`}
+      style={{
+        borderColor: today ? "var(--accent)" : "var(--border)",
+        backgroundColor:
+          today ? "var(--bg-card)"
+          : past ? "var(--bg-base)"
+          : "var(--bg-card)",
+        boxShadow: today ? "0 1px 2px 0 rgb(0 0 0 / 0.05)" : undefined,
+      }}>
       {/* Day header — always visible */}
       <button
         type="button"
@@ -128,10 +134,20 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
         {/* Day number pill */}
         <div
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-            today ? "bg-[#E8610A] text-white"
-            : past ? "bg-[#F2EDE7] text-[#B0ADA7]"
-            : "bg-[#F9F7F4] text-[#72706A]"
-          }`}>
+            today ? "text-white"
+            : past ? ""
+            : ""
+          }`}
+          style={{
+            backgroundColor:
+              today ? "var(--accent)"
+              : past ? "var(--bg-hover)"
+              : "var(--bg-base)",
+            color:
+              today ? "white"
+              : past ? "var(--text-muted)"
+              : "var(--text-secondary)",
+          }}>
           {dayIndex + 1}
         </div>
 
@@ -139,30 +155,44 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span
-                className={`text-sm font-bold ${
-                  today ? "text-[#E8610A]"
-                  : past ? "text-[#B0ADA7]"
-                  : "text-[#1A1916]"
-                }`}>
+                className={`text-sm font-bold`}
+                style={{
+                  color:
+                    today ? "var(--accent)"
+                    : past ? "var(--text-muted)"
+                    : "var(--text-primary)",
+                }}>
                 {date}
               </span>
               <span
-                className={`text-xs ${today ? "text-[#F5A05A]" : "text-[#B0ADA7]"}`}>
+                className="text-xs"
+                style={{
+                  color: today ? "var(--accent-hover)" : "var(--text-muted)",
+                }}>
                 {weekday}
               </span>
               {today && (
-                <span className="rounded-full bg-[#FEF0E7] px-2 py-0.5 text-[10px] font-bold text-[#E8610A]">
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                  style={{
+                    backgroundColor: "var(--bg-accent-soft)",
+                    color: "var(--accent)",
+                  }}>
                   Today
                 </span>
               )}
             </div>
             {total > 0 && (
-              <p className="text-[11px] text-[#B0ADA7]">
+              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                 {doneCount}/{total} task{total !== 1 ? "s" : ""} done
               </p>
             )}
             {total === 0 && (
-              <p className="text-[11px] text-[#D6D1CA]">No tasks yet</p>
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--border-dashed)" }}>
+                No tasks yet
+              </p>
             )}
           </div>
         </div>
@@ -170,15 +200,21 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
         {/* Progress mini-bar (only if tasks exist) */}
         {total > 0 && (
           <div className="hidden sm:flex items-center gap-2 shrink-0">
-            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[#F2EDE7]">
+            <div
+              className="h-1.5 w-16 overflow-hidden rounded-full"
+              style={{ backgroundColor: "var(--bg-hover)" }}>
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  doneCount === total ? "bg-[#16A34A]" : "bg-[#E8610A]"
-                }`}
-                style={{ width: `${total ? (doneCount / total) * 100 : 0}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${total ? (doneCount / total) * 100 : 0}%`,
+                  backgroundColor:
+                    doneCount === total ? "#16A34A" : "var(--accent)",
+                }}
               />
             </div>
-            <span className="text-[11px] font-semibold text-[#B0ADA7]">
+            <span
+              className="text-[11px] font-semibold"
+              style={{ color: "var(--text-muted)" }}>
               {total ? Math.round((doneCount / total) * 100) : 0}%
             </span>
           </div>
@@ -194,30 +230,41 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`shrink-0 text-[#B0ADA7] transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          style={{ color: "var(--text-muted)" }}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
 
       {/* Expandable body */}
       {open && (
-        <div className="border-t border-[#EDE8E2] px-4 pb-4 pt-3">
+        <div
+          className="border-t px-4 pb-4 pt-3"
+          style={{ borderColor: "var(--border)" }}>
           {/* Task list */}
           {tasks.length > 0 && (
             <ul className="mb-3 flex flex-col gap-1.5">
               {tasks.map((task) => (
                 <li
                   key={task.id}
-                  className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-[#F9F7F4]">
+                  className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--bg-base)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}>
                   <button
                     type="button"
                     onClick={() => toggleTask(task.id)}
-                    className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                      task.done ?
-                        "border-[#16A34A] bg-[#16A34A]"
-                      : "border-[#D6D1CA] hover:border-[#E8610A]"
-                    }`}
-                    style={{ height: "18px", width: "18px" }}>
+                    className="flex shrink-0 items-center justify-center rounded-full border-2 transition-all"
+                    style={{
+                      height: "18px",
+                      width: "18px",
+                      borderColor:
+                        task.done ? "#16A34A" : "var(--border-dashed)",
+                      backgroundColor: task.done ? "#16A34A" : "transparent",
+                    }}>
                     {task.done && (
                       <svg
                         width="10"
@@ -241,14 +288,23 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                         if (e.key === "Enter") saveEdit();
                       }}
                       autoFocus
-                      className="flex-1 text-sm bg-white border border-[#E8E4DE] rounded px-2 py-1 outline-none"
+                      className="flex-1 text-sm rounded px-2 py-1 outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-card)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-primary)",
+                      }}
                     />
                   : <span
                       className={`flex-1 text-sm transition-all ${
-                        task.done ?
-                          "text-[#B0ADA7] line-through"
-                        : "text-[#1A1916]"
-                      }`}>
+                        task.done ? "line-through" : ""
+                      }`}
+                      style={{
+                        color:
+                          task.done ? "var(--text-muted)" : (
+                            "var(--text-primary)"
+                          ),
+                      }}>
                       {task.text}
                     </span>
                   }
@@ -258,7 +314,21 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                     <button
                       type="button"
                       onClick={() => startEdit(task)}
-                      className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#F9F7F4] text-[#72706A] transition-all hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                      className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        color: "var(--text-secondary)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--bg-accent-soft)";
+                        e.currentTarget.style.color = "var(--accent)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--bg-base)";
+                        e.currentTarget.style.color = "var(--text-secondary)";
+                      }}>
                       <svg
                         width="12"
                         height="12"
@@ -277,7 +347,20 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                     <button
                       type="button"
                       onClick={() => deleteTask(task.id)}
-                      className="h-7 w-7 flex items-center justify-center rounded-lg bg-[#F9F7F4] text-[#72706A] transition-all hover:bg-[#FEF2F2] hover:text-[#DC2626]">
+                      className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        color: "var(--text-secondary)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "#FEF2F2";
+                        e.currentTarget.style.color = "#DC2626";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--bg-base)";
+                        e.currentTarget.style.color = "var(--text-secondary)";
+                      }}>
                       <svg
                         width="12"
                         height="12"
@@ -299,16 +382,30 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
 
           {/* Add task input */}
           <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center gap-2 rounded-lg border border-[#E8E4DE] bg-[#F9F7F4] px-3 py-2 focus-within:border-[#E8610A] focus-within:bg-white transition-colors">
+            <div
+              className="flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors focus-within:border-[var(--accent)]"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg-base)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.backgroundColor = "var(--bg-card)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.backgroundColor = "var(--bg-base)";
+              }}>
               <svg
                 width="12"
                 height="12"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#B0ADA7"
+                stroke="currentColor"
                 strokeWidth="2.5"
                 strokeLinecap="round"
-                strokeLinejoin="round">
+                strokeLinejoin="round"
+                style={{ color: "var(--text-muted)" }}>
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -319,14 +416,29 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Add a task for this day…"
-                className="flex-1 bg-transparent text-sm text-[#1A1916] placeholder:text-[#D6D1CA] outline-none"
+                className="flex-1 bg-transparent text-sm outline-none"
+                style={{
+                  color: "var(--text-primary)",
+                  placeholderColor: "var(--border-dashed)",
+                }}
               />
             </div>
             <button
               type="button"
               onClick={addTask}
               disabled={!inputVal.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] disabled:opacity-40 disabled:cursor-not-allowed">
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: "var(--accent)",
+              }}
+              onMouseEnter={(e) => {
+                if (inputVal.trim()) {
+                  e.currentTarget.style.backgroundColor = "var(--accent-hover)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--accent)";
+              }}>
               <svg
                 width="13"
                 height="13"
@@ -362,16 +474,28 @@ export default function DailyTasksField({
 
   if (!startDate || !endDate) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#E8E4DE] bg-white p-5">
+      <div
+        className="rounded-2xl border border-dashed p-5"
+        style={{
+          borderColor: "var(--border-dashed)",
+          backgroundColor: "var(--bg-card)",
+        }}>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          <label
+            className="block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             Daily Goals
           </label>
-          <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+          <span
+            className="rounded-md px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: "var(--bg-hover)",
+              color: "var(--text-muted)",
+            }}>
             Optional
           </span>
         </div>
-        <p className="text-xs text-[#D6D1CA] mt-2">
+        <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
           Set a start date and end date first to unlock daily goals.
         </p>
       </div>
@@ -389,24 +513,38 @@ export default function DailyTasksField({
   };
 
   return (
-    <div className="rounded-2xl border border-[#EDE8E2] bg-white p-5">
+    <div
+      className="rounded-2xl border p-5"
+      style={{
+        borderColor: "var(--border)",
+        backgroundColor: "var(--bg-card)",
+      }}>
       {/* Section header */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <label className="block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          <label
+            className="block text-xs font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}>
             Daily Goals
           </label>
-          <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+          <span
+            className="rounded-md px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: "var(--bg-hover)",
+              color: "var(--text-muted)",
+            }}>
             Optional
           </span>
         </div>
         {totalTasks > 0 && (
-          <span className="text-[11px] font-semibold text-[#72706A]">
+          <span
+            className="text-[11px] font-semibold"
+            style={{ color: "var(--text-secondary)" }}>
             {doneTasks}/{totalTasks} done
           </span>
         )}
       </div>
-      <p className="text-xs text-[#B0ADA7] mb-4">
+      <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
         Plan what you want to accomplish each day of your project (
         {dates.length} day{dates.length !== 1 ? "s" : ""}).
       </p>
@@ -416,7 +554,22 @@ export default function DailyTasksField({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#E8E4DE] bg-[#F9F7F4] px-4 py-4 text-sm font-medium text-[#72706A] transition-all hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-4 text-sm font-medium transition-all"
+          style={{
+            borderColor: "var(--border-dashed)",
+            backgroundColor: "var(--bg-base)",
+            color: "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.backgroundColor = "var(--bg-accent-soft)";
+            e.currentTarget.style.color = "var(--accent)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-dashed)";
+            e.currentTarget.style.backgroundColor = "var(--bg-base)";
+            e.currentTarget.style.color = "var(--text-secondary)";
+          }}>
           <svg
             width="16"
             height="16"
@@ -449,7 +602,20 @@ export default function DailyTasksField({
           <button
             type="button"
             onClick={() => setExpanded(false)}
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] py-2.5 text-xs font-semibold text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-base)",
+              color: "var(--text-secondary)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-accent-soft)";
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--bg-base)";
+              e.currentTarget.style.color = "var(--text-secondary)";
+            }}>
             <svg
               width="12"
               height="12"

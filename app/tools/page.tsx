@@ -61,22 +61,35 @@ export default function UserToolsPage() {
   if (!authLoading && !user) {
     return (
       <div
-        className="flex h-screen overflow-hidden bg-[#F9F7F4]"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        className="flex h-screen overflow-hidden"
+        style={{
+          backgroundColor: "var(--bg-base)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
           <TopBar />
           <main className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
-                <WrenchScrewdriverIcon className="h-7 w-7 text-[#E8610A]" />
+              <div
+                className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                <WrenchScrewdriverIcon
+                  className="h-7 w-7"
+                  style={{ color: "var(--accent)" }}
+                />
               </div>
               <h2
-                className="text-lg font-bold text-[#1A1916]"
-                style={{ fontFamily: "'Sora', sans-serif" }}>
+                className="text-lg font-bold"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: "'Sora', sans-serif",
+                }}>
                 Please sign in
               </h2>
-              <p className="mt-1 text-sm text-[#B0ADA7]">
+              <p
+                className="mt-1 text-sm"
+                style={{ color: "var(--text-muted)" }}>
                 You need to be logged in to manage your tools.
               </p>
             </div>
@@ -174,8 +187,11 @@ export default function UserToolsPage() {
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-[#F9F7F4]"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      className="flex h-screen overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-base)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
@@ -187,11 +203,14 @@ export default function UserToolsPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1
-                  className="text-base font-bold text-[#1A1916] sm:text-lg"
-                  style={{ fontFamily: "'Sora', sans-serif" }}>
+                  className="text-base font-bold sm:text-lg"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: "'Sora', sans-serif",
+                  }}>
                   My Tools
                 </h1>
-                <p className="text-xs text-[#B0ADA7]">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {isLoading ?
                     "Loading…"
                   : `${Object.keys(userTools).length} categor${Object.keys(userTools).length !== 1 ? "ies" : "y"}`
@@ -202,7 +221,17 @@ export default function UserToolsPage() {
               {!isLoading && (
                 <button
                   onClick={() => setAddCategoryOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                  className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors active:scale-[0.987]"
+                  style={{
+                    backgroundColor: "var(--accent)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "var(--accent-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent)";
+                  }}>
                   <PlusIcon className="h-4 w-4" />
                   New Category
                 </button>
@@ -211,7 +240,13 @@ export default function UserToolsPage() {
 
             {/* ── Error ── */}
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div
+                className="rounded-xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: "rgba(220, 38, 38, 0.2)",
+                  backgroundColor: "rgba(220, 38, 38, 0.1)",
+                  color: "#DC2626",
+                }}>
                 {error}
               </div>
             )}
@@ -220,8 +255,16 @@ export default function UserToolsPage() {
             {isLoading && (
               <div className="flex items-center justify-center py-16">
                 <div className="text-center">
-                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#E8610A] border-t-transparent" />
-                  <p className="mt-2 text-sm text-[#72706A]">
+                  <div
+                    className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+                    style={{
+                      borderColor: "var(--accent)",
+                      borderTopColor: "transparent",
+                    }}
+                  />
+                  <p
+                    className="mt-2 text-sm"
+                    style={{ color: "var(--text-secondary)" }}>
                     Loading your tools…
                   </p>
                 </div>
@@ -230,22 +273,47 @@ export default function UserToolsPage() {
 
             {/* ── Empty state ── */}
             {!isLoading && !error && !hasTools && (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
-                  <WrenchScrewdriverIcon className="h-7 w-7 text-[#E8610A]" />
+              <div
+                className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 px-6 text-center"
+                style={{
+                  borderColor: "var(--border-dashed)",
+                  backgroundColor: "var(--bg-card)",
+                }}>
+                <div
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+                  style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                  <WrenchScrewdriverIcon
+                    className="h-7 w-7"
+                    style={{ color: "var(--accent)" }}
+                  />
                 </div>
                 <h3
-                  className="mb-1 text-sm font-semibold text-[#1A1916]"
-                  style={{ fontFamily: "'Sora', sans-serif" }}>
+                  className="mb-1 text-sm font-semibold"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: "'Sora', sans-serif",
+                  }}>
                   No tools yet
                 </h3>
-                <p className="mb-5 max-w-xs text-xs leading-relaxed text-[#B0ADA7]">
+                <p
+                  className="mb-5 max-w-xs text-xs leading-relaxed"
+                  style={{ color: "var(--text-muted)" }}>
                   Create a category to start organising your tools and keep your
                   workflow in one place.
                 </p>
                 <button
                   onClick={() => setAddCategoryOpen(true)}
-                  className="flex items-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                  className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors active:scale-[0.987]"
+                  style={{
+                    backgroundColor: "var(--accent)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "var(--accent-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent)";
+                  }}>
                   <PlusIcon className="h-4 w-4" />
                   Add your first category
                 </button>
@@ -258,19 +326,41 @@ export default function UserToolsPage() {
                 {Object.entries(userTools).map(([categoryName, tools]) => (
                   <div
                     key={categoryName}
-                    className="w-full rounded-2xl border border-[#EDE8E2] bg-white shadow-sm overflow-hidden">
+                    className="w-full rounded-2xl border shadow-sm overflow-hidden"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--bg-card)",
+                    }}>
                     {/* Category header */}
-                    <div className="flex items-center justify-between border-b border-[#EDE8E2] bg-[#FDFCFB] px-5 py-3.5">
+                    <div
+                      className="flex items-center justify-between border-b px-5 py-3.5"
+                      style={{
+                        borderColor: "var(--border)",
+                        backgroundColor: "var(--bg-hover)",
+                      }}>
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#FEF0E7]">
-                          <WrenchScrewdriverIcon className="h-4 w-4 text-[#E8610A]" />
+                        <span
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                          style={{ backgroundColor: "var(--bg-accent-soft)" }}>
+                          <WrenchScrewdriverIcon
+                            className="h-4 w-4"
+                            style={{ color: "var(--accent)" }}
+                          />
                         </span>
                         <h2
-                          className="truncate text-sm font-semibold text-[#1A1916]"
-                          style={{ fontFamily: "'Sora', sans-serif" }}>
+                          className="truncate text-sm font-semibold"
+                          style={{
+                            color: "var(--text-primary)",
+                            fontFamily: "'Sora', sans-serif",
+                          }}>
                           {categoryName}
                         </h2>
-                        <span className="shrink-0 rounded-full bg-[#F2EDE7] px-2 py-0.5 text-[10px] font-medium text-[#72706A]">
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                          style={{
+                            backgroundColor: "var(--bg-accent-soft)",
+                            color: "var(--text-secondary)",
+                          }}>
                           {(tools as string[]).length}
                         </span>
                       </div>
@@ -280,13 +370,40 @@ export default function UserToolsPage() {
                             setEditingCategory(categoryName);
                             setEditCategoryOpen(true);
                           }}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F2EDE7] text-[#E8610A] transition-colors hover:bg-[#E8610A] hover:text-white"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+                          style={{
+                            backgroundColor: "var(--bg-accent-soft)",
+                            color: "var(--accent)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "var(--accent)";
+                            e.currentTarget.style.color = "white";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "var(--bg-accent-soft)";
+                            e.currentTarget.style.color = "var(--accent)";
+                          }}
                           title="Edit category">
                           <PencilIcon className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => openDeleteCategory(categoryName)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-400 transition-colors hover:bg-red-500 hover:text-white"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+                          style={{
+                            backgroundColor: "rgba(220, 38, 38, 0.1)",
+                            color: "#DC2626",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#DC2626";
+                            e.currentTarget.style.color = "white";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "rgba(220, 38, 38, 0.1)";
+                            e.currentTarget.style.color = "#DC2626";
+                          }}
                           title="Delete category">
                           <TrashIcon className="h-3.5 w-3.5" />
                         </button>
@@ -311,7 +428,12 @@ export default function UserToolsPage() {
                                 onChange={(e) =>
                                   setEditingToolValue(e.target.value)
                                 }
-                                className="rounded-full border border-[#E8610A] bg-[#FEF0E7] px-3 py-1 text-xs text-[#1A1916] focus:outline-none focus:ring-1 focus:ring-[#E8610A] w-32"
+                                className="rounded-full px-3 py-1 text-xs focus:outline-none focus:ring-1 w-32"
+                                style={{
+                                  borderColor: "var(--accent)",
+                                  backgroundColor: "var(--bg-accent-soft)",
+                                  color: "var(--text-primary)",
+                                }}
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && handleUpdateTool()
                                 }
@@ -319,7 +441,16 @@ export default function UserToolsPage() {
                               />
                               <button
                                 onClick={handleUpdateTool}
-                                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E8610A] text-white hover:bg-[#D15508]">
+                                className="flex h-6 w-6 items-center justify-center rounded-full text-white transition-colors"
+                                style={{ backgroundColor: "var(--accent)" }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "var(--accent-hover)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "var(--accent)";
+                                }}>
                                 <CheckIcon className="h-3 w-3" />
                               </button>
                               <button
@@ -327,15 +458,46 @@ export default function UserToolsPage() {
                                   setEditingTool(null);
                                   setEditingToolValue("");
                                 }}
-                                className="flex h-6 w-6 items-center justify-center rounded-full border border-[#EDE8E2] bg-white text-[#72706A] hover:bg-[#F2EDE7]">
+                                className="flex h-6 w-6 items-center justify-center rounded-full border transition-colors"
+                                style={{
+                                  borderColor: "var(--border)",
+                                  backgroundColor: "var(--bg-card)",
+                                  color: "var(--text-secondary)",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "var(--bg-hover)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "var(--bg-card)";
+                                }}>
                                 <XMarkIcon className="h-3 w-3" />
                               </button>
                             </div>
                           : /* ── Tool pill ── */
                             <div
                               key={tool}
-                              className="group relative flex h-8 items-center gap-1.5 rounded-full border border-[#EDE8E2] bg-[#F9F7F4] pl-3 pr-2 transition-all hover:border-[#E8610A] hover:bg-[#FEF0E7]">
-                              <span className="text-xs font-medium text-[#1A1916] leading-none">
+                              className="group relative flex h-8 items-center gap-1.5 rounded-full border pl-3 pr-2 transition-all"
+                              style={{
+                                borderColor: "var(--border)",
+                                backgroundColor: "var(--bg-base)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor =
+                                  "var(--accent)";
+                                e.currentTarget.style.backgroundColor =
+                                  "var(--bg-accent-soft)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor =
+                                  "var(--border)";
+                                e.currentTarget.style.backgroundColor =
+                                  "var(--bg-base)";
+                              }}>
+                              <span
+                                className="text-xs font-medium leading-none"
+                                style={{ color: "var(--text-primary)" }}>
                                 {tool}
                               </span>
                               <button
@@ -346,7 +508,15 @@ export default function UserToolsPage() {
                                   });
                                   setEditingToolValue(tool);
                                 }}
-                                className="hidden h-4 w-4 items-center justify-center rounded-full text-[#B0ADA7] transition-colors group-hover:flex hover:text-[#E8610A]"
+                                className="hidden h-4 w-4 items-center justify-center rounded-full transition-colors group-hover:flex"
+                                style={{ color: "var(--text-muted)" }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = "var(--accent)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color =
+                                    "var(--text-muted)";
+                                }}
                                 title="Edit tool">
                                 <PencilIcon className="h-3 w-3" />
                               </button>
@@ -354,7 +524,22 @@ export default function UserToolsPage() {
                                 onClick={() =>
                                   handleDeleteTool(categoryName, tool)
                                 }
-                                className="hidden h-4 w-4 items-center justify-center rounded-full bg-[#EDE8E2] text-[#72706A] transition-colors group-hover:flex hover:bg-red-100 hover:text-red-500"
+                                className="hidden h-4 w-4 items-center justify-center rounded-full transition-colors group-hover:flex"
+                                style={{
+                                  backgroundColor: "var(--border)",
+                                  color: "var(--text-secondary)",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#DC2626";
+                                  e.currentTarget.style.color = "white";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "var(--border)";
+                                  e.currentTarget.style.color =
+                                    "var(--text-secondary)";
+                                }}
                                 title="Delete tool">
                                 <XMarkIcon className="h-2.5 w-2.5" />
                               </button>
@@ -364,7 +549,20 @@ export default function UserToolsPage() {
                         {/* Add Tool button → opens modal */}
                         <button
                           onClick={() => openAddToolModal(categoryName)}
-                          className="flex h-8 items-center gap-1.5 rounded-full border border-dashed border-[#D6D1CA] px-3 text-xs font-medium text-[#B0ADA7] transition-colors hover:border-[#E8610A] hover:text-[#E8610A]">
+                          className="flex h-8 items-center gap-1.5 rounded-full border border-dashed px-3 text-xs font-medium transition-colors"
+                          style={{
+                            borderColor: "var(--border-dashed)",
+                            color: "var(--text-muted)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "var(--accent)";
+                            e.currentTarget.style.color = "var(--accent)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor =
+                              "var(--border-dashed)";
+                            e.currentTarget.style.color = "var(--text-muted)";
+                          }}>
                           <PlusIcon className="h-3.5 w-3.5" />
                           Add Tool
                         </button>

@@ -45,25 +45,51 @@ export function Modal({
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl shadow-black/10"
+        className="relative z-10 w-full max-w-md rounded-2xl border shadow-2xl"
         style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
           animation: "modalIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
         }}>
-        <div className="flex items-start justify-between border-b border-[#F3F0EB] px-6 py-5">
+        <div
+          className="flex items-start justify-between border-b px-6 py-5"
+          style={{ borderColor: "var(--divide)" }}>
           <div>
             <h2
-              className="text-base font-bold text-[#1A1916]"
-              style={{ fontFamily: "'Sora', sans-serif" }}>
+              className="text-base font-bold"
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "'Sora', sans-serif",
+              }}>
               {title}
             </h2>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-[#B0ADA7]">{subtitle}</p>
+              <p
+                className="mt-0.5 text-xs"
+                style={{ color: "var(--text-muted)" }}>
+                {subtitle}
+              </p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#EDE8E2] text-[#B0ADA7] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            className="flex h-8 w-8 items-center justify-center rounded-xl border transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              color: "var(--text-muted)",
+              backgroundColor: "transparent",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.backgroundColor = "var(--bg-accent-soft)";
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}>
             <svg
               width="14"
               height="14"

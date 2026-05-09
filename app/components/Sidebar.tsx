@@ -179,11 +179,59 @@ const SignOutIcon = () => (
   </svg>
 );
 
-interface NavListProps {
-  onClose: () => void;
+// Shared hover handlers — avoids repeating inline lambdas
+const navHover = {
+  enter: (
+    e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    isActive: boolean,
+  ) => {
+    if (!isActive) {
+      const el = e.currentTarget as HTMLElement;
+      el.style.backgroundColor = "var(--bg-accent-soft)";
+      el.style.color = "var(--accent)";
+    }
+  },
+  leave: (
+    e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    isActive: boolean,
+  ) => {
+    if (!isActive) {
+      const el = e.currentTarget as HTMLElement;
+      el.style.backgroundColor = "transparent";
+      el.style.color = "var(--text-secondary)";
+    }
+  },
+};
+
+function NavItem({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: { icon: React.ReactNode; label: string; href: string };
+  isActive: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className="group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors overflow-visible"
+      style={{
+        backgroundColor: isActive ? "var(--bg-accent-soft)" : "transparent",
+        color: isActive ? "var(--accent)" : "var(--text-secondary)",
+      }}
+      onMouseEnter={(e) => navHover.enter(e, isActive)}
+      onMouseLeave={(e) => navHover.leave(e, isActive)}>
+      <span style={{ color: isActive ? "var(--accent)" : "var(--text-muted)" }}>
+        {item.icon}
+      </span>
+      <span className="flex-1 text-left">{item.label}</span>
+    </Link>
+  );
 }
 
-function NavList({ onClose }: NavListProps) {
+function NavList({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const {
@@ -195,89 +243,118 @@ function NavList({ onClose }: NavListProps) {
     userAchievements,
   } = useAchievements();
 
-  // Calculate unviewed count
   const unviewedCount = Math.max(
     0,
     (unlockedCount || 0) - (lastViewedAchievements || 0),
   );
 
-  // Refresh achievements when component mounts
   useEffect(() => {
     refreshAchievements();
   }, [refreshAchievements]);
-
-  // Auto-sync when no achievements but user has stats
   useEffect(() => {
-    if (user && unlockedCount === 0 && userAchievements.length === 0) {
+    if (user && unlockedCount === 0 && userAchievements.length === 0)
       forceSyncAchievements();
-    }
   }, [user, unlockedCount, userAchievements.length, forceSyncAchievements]);
-
-  const handleAchievementsClick = () => {
-    if (unviewedCount > 0) {
-      markAchievementsAsViewed();
-    }
-    onClose();
-  };
 
   return (
     <div className="flex flex-col gap-0.5">
-      <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <p
+        className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest"
+        style={{ color: "var(--text-muted)" }}>
         Main
       </p>
+
       {navItems.map((item) => {
         const isActive = pathname === item.href;
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            onClick={
-              item.label === "Achievements" ? handleAchievementsClick : onClose
+        const handleClick =
+          item.label === "Achievements" ?
+            () => {
+              if (unviewedCount > 0) markAchievementsAsViewed();
+              onClose();
             }
-            className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors overflow-visible ${
-              isActive ?
-                "bg-[#FEF0E7] text-[#E8610A]"
-              : "text-[#72706A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-            }`}>
-            <span
-              className={
-                isActive ? "text-[#E8610A]" : (
-                  "text-[#B0ADA7] group-hover:text-[#E8610A]"
-                )
-              }>
-              {item.icon}
-            </span>
-            <span className="flex-1 text-left">{item.label}</span>
+          : onClose;
 
-            {/* Red Badge for NEW Achievements */}
+        return (
+          <div key={item.label} className="relative">
+            <NavItem item={item} isActive={isActive} onClick={handleClick} />
             {item.label === "Achievements" && unviewedCount > 0 && (
-              <div className="absolute -right-2 -top-2 z-50">
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-lg ring-2 ring-white">
+              <div className="absolute -right-2 -top-2 z-50 pointer-events-none">
+                <span
+                  className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white shadow-lg"
+                  style={{ outline: "2px solid var(--bg-base)" }}>
                   {unviewedCount > 99 ? "99+" : unviewedCount}
                 </span>
               </div>
             )}
-          </Link>
+          </div>
         );
       })}
 
-      <div className="mt-3 pt-3 border-t border-[#EDE8E2]">
-        <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+      <div
+        className="mt-3 pt-3 border-t"
+        style={{ borderColor: "var(--border)" }}>
+        <p
+          className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Support
         </p>
         {bottomItems.map((item) => (
-          <Link
+          <NavItem
             key={item.label}
-            href={item.href}
+            item={item}
+            isActive={pathname === item.href}
             onClick={onClose}
-            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
-            <span className="text-[#B0ADA7] group-hover:text-[#E8610A]">
-              {item.icon}
-            </span>
-            {item.label}
-          </Link>
+          />
         ))}
       </div>
+    </div>
+  );
+}
+
+function UserFooter({
+  onSignOut,
+  loading,
+  user,
+}: {
+  onSignOut: () => void;
+  loading: boolean;
+  user: { email?: string | null; displayName?: string | null } | null;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+        style={{ backgroundColor: "var(--accent)" }}>
+        {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p
+          className="truncate text-xs font-semibold"
+          style={{ color: "var(--text-primary)" }}>
+          {user?.displayName ?? user?.email ?? "Unknown"}
+        </p>
+        <p
+          className="truncate text-[11px]"
+          style={{ color: "var(--text-muted)" }}>
+          {user?.email ?? ""}
+        </p>
+      </div>
+      <button
+        onClick={onSignOut}
+        disabled={loading}
+        title="Sign out"
+        className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ color: "var(--accent)" }}
+        onMouseEnter={(e) =>
+          ((e.currentTarget as HTMLElement).style.backgroundColor =
+            "var(--bg-accent-soft)")
+        }
+        onMouseLeave={(e) =>
+          ((e.currentTarget as HTMLElement).style.backgroundColor =
+            "transparent")
+        }>
+        <SignOutIcon />
+      </button>
     </div>
   );
 }
@@ -289,11 +366,19 @@ export default function Sidebar() {
   return (
     <>
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex h-screen w-[220px] shrink-0 flex-col border-r border-[#EDE8E2] bg-[#F9F7F4]">
+      <aside
+        className="hidden md:flex h-screen w-[220px] shrink-0 flex-col border-r"
+        style={{
+          backgroundColor: "var(--bg-base)",
+          borderColor: "var(--border)",
+        }}>
         <Link
           href="/dashboard"
-          className="flex items-center gap-2.5 px-5 py-5 border-b border-[#EDE8E2] cursor-pointer">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#E8610A]">
+          className="flex items-center gap-2.5 px-5 py-5 border-b cursor-pointer"
+          style={{ borderColor: "var(--border)" }}>
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+            style={{ backgroundColor: "var(--accent)" }}>
             <svg
               width="18"
               height="18"
@@ -307,8 +392,11 @@ export default function Sidebar() {
             </svg>
           </div>
           <span
-            className="text-base font-bold tracking-tight text-[#1A1916]"
-            style={{ fontFamily: "'Sora', sans-serif" }}>
+            className="text-base font-bold tracking-tight"
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              color: "var(--text-primary)",
+            }}>
             BuildFlow
           </span>
         </Link>
@@ -317,34 +405,24 @@ export default function Sidebar() {
           <NavList onClose={() => {}} />
         </nav>
 
-        <div className="border-t border-[#EDE8E2] px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8610A] text-xs font-bold text-white">
-              {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-[#1A1916]">
-                {user?.displayName ?? user?.email ?? "Unknown"}
-              </p>
-              <p className="truncate text-[11px] text-[#B0ADA7]">
-                {user?.email ?? ""}
-              </p>
-            </div>
-            <button
-              onClick={logOut}
-              disabled={loading}
-              title="Sign out"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#E8610A] transition-colors hover:bg-[#FEF0E7] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-              <SignOutIcon />
-            </button>
-          </div>
+        <div
+          className="border-t px-4 py-4"
+          style={{ borderColor: "var(--border)" }}>
+          <UserFooter onSignOut={logOut} loading={loading} user={user} />
         </div>
       </aside>
 
       {/* ── Mobile top bar ── */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-[#EDE8E2] bg-[#F9F7F4] px-4 py-3 shadow-sm">
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b px-4 py-3 shadow-sm"
+        style={{
+          backgroundColor: "var(--bg-base)",
+          borderColor: "var(--border)",
+        }}>
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-[#E8610A]">
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-[9px]"
+            style={{ backgroundColor: "var(--accent)" }}>
             <svg
               width="15"
               height="15"
@@ -358,8 +436,11 @@ export default function Sidebar() {
             </svg>
           </div>
           <span
-            className="text-sm font-bold tracking-tight text-[#1A1916]"
-            style={{ fontFamily: "'Sora', sans-serif" }}>
+            className="text-sm font-bold tracking-tight"
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              color: "var(--text-primary)",
+            }}>
             BuildFlow
           </span>
         </Link>
@@ -367,7 +448,16 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <Link
             href="/AddProjectPage"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E8610A] text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-white transition-colors active:scale-[0.987]"
+            style={{ backgroundColor: "var(--accent)" }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLElement).style.backgroundColor =
+                "var(--accent-hover)")
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLElement).style.backgroundColor =
+                "var(--accent)")
+            }>
             <svg
               width="16"
               height="16"
@@ -382,7 +472,13 @@ export default function Sidebar() {
             </svg>
           </Link>
 
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+          <button
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl border transition-colors"
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderColor: "var(--border)",
+              color: "var(--text-secondary)",
+            }}>
             <svg
               width="16"
               height="16"
@@ -395,12 +491,23 @@ export default function Sidebar() {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#E8610A] ring-2 ring-[#F9F7F4]" />
+            <span
+              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
+              style={{
+                backgroundColor: "var(--accent)",
+                outline: "2px solid var(--bg-base)",
+              }}
+            />
           </button>
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E8E4DE] bg-white text-[#72706A] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors"
+            style={{
+              backgroundColor: "var(--bg-card)",
+              borderColor: "var(--border)",
+              color: "var(--text-secondary)",
+            }}
             aria-label="Toggle menu">
             {mobileOpen ?
               <svg
@@ -440,29 +547,17 @@ export default function Sidebar() {
             className="md:hidden fixed inset-0 z-30 bg-black/20"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="md:hidden fixed top-[53px] left-0 right-0 z-40 max-h-[calc(100vh-53px)] overflow-y-auto border-b border-[#EDE8E2] bg-[#F9F7F4] px-3 py-3 shadow-xl">
+          <div
+            className="md:hidden fixed top-[53px] left-0 right-0 z-40 max-h-[calc(100vh-53px)] overflow-y-auto border-b px-3 py-3 shadow-xl"
+            style={{
+              backgroundColor: "var(--bg-base)",
+              borderColor: "var(--border)",
+            }}>
             <NavList onClose={() => setMobileOpen(false)} />
-            <div className="mt-3 border-t border-[#EDE8E2] pt-3 px-2">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8610A] text-xs font-bold text-white">
-                  {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-[#1A1916]">
-                    {user?.displayName ?? user?.email ?? "Unknown"}
-                  </p>
-                  <p className="truncate text-[11px] text-[#B0ADA7]">
-                    {user?.email ?? ""}
-                  </p>
-                </div>
-                <button
-                  onClick={logOut}
-                  disabled={loading}
-                  title="Sign out"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#E8610A] transition-colors hover:bg-[#FEF0E7] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <SignOutIcon />
-                </button>
-              </div>
+            <div
+              className="mt-3 border-t pt-3 px-2"
+              style={{ borderColor: "var(--border)" }}>
+              <UserFooter onSignOut={logOut} loading={loading} user={user} />
             </div>
           </div>
         </>

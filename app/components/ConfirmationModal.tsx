@@ -21,7 +21,7 @@ export default function ConfirmationModal({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
-  confirmVariant = "danger",
+  confirmVariant = "primary",
   loading = false,
   onConfirm,
   onCancel,
@@ -62,7 +62,7 @@ export default function ConfirmationModal({
     <div
       className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
       style={{
-        background: "rgba(26, 25, 22, 0.45)",
+        background: "rgba(0, 0, 0, 0.45)",
         backdropFilter: "blur(4px)",
       }}
       onClick={() => {
@@ -70,78 +70,68 @@ export default function ConfirmationModal({
       }}>
       <div
         ref={panelRef}
-        className="w-full max-w-sm overflow-hidden rounded-2xl border border-[#EDE8E2] bg-[#FDFCFB] shadow-xl"
-        style={{ fontFamily: "'DM Sans', sans-serif", opacity: 0 }}
+        className="w-full max-w-sm overflow-hidden rounded-2xl border shadow-xl"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
+          fontFamily: "'DM Sans', sans-serif",
+          opacity: 0,
+        }}
         onClick={(e) => e.stopPropagation()}>
-        {/* Top accent strip */}
+        {/* Top accent strip - always orange now */}
         <div
           className="h-1 w-full"
           style={{
-            background:
-              isDanger ?
-                "linear-gradient(90deg, #DC2626, #F87171)"
-              : "linear-gradient(90deg, #E8610A, #F5A623)",
+            background: "linear-gradient(90deg, var(--accent), #F5A623)",
           }}
         />
 
         <div className="p-6">
           {/* Icon + title row */}
           <div className="flex items-start gap-3.5">
-            {/* Icon badge */}
+            {/* Icon badge - always orange now */}
             <div
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
               style={{
-                background: isDanger ? "#FEF2F2" : "#FEF0E7",
+                background: "var(--bg-accent-soft)",
               }}>
-              {
-                isDanger ?
-                  // Trash / warning icon for danger
-                  <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#DC2626"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                  </svg>
-                  // Check / action icon for primary
-                : <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#E8610A"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-
-              }
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
             </div>
 
             <div className="flex-1 min-w-0">
               <h3
-                className="text-[15px] font-bold leading-snug text-[#1A1916]"
-                style={{ fontFamily: "'Sora', sans-serif" }}>
+                className="text-[15px] font-bold leading-snug"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: "'Sora', sans-serif",
+                }}>
                 {title}
               </h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[#72706A]">
+              <p
+                className="mt-1.5 text-[13px] leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}>
                 {message}
               </p>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="mt-5 border-t border-[#F0EBE5]" />
+          <div
+            className="mt-5 border-t"
+            style={{ borderColor: "var(--divide)" }}
+          />
 
           {/* Actions */}
           <div className="mt-4 flex gap-2.5">
@@ -149,7 +139,27 @@ export default function ConfirmationModal({
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-[13px] font-medium text-[#72706A] transition-all hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A] disabled:pointer-events-none disabled:opacity-50">
+              className="flex-1 rounded-xl border py-2.5 text-[13px] font-medium transition-all disabled:pointer-events-none disabled:opacity-50"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg-card)",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                  e.currentTarget.style.backgroundColor =
+                    "var(--bg-accent-soft)";
+                  e.currentTarget.style.color = "var(--accent)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.backgroundColor = "var(--bg-card)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }
+              }}>
               {cancelLabel}
             </button>
 
@@ -160,13 +170,8 @@ export default function ConfirmationModal({
               className="relative flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white transition-all disabled:pointer-events-none disabled:opacity-60"
               style={{
                 background:
-                  isDanger ?
-                    "linear-gradient(135deg, #DC2626, #C41E1E)"
-                  : "linear-gradient(135deg, #E8610A, #D15508)",
-                boxShadow:
-                  isDanger ?
-                    "0 2px 8px rgba(220,38,38,0.25)"
-                  : "0 2px 8px rgba(232,97,10,0.25)",
+                  "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+                boxShadow: "0 2px 8px rgba(232,97,10,0.25)",
               }}>
               {loading ?
                 <LoadingSpinner variant="spinner" size="sm" />

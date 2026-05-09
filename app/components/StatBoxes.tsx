@@ -55,7 +55,9 @@ function StatBoxes({ projects }: { projects: Project[] }) {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
         ),
-        accent: "bg-[#FEF0E7] text-[#E8610A]",
+        // light bg / light text   dark bg / dark text
+        accentLight: "bg-[#FEF0E7] text-[#E8610A]",
+        accentDark: "dark:bg-[#2a1a0a] dark:text-[#f07230]",
         bar: "bg-[#E8610A]",
         barPct: pct(total),
       },
@@ -79,7 +81,8 @@ function StatBoxes({ projects }: { projects: Project[] }) {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         ),
-        accent: "bg-[#FFF3E0] text-[#F57C00]",
+        accentLight: "bg-[#FFF3E0] text-[#F57C00]",
+        accentDark: "dark:bg-[#271a00] dark:text-[#f59e0b]",
         bar: "bg-[#F57C00]",
         barPct: pct(highPriority),
       },
@@ -102,7 +105,8 @@ function StatBoxes({ projects }: { projects: Project[] }) {
             <polyline points="12 6 12 12 16 14" />
           </svg>
         ),
-        accent: "bg-[#EDE9FE] text-[#7C3AED]",
+        accentLight: "bg-[#EDE9FE] text-[#7C3AED]",
+        accentDark: "dark:bg-[#1e1530] dark:text-[#a78bfa]",
         bar: "bg-[#7C3AED]",
         barPct: pct(inProgress),
       },
@@ -126,7 +130,8 @@ function StatBoxes({ projects }: { projects: Project[] }) {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         ),
-        accent: "bg-[#FEE2E2] text-[#DC2626]",
+        accentLight: "bg-[#FEE2E2] text-[#DC2626]",
+        accentDark: "dark:bg-[#2a0f0f] dark:text-[#f87171]",
         bar: "bg-[#DC2626]",
         barPct: pct(unfinished),
       },
@@ -138,25 +143,39 @@ function StatBoxes({ projects }: { projects: Project[] }) {
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="flex flex-col gap-3 rounded-2xl border border-[#EDE8E2] bg-white p-4 sm:gap-4 sm:p-5">
+          className="flex flex-col gap-3 rounded-2xl border p-4 sm:gap-4 sm:p-5"
+          style={{
+            backgroundColor: "var(--bg-card)",
+            borderColor: "var(--border)",
+          }}>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[11px] font-medium text-[#B0ADA7] sm:text-xs">
+              <p
+                className="text-[11px] font-medium sm:text-xs"
+                style={{ color: "var(--text-muted)" }}>
                 {stat.label}
               </p>
               <p
-                className="mt-1 text-2xl font-extrabold tracking-tight text-[#1A1916] sm:text-3xl"
-                style={{ fontFamily: "'Sora', sans-serif" }}>
+                className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl"
+                style={{
+                  fontFamily: "'Sora', sans-serif",
+                  color: "var(--text-primary)",
+                }}>
                 {stat.value}
               </p>
             </div>
+
+            {/* Icon badge — adapts in both light and dark */}
             <span
-              className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${stat.accent}`}>
+              className={`flex h-9 w-9 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${stat.accentLight} ${stat.accentDark}`}>
               {stat.icon}
             </span>
           </div>
+
           <div>
-            <div className="h-1.5 w-full rounded-full bg-[#F2EDE7]">
+            <div
+              className="h-1.5 w-full rounded-full"
+              style={{ backgroundColor: "var(--bg-hover)" }}>
               <div
                 className={`h-1.5 rounded-full transition-all duration-500 ${stat.bar}`}
                 style={{ width: `${stat.barPct}%` }}
@@ -166,8 +185,13 @@ function StatBoxes({ projects }: { projects: Project[] }) {
               className={`mt-2 text-[11px] font-medium sm:text-xs ${
                 stat.positive === false ? "text-[#DC2626]"
                 : stat.positive === true ? "text-[#16A34A]"
-                : "text-[#72706A]"
-              }`}>
+                : ""
+              }`}
+              style={
+                stat.positive === null ?
+                  { color: "var(--text-secondary)" }
+                : undefined
+              }>
               {stat.positive === true && "↑ "}
               {stat.positive === false && "↓ "}
               {stat.change}

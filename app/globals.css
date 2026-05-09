@@ -1,5 +1,65 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+/* ─────────────────────────────────────────────────────────────
+   Add these rules to your existing globals.css
+   (keep whatever @tailwind directives / resets you already have)
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Light tokens (default) ───────────────────────────────── */
+:root {
+  --bg-base: #f9f7f4;
+  --bg-card: #ffffff;
+  --bg-hover: #f2ede7;
+  --bg-accent-soft: #fef0e7;
+
+  --border: #ede8e2;
+  --border-dashed: #d6d1ca;
+  --divide: #f2ede7;
+
+  --text-primary: #1a1916;
+  --text-secondary: #72706a;
+  --text-muted: #b0ada7;
+
+  --accent: #e8610a;
+  --accent-hover: #d15508;
+
+  /* sidebar active nav badge ring */
+  --ring-bg: #f9f7f4;
+}
+
+/* ── Dark tokens ──────────────────────────────────────────── */
+.dark {
+  --bg-base: #0d1117;
+  --bg-card: #161b22;
+  --bg-hover: #21262d;
+  --bg-accent-soft: #1a1200;
+
+  --border: #30363d;
+  --border-dashed: #21262d;
+  --divide: #21262d;
+
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+
+  --accent: #e8610a;
+  --accent-hover: #f07230;
+
+  --ring-bg: #0d1117;
+}
+/* ── Tailwind arbitrary-value shorthands ──────────────────── */
+/* Use these class names anywhere instead of hardcoded hex:
+     bg-base          → background page
+     bg-card          → card / surface
+     bg-hover         → hover state
+     bg-accent-soft   → soft orange tint
+     border-default   → standard border
+     text-primary     → headings
+     text-secondary   → body / nav
+     text-muted       → hints / timestamps
+*/
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -9,4 +69,15 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Optional: Prevent transition on page load to avoid flash */
+html.dark {
+  color-scheme: dark;
 }

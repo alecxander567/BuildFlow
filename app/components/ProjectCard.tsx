@@ -47,6 +47,8 @@ export interface ProjectCardProps {
   onToggleStar?: (id: string) => Promise<void>;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
   if (!startDate || !endDate) return null;
   const start = new Date(startDate);
@@ -65,23 +67,19 @@ function getDaysRemaining(endDate?: string | null) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
-  const diffMs = end.getTime() - today.getTime();
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getProgressStatus(
-  progress: number,
-  endDate?: string | null,
-): { label: string; color: string } {
+function getProgressStatus(progress: number, endDate?: string | null) {
   const daysLeft = getDaysRemaining(endDate);
-  if (progress >= 100) return { label: "Complete", color: "text-[#16A34A]" };
+  if (progress >= 100) return { label: "Complete", color: "#16A34A" };
   if (daysLeft !== null && daysLeft < 0)
-    return { label: "Overdue", color: "text-[#DC2626]" };
-  if (progress > 0) return { label: "In Progress", color: "text-[#7C3AED]" };
-  return { label: "Not started", color: "text-[#B0ADA7]" };
+    return { label: "Overdue", color: "#DC2626" };
+  if (progress > 0) return { label: "In Progress", color: "#7C3AED" };
+  return { label: "Not started", color: "" };
 }
 
-function formatDayLabel(dateStr: string): { weekday: string; date: string } {
+function formatDayLabel(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return {
     weekday: d.toLocaleDateString("en-US", { weekday: "short" }),
@@ -89,53 +87,123 @@ function formatDayLabel(dateStr: string): { weekday: string; date: string } {
   };
 }
 
-function isTodayStr(dateStr: string): boolean {
+function isTodayStr(dateStr: string) {
   return dateStr === new Date().toISOString().split("T")[0];
 }
 
-function flattenTools(selectedTools?: Record<string, string[]>): string[] {
+function flattenTools(selectedTools?: Record<string, string[]>) {
   if (!selectedTools) return [];
   return Object.values(selectedTools).flat();
 }
 
-const priorityConfig: Record<
+// ─── useIsDark — reads .dark class on <html>, no Tailwind needed ──────────────
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      setIsDark(document.documentElement.classList.contains("dark"));
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
+}
+
+// ─── Theme maps (explicit light + dark hex) ───────────────────────────────────
+
+type Pair = { bg: string; border: string; text: string };
+
+const priorityTheme: Record<
   Priority,
-  { label: string; dot: string; text: string; bg: string; border: string }
+  { label: string; dot: string; light: Pair; dark: Pair }
 > = {
   High: {
     label: "High",
-    dot: "bg-[#DC2626]",
-    text: "text-[#DC2626]",
-    bg: "bg-[#FEF2F2]",
-    border: "border-[#FECACA]",
+    dot: "#DC2626",
+    light: { text: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+    dark: { text: "#f87171", bg: "#3b1111", border: "#7f2020" },
   },
   Moderate: {
     label: "Moderate",
-    dot: "bg-[#D97706]",
-    text: "text-[#D97706]",
-    bg: "bg-[#FFFBEB]",
-    border: "border-[#FDE68A]",
+    dot: "#D97706",
+    light: { text: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+    dark: { text: "#fbbf24", bg: "#362008", border: "#7a4a10" },
   },
   Low: {
     label: "Low",
-    dot: "bg-[#16A34A]",
-    text: "text-[#16A34A]",
-    bg: "bg-[#F0FDF4]",
-    border: "border-[#BBF7D0]",
+    dot: "#16A34A",
+    light: { text: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
+    dark: { text: "#4ade80", bg: "#0f2d1a", border: "#1e5c34" },
   },
 };
 
-const typeConfig: Record<ProjectType, { bg: string; text: string }> = {
-  Engineering: { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]" },
-  Technology: { bg: "bg-[#F0FDF4]", text: "text-[#15803D]" },
-  Research: { bg: "bg-[#FDF4FF]", text: "text-[#7E22CE]" },
-  Medical: { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]" },
-  "Art & Design": { bg: "bg-[#FFF7ED]", text: "text-[#C2410C]" },
-  Literature: { bg: "bg-[#FEFCE8]", text: "text-[#A16207]" },
-  Business: { bg: "bg-[#F0FDFA]", text: "text-[#0F766E]" },
-  Others: { bg: "bg-[#F9FAFB]", text: "text-[#4B5563]" },
+type TextBg = { bg: string; text: string };
+
+const typeTheme: Record<ProjectType, { light: TextBg; dark: TextBg }> = {
+  Engineering: {
+    light: { bg: "#EFF6FF", text: "#1D4ED8" },
+    dark: { bg: "#172554", text: "#93c5fd" },
+  },
+  Technology: {
+    light: { bg: "#F0FDF4", text: "#15803D" },
+    dark: { bg: "#14532d", text: "#86efac" },
+  },
+  Research: {
+    light: { bg: "#FDF4FF", text: "#7E22CE" },
+    dark: { bg: "#3b0764", text: "#d8b4fe" },
+  },
+  Medical: {
+    light: { bg: "#FFF1F2", text: "#BE123C" },
+    dark: { bg: "#4c0519", text: "#fda4af" },
+  },
+  "Art & Design": {
+    light: { bg: "#FFF7ED", text: "#C2410C" },
+    dark: { bg: "#431407", text: "#fdba74" },
+  },
+  Literature: {
+    light: { bg: "#FEFCE8", text: "#A16207" },
+    dark: { bg: "#422006", text: "#fde68a" },
+  },
+  Business: {
+    light: { bg: "#F0FDFA", text: "#0F766E" },
+    dark: { bg: "#134e4a", text: "#5eead4" },
+  },
+  Others: {
+    light: { bg: "#F9FAFB", text: "#4B5563" },
+    dark: { bg: "#1f2937", text: "#d1d5db" },
+  },
 };
 
+// Day strip pill colours
+const dayPill: Record<string, { light: Pair; dark: Pair }> = {
+  today: {
+    light: { bg: "#FEF0E7", border: "#F5C89A", text: "#E8610A" },
+    dark: { bg: "#2d1a00", border: "#7c3900", text: "#f07230" },
+  },
+  allDone: {
+    light: { bg: "#F0FDF4", border: "#BBF7D0", text: "#16A34A" },
+    dark: { bg: "#0f2d1a", border: "#1e5c34", text: "#4ade80" },
+  },
+  partial: {
+    light: { bg: "#FFFBEB", border: "#FDE68A", text: "#D97706" },
+    dark: { bg: "#362008", border: "#7a4a10", text: "#fbbf24" },
+  },
+  missed: {
+    light: { bg: "#FEF2F2", border: "#FECACA", text: "#DC2626" },
+    dark: { bg: "#3b1111", border: "#7f2020", text: "#f87171" },
+  },
+  default: {
+    light: { bg: "#f2ede7", border: "#ede8e2", text: "#b0ada7" },
+    dark: { bg: "#21262d", border: "#30363d", text: "#484f58" },
+  },
+};
+
+// Cover placeholder gradients (Tailwind classes, light vs dark handled by isDark flag)
 const placeholderGradients: Record<ProjectType, string> = {
   Engineering: "from-[#DBEAFE] to-[#EFF6FF]",
   Technology: "from-[#DCFCE7] to-[#F0FDF4]",
@@ -145,6 +213,17 @@ const placeholderGradients: Record<ProjectType, string> = {
   Literature: "from-[#FEF9C3] to-[#FEFCE8]",
   Business: "from-[#CCFBF1] to-[#F0FDFA]",
   Others: "from-[#F3F4F6] to-[#F9FAFB]",
+};
+
+const placeholderGradientsDark: Record<ProjectType, string> = {
+  Engineering: "from-[#1e3a5f] to-[#1a2f4a]",
+  Technology: "from-[#14532d] to-[#0f3d22]",
+  Research: "from-[#3b0764] to-[#2e0550]",
+  Medical: "from-[#4c0519] to-[#3b0412]",
+  "Art & Design": "from-[#431407] to-[#350f05]",
+  Literature: "from-[#422006] to-[#341a05]",
+  Business: "from-[#042f2e] to-[#032524]",
+  Others: "from-[#1f2937] to-[#111827]",
 };
 
 const placeholderIcons: Record<ProjectType, React.ReactElement> = {
@@ -270,11 +349,14 @@ const placeholderIcons: Record<ProjectType, React.ReactElement> = {
 
 const PILL_LIMIT = 4;
 
+// ─── DayTaskModal ─────────────────────────────────────────────────────────────
+
 interface DayTaskModalProps {
   dateStr: string;
   tasks: DayTask[];
   onClose: () => void;
   onToggle: (taskId: string) => void;
+  isDark: boolean;
 }
 
 function DayTaskModal({
@@ -282,6 +364,7 @@ function DayTaskModal({
   tasks,
   onClose,
   onToggle,
+  isDark,
 }: DayTaskModalProps) {
   const { weekday, date } = formatDayLabel(dateStr);
   const today = isTodayStr(dateStr);
@@ -308,33 +391,61 @@ function DayTaskModal({
       onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-sm rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl"
+        className="relative w-full max-w-sm rounded-2xl border shadow-2xl"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          borderColor: "var(--border)",
+        }}
         onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div
-          className={`flex items-center justify-between rounded-t-2xl px-5 py-4 ${today ? "bg-[#FEF0E7]" : "bg-[#F9F7F4]"}`}>
+          className="flex items-center justify-between rounded-t-2xl px-5 py-4"
+          style={{
+            backgroundColor: today ? "var(--bg-accent-soft)" : "var(--bg-base)",
+          }}>
           <div>
             <div className="flex items-center gap-2">
               <p
-                className={`text-sm font-bold ${today ? "text-[#E8610A]" : "text-[#1A1916]"}`}>
+                className="text-sm font-bold"
+                style={{ color: today ? "#E8610A" : "var(--text-primary)" }}>
                 {date}
               </p>
               {today && (
-                <span className="rounded-full bg-[#E8610A] px-2 py-0.5 text-[10px] font-bold text-white">
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
+                  style={{ backgroundColor: "#E8610A" }}>
                   Today
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-[#B0ADA7]">{weekday}</p>
+            <p
+              className="mt-0.5 text-xs"
+              style={{ color: "var(--text-muted)" }}>
+              {weekday}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <span
-              className={`text-xs font-semibold ${doneCount === tasks.length && tasks.length > 0 ? "text-[#16A34A]" : "text-[#72706A]"}`}>
+              className="text-xs font-semibold"
+              style={{
+                color:
+                  doneCount === tasks.length && tasks.length > 0 ?
+                    "#16A34A"
+                  : "var(--text-secondary)",
+              }}>
               {doneCount}/{tasks.length} done
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#B0ADA7] transition-colors hover:bg-[#EDE8E2] hover:text-[#72706A]">
+              className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }>
               <svg
                 width="12"
                 height="12"
@@ -350,21 +461,28 @@ function DayTaskModal({
             </button>
           </div>
         </div>
+
         {tasks.length > 0 && (
           <div className="px-5 pt-3">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2EDE7]">
+            <div
+              className="h-1.5 w-full overflow-hidden rounded-full"
+              style={{ backgroundColor: "var(--bg-hover)" }}>
               <div
-                className="h-full rounded-full bg-[#E8610A] transition-all duration-500"
+                className="h-full rounded-full transition-all duration-500"
                 style={{
-                  width: `${tasks.length ? (doneCount / tasks.length) * 100 : 0}%`,
+                  width: `${(doneCount / tasks.length) * 100}%`,
+                  backgroundColor: "#E8610A",
                 }}
               />
             </div>
           </div>
         )}
+
         <div className="max-h-72 overflow-y-auto px-4 py-3">
           {tasks.length === 0 ?
-            <p className="py-6 text-center text-sm text-[#D6D1CA]">
+            <p
+              className="py-6 text-center text-sm"
+              style={{ color: "var(--text-muted)" }}>
               No tasks for this day
             </p>
           : <ul className="flex flex-col gap-1">
@@ -373,9 +491,20 @@ function DayTaskModal({
                   <button
                     type="button"
                     onClick={() => onToggle(task.id)}
-                    className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[#F9F7F4]">
+                    className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors"
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--bg-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }>
                     <span
-                      className={`mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${task.done ? "border-[#16A34A] bg-[#16A34A]" : "border-[#D6D1CA] hover:border-[#E8610A]"}`}>
+                      className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all"
+                      style={{
+                        borderColor: task.done ? "#16A34A" : "var(--border)",
+                        backgroundColor: task.done ? "#16A34A" : "transparent",
+                      }}>
                       {task.done && (
                         <svg
                           width="9"
@@ -391,7 +520,13 @@ function DayTaskModal({
                       )}
                     </span>
                     <span
-                      className={`flex-1 text-sm leading-relaxed transition-all ${task.done ? "text-[#B0ADA7] line-through" : "text-[#1A1916]"}`}>
+                      className={`flex-1 text-sm leading-relaxed transition-all ${task.done ? "line-through" : ""}`}
+                      style={{
+                        color:
+                          task.done ? "var(--text-muted)" : (
+                            "var(--text-primary)"
+                          ),
+                      }}>
                       {task.text}
                     </span>
                   </button>
@@ -400,11 +535,24 @@ function DayTaskModal({
             </ul>
           }
         </div>
-        <div className="border-t border-[#F2EDE7] px-5 py-3">
+
+        <div
+          className="border-t px-5 py-3"
+          style={{ borderColor: "var(--divide)" }}>
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl bg-[#F9F7F4] py-2 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#EDE8E2]">
+            className="w-full rounded-xl py-2 text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: "var(--bg-base)",
+              color: "var(--text-secondary)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "var(--bg-base)")
+            }>
             Close
           </button>
         </div>
@@ -413,19 +561,23 @@ function DayTaskModal({
   );
 }
 
+// ─── DayStrip ─────────────────────────────────────────────────────────────────
+
 interface DayStripProps {
   dateRange: string[];
   dailyPlan: DailyPlan;
   onDayClick: (dateStr: string) => void;
+  isDark: boolean;
 }
 
-function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
+function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
   const todayStr = new Date().toISOString().split("T")[0];
   const stripRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
   const dragMoved = useRef(false);
+  const m = isDark ? "dark" : "light";
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
@@ -438,7 +590,6 @@ function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
-
     const onMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
       e.preventDefault();
@@ -447,12 +598,10 @@ function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
       if (Math.abs(walk) > 4) dragMoved.current = true;
       el.scrollLeft = scrollLeft.current - walk;
     };
-
     const onUp = () => {
       isDragging.current = false;
       if (el) el.style.cursor = "grab";
     };
-
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
@@ -461,18 +610,26 @@ function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
     };
   }, []);
 
+  const legend = [
+    { color: "#16A34A", label: "Done" },
+    { color: "#D97706", label: "Partial" },
+    { color: "#DC2626", label: "Missed" },
+    { color: isDark ? "#30363d" : "#D6D1CA", label: "No tasks" },
+  ];
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+        <p
+          className="text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-muted)" }}>
           Daily Plan
         </p>
-        <p className="text-[10px] text-[#B0ADA7]">
+        <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
           {dateRange.length} day{dateRange.length !== 1 ? "s" : ""}
         </p>
       </div>
 
-      {/* Drag-scrollable pill row — no visible scrollbar */}
       <div
         ref={stripRef}
         className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -488,21 +645,19 @@ function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
           const partial = doneCount > 0 && doneCount < totalCount;
           const hasTasks = totalCount > 0;
 
-          let dotBg = "bg-[#E8E4DE]";
-          if (allDone) dotBg = "bg-[#16A34A]";
-          else if (partial) dotBg = "bg-[#D97706]";
-          else if (hasTasks && isPast) dotBg = "bg-[#DC2626]";
-          else if (hasTasks) dotBg = "bg-[#B0ADA7]";
+          let key = "default";
+          if (isToday) key = "today";
+          else if (allDone) key = "allDone";
+          else if (partial) key = "partial";
+          else if (hasTasks && isPast) key = "missed";
 
-          let pillCls = "border-[#EDE8E2] bg-[#F9F7F4] text-[#B0ADA7]";
-          if (isToday)
-            pillCls = "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A] font-bold";
-          else if (allDone)
-            pillCls = "border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]";
-          else if (partial)
-            pillCls = "border-[#FDE68A] bg-[#FFFBEB] text-[#D97706]";
-          else if (hasTasks && isPast)
-            pillCls = "border-[#FECACA] bg-[#FEF2F2] text-[#DC2626]";
+          const pill = dayPill[key][m];
+
+          let dotColor = isDark ? "#30363d" : "#D6D1CA";
+          if (allDone) dotColor = "#16A34A";
+          else if (partial) dotColor = "#D97706";
+          else if (hasTasks && isPast) dotColor = "#DC2626";
+          else if (hasTasks) dotColor = isDark ? "#484f58" : "#B0ADA7";
 
           const { weekday } = formatDayLabel(dateStr);
 
@@ -513,40 +668,49 @@ function DayStrip({ dateRange, dailyPlan, onDayClick }: DayStripProps) {
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
-                // Only fire click if the user wasn't dragging
                 if (!dragMoved.current) onDayClick(dateStr);
               }}
               title={`${dateStr} · ${doneCount}/${totalCount} tasks done`}
-              className={`flex shrink-0 flex-col items-center gap-1 rounded-xl border px-2.5 py-1.5 transition-all hover:scale-105 hover:shadow-sm ${pillCls}`}>
+              className="flex shrink-0 flex-col items-center gap-1 rounded-xl border px-2.5 py-1.5 transition-all hover:scale-105 hover:shadow-sm"
+              style={{
+                backgroundColor: pill.bg,
+                borderColor: pill.border,
+                color: pill.text,
+                fontWeight: isToday ? 700 : undefined,
+              }}>
               <span className="text-[9px] font-medium uppercase tracking-wide leading-none">
                 {weekday}
               </span>
               <span className="text-[11px] leading-none">
                 {new Date(dateStr + "T00:00:00").getDate()}
               </span>
-              <span className={`h-1.5 w-1.5 rounded-full ${dotBg}`} />
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: dotColor }}
+              />
             </button>
           );
         })}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-3 pt-0.5">
-        {[
-          { dot: "bg-[#16A34A]", label: "Done" },
-          { dot: "bg-[#D97706]", label: "Partial" },
-          { dot: "bg-[#DC2626]", label: "Missed" },
-          { dot: "bg-[#E8E4DE]", label: "No tasks" },
-        ].map(({ dot, label }) => (
+        {legend.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
-            <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-            <span className="text-[9px] text-[#B0ADA7]">{label}</span>
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-[9px]" style={{ color: "var(--text-muted)" }}>
+              {label}
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
 }
+
+// ─── ProjectCard ──────────────────────────────────────────────────────────────
 
 export default function ProjectCard({
   id,
@@ -561,7 +725,6 @@ export default function ProjectCard({
   endDate,
   selectedTools,
   dailyPlan: dailyPlanProp,
-  starCount = 0,
   userId,
   currentUserId,
   onDeleteProject,
@@ -572,19 +735,20 @@ export default function ProjectCard({
 }: ProjectCardProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
+  const isDark = useIsDark();
+  const m = isDark ? "dark" : "light";
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
 
   const isOwner = currentUserId === userId;
   const canEdit = isOwner;
-
   const starred = !!currentUserId && starredBy.includes(currentUserId);
   const totalStars = starredBy.length;
-
-  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
 
   const dateRange = React.useMemo(
     () => (startDate && endDate ? generateDateRange(startDate, endDate) : []),
@@ -604,10 +768,13 @@ export default function ProjectCard({
     [hasDailyTasks, dailyPlan, startDate, endDate, progressProp],
   );
 
-  const p = priorityConfig[priority] || priorityConfig.Moderate;
-  const t = typeConfig[projectType] || typeConfig.Others;
-  const grad = placeholderGradients[projectType] || placeholderGradients.Others;
-  const icon = placeholderIcons[projectType] || placeholderIcons.Others;
+  const p = priorityTheme[priority] ?? priorityTheme.Moderate;
+  const t = typeTheme[projectType] ?? typeTheme.Others;
+  const grad =
+    isDark ?
+      (placeholderGradientsDark[projectType] ?? placeholderGradientsDark.Others)
+    : (placeholderGradients[projectType] ?? placeholderGradients.Others);
+  const icon = placeholderIcons[projectType] ?? placeholderIcons.Others;
 
   const durationLabel = getDurationLabel(startDate, endDate);
   const daysLeft = getDaysRemaining(endDate);
@@ -620,19 +787,19 @@ export default function ProjectCard({
 
   useEffect(() => {
     if (!menuOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    const handler = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
-    window.addEventListener("mousedown", onPointerDown);
-    return () => window.removeEventListener("mousedown", onPointerDown);
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
   const handleDelete = async () => {
     if (!onDeleteProject) return;
     setDeleting(true);
     try {
-      const success = await onDeleteProject(id);
-      if (success) setConfirmDeleteOpen(false);
+      const ok = await onDeleteProject(id);
+      if (ok) setConfirmDeleteOpen(false);
     } finally {
       setDeleting(false);
     }
@@ -640,30 +807,39 @@ export default function ProjectCard({
 
   const handleToggleTask = useCallback(
     (dateStr: string, taskId: string) => {
-      setDailyPlan((prevPlan) => {
-        const currentTasks = prevPlan[dateStr] ?? [];
-        const updatedTasks = currentTasks.map((task) =>
+      setDailyPlan((prev) => {
+        const updated = (prev[dateStr] ?? []).map((task) =>
           task.id === taskId ? { ...task, done: !task.done } : task,
         );
-        const next = { ...prevPlan, [dateStr]: updatedTasks };
-
-        // Use setTimeout to move the update out of render phase
-        setTimeout(() => {
-          onUpdateDailyPlan?.(id, next);
-        }, 0);
-
+        const next = { ...prev, [dateStr]: updated };
+        setTimeout(() => onUpdateDailyPlan?.(id, next), 0);
         return next;
       });
     },
     [id, onUpdateDailyPlan],
   );
 
+  // Accent hover helpers (used inline for buttons that can't use Tailwind dark:)
+  const accentHoverBg = isDark ? "#1a1200" : "#FEF0E7";
+  const accentHoverBorder = isDark ? "#7c3900" : "#F5C89A";
+  const dangerHoverBg = isDark ? "#3b1111" : "#FEF2F2";
+
   return (
     <>
       <div
         onClick={() => setOverviewOpen(true)}
-        className="group flex flex-col rounded-2xl border border-[#EDE8E2] bg-white cursor-pointer transition-all hover:shadow-md hover:shadow-[#E8610A]/10 hover:border-[#F5C89A]">
-        {/* ── Cover image ── */}
+        className="group flex flex-col rounded-2xl border cursor-pointer transition-all hover:shadow-md hover:shadow-[#E8610A]/10"
+        style={{
+          backgroundColor: "var(--bg-card)",
+          borderColor: "var(--border)",
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.borderColor = accentHoverBorder)
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.borderColor = "var(--border)")
+        }>
+        {/* ── Cover ── */}
         <div className="relative h-36 w-full overflow-hidden rounded-t-2xl">
           {imageUrl ?
             <img
@@ -673,7 +849,11 @@ export default function ProjectCard({
             />
           : <div
               className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
-              <div className={`${t?.text || "text-gray-500"} opacity-60`}>
+              <div
+                style={{
+                  color: isDark ? "rgba(255,255,255,0.6)" : t.light.text,
+                  opacity: isDark ? 1 : 0.6,
+                }}>
                 {icon}
               </div>
             </div>
@@ -681,22 +861,43 @@ export default function ProjectCard({
 
           {/* Priority badge */}
           <div
-            className={`absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm ${p?.bg || "bg-gray-100"} ${p?.text || "text-gray-600"} ${p?.border || "border-gray-200"}`}>
+            className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm"
+            style={{
+              backgroundColor: p[m].bg,
+              color: p[m].text,
+              borderColor: p[m].border,
+            }}>
             <span
-              className={`h-1.5 w-1.5 rounded-full ${p?.dot || "bg-gray-400"}`}
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: p.dot }}
             />
-            {p?.label || priority}
+            {p.label}
           </div>
 
-          {/* Menu button — owner only */}
+          {/* ⋯ menu */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setMenuOpen((prev) => !prev);
+                  setMenuOpen((v) => !v);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                className="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
+                style={{
+                  backgroundColor: "var(--bg-card)",
+                  borderColor: "var(--border)",
+                  color: "var(--text-secondary)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = accentHoverBg;
+                  e.currentTarget.style.borderColor = accentHoverBorder;
+                  e.currentTarget.style.color = "#E8610A";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--bg-card)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }}>
                 <svg
                   width="14"
                   height="14"
@@ -713,14 +914,28 @@ export default function ProjectCard({
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 mt-1.5 w-40 rounded-xl border border-[#EDE8E2] bg-white p-1.5 shadow-lg shadow-black/10 z-20">
+                <div
+                  className="absolute right-0 mt-1.5 w-40 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
+                  style={{
+                    backgroundColor: "var(--bg-card)",
+                    borderColor: "var(--border)",
+                  }}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(false);
                       router.push(`/AddProjectPage?edit=${id}`);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#1A1916] transition-colors hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
+                    style={{ color: "var(--text-primary)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = accentHoverBg;
+                      e.currentTarget.style.color = "#E8610A";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }}>
                     <svg
                       width="12"
                       height="12"
@@ -741,7 +956,14 @@ export default function ProjectCard({
                       setMenuOpen(false);
                       setConfirmDeleteOpen(true);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium text-[#DC2626] transition-colors hover:bg-[#FEF2F2]">
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
+                    style={{ color: "#DC2626" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = dangerHoverBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}>
                     <svg
                       width="12"
                       height="12"
@@ -765,29 +987,37 @@ export default function ProjectCard({
           )}
         </div>
 
-        {/* ── Card body ── */}
+        {/* ── Body ── */}
         <div className="flex flex-1 flex-col gap-3 p-4">
+          {/* Type badge */}
           <span
-            className={`inline-flex w-fit items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold ${t?.bg || "bg-gray-100"} ${t?.text || "text-gray-600"}`}>
+            className="inline-flex w-fit items-center rounded-lg px-2.5 py-0.5 text-[11px] font-semibold"
+            style={{ backgroundColor: t[m].bg, color: t[m].text }}>
             {projectType || "Others"}
           </span>
 
+          {/* Title / description */}
           <div>
             <h3
-              className="truncate text-sm font-bold text-[#1A1916] transition-colors group-hover:text-[#E8610A]"
-              style={{ fontFamily: "'Sora', sans-serif" }}>
+              className="truncate text-sm font-bold transition-colors group-hover:text-[#E8610A]"
+              style={{
+                fontFamily: "'Sora', sans-serif",
+                color: "var(--text-primary)",
+              }}>
               {title}
             </h3>
-            {/* Description or placeholder */}
             {description ?
-              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#374151]">
+              <p
+                className="mt-1 line-clamp-2 text-xs leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}>
                 {description}
               </p>
-            : <p className="mt-1 text-xs italic text-[#D6D1CA]">
+            : <p
+                className="mt-1 text-xs italic"
+                style={{ color: "var(--text-muted)" }}>
                 No description provided
               </p>
             }
-
             {!isOwner && ownerEmail && (
               <div className="mt-2 flex items-center gap-1.5">
                 <svg
@@ -795,63 +1025,92 @@ export default function ProjectCard({
                   height="11"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#1A1916"
+                  stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeLinejoin="round">
+                  strokeLinejoin="round"
+                  style={{ color: "var(--text-primary)" }}>
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                <span className="text-[10px] font-bold text-[#1A1916] truncate">
+                <span
+                  className="text-[10px] font-bold truncate"
+                  style={{ color: "var(--text-primary)" }}>
                   {ownerEmail}
                 </span>
               </div>
             )}
           </div>
 
-          {/* Tools or placeholder */}
+          {/* Tool pills */}
           {allTools.length > 0 ?
             <div className="flex flex-wrap gap-1.5">
               {visibleTools.map((tool) => (
                 <span
                   key={tool}
-                  className="rounded-full border border-[#E8E4DE] bg-[#F9F7F4] px-2.5 py-0.5 text-[10px] font-medium text-[#72706A]">
+                  className="rounded-full border px-2.5 py-0.5 text-[10px] font-medium"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--bg-base)",
+                    color: "var(--text-secondary)",
+                  }}>
                   {tool}
                 </span>
               ))}
               {overflowCount > 0 && (
-                <span className="rounded-full border border-[#F5C89A] bg-[#FEF0E7] px-2.5 py-0.5 text-[10px] font-semibold text-[#E8610A]">
+                <span
+                  className="rounded-full border px-2.5 py-0.5 text-[10px] font-semibold"
+                  style={{
+                    backgroundColor: isDark ? "#2d1a00" : "#FEF0E7",
+                    borderColor: isDark ? "#7c3900" : "#F5C89A",
+                    color: isDark ? "#f07230" : "#E8610A",
+                  }}>
                   +{overflowCount}
                 </span>
               )}
             </div>
           : <div className="flex flex-wrap gap-1.5">
-              <span className="rounded-full border border-dashed border-[#E8E4DE] px-2.5 py-0.5 text-[10px] text-[#D6D1CA]">
+              <span
+                className="rounded-full border border-dashed px-2.5 py-0.5 text-[10px] italic"
+                style={{
+                  borderColor: "var(--border-dashed)",
+                  color: "var(--text-muted)",
+                }}>
                 No tools added
               </span>
             </div>
           }
 
-          {/* ── Progress ── */}
+          {/* Progress */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className={`text-[11px] font-semibold ${status.color}`}>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: status.color || "var(--text-muted)" }}>
                 {status.label}
               </span>
-              <span className="text-[11px] font-bold text-[#1A1916]">
+              <span
+                className="text-[11px] font-bold"
+                style={{ color: "var(--text-primary)" }}>
                 {clampedProgress}%
               </span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F2EDE7]">
+            <div
+              className="h-1.5 w-full overflow-hidden rounded-full"
+              style={{ backgroundColor: "var(--bg-hover)" }}>
               <div
-                className="h-full rounded-full bg-[#E8610A] transition-all duration-500"
-                style={{ width: `${clampedProgress}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${clampedProgress}%`,
+                  backgroundColor: "#E8610A",
+                }}
               />
             </div>
-            {/* Date row or placeholder */}
             {startDate || endDate ?
               <div className="flex items-center justify-between pt-0.5">
-                <span className="text-[10px] text-[#B0ADA7]">
+                <span
+                  className="text-[10px]"
+                  style={{ color: "var(--text-muted)" }}>
                   {durationLabel ?
                     `${durationLabel} total`
                   : endDate ?
@@ -860,11 +1119,13 @@ export default function ProjectCard({
                 </span>
                 {daysLeft !== null && clampedProgress < 100 && (
                   <span
-                    className={`text-[10px] font-medium ${
-                      daysLeft < 0 ? "text-[#DC2626]"
-                      : daysLeft <= 3 ? "text-[#D97706]"
-                      : "text-[#72706A]"
-                    }`}>
+                    className="text-[10px] font-medium"
+                    style={{
+                      color:
+                        daysLeft < 0 ? "#DC2626"
+                        : daysLeft <= 3 ? "#D97706"
+                        : "var(--text-secondary)",
+                    }}>
                     {daysLeft < 0 ?
                       `${Math.abs(daysLeft)}d overdue`
                     : daysLeft === 0 ?
@@ -874,49 +1135,65 @@ export default function ProjectCard({
                 )}
               </div>
             : <div className="flex items-center justify-between pt-0.5">
-                <span className="text-[10px] italic text-[#D6D1CA]">
+                <span
+                  className="text-[10px] italic"
+                  style={{ color: "var(--text-muted)" }}>
                   No dates set
                 </span>
               </div>
             }
           </div>
 
-          {/* ── Day Strip — owner only ── */}
+          {/* Day Strip */}
           {isOwner && dateRange.length > 0 && (
             <div
-              className="rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] p-3"
+              className="rounded-xl border p-3"
+              style={{
+                backgroundColor: "var(--bg-base)",
+                borderColor: "var(--border)",
+              }}
               onClick={(e) => e.stopPropagation()}>
               {hasDailyTasks ?
                 <DayStrip
                   dateRange={dateRange}
                   dailyPlan={dailyPlan}
-                  onDayClick={(dateStr) => setSelectedDay(dateStr)}
+                  onDayClick={setSelectedDay}
+                  isDark={isDark}
                 />
               : <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[#B0ADA7]">
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--text-muted)" }}>
                       Daily Plan
                     </p>
-                    <p className="text-[10px] text-[#B0ADA7]">
+                    <p
+                      className="text-[10px]"
+                      style={{ color: "var(--text-muted)" }}>
                       {dateRange.length} day{dateRange.length !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[#E8E4DE] py-3">
+                  <div
+                    className="flex items-center justify-center gap-2 rounded-lg border border-dashed py-3"
+                    style={{ borderColor: "var(--border-dashed)" }}>
                     <svg
                       width="12"
                       height="12"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#D6D1CA"
+                      stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
-                      strokeLinejoin="round">
+                      strokeLinejoin="round"
+                      style={{ color: "var(--text-muted)" }}>
                       <rect x="3" y="4" width="18" height="18" rx="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    <span className="text-[10px] italic text-[#D6D1CA]">
+                    <span
+                      className="text-[10px] italic"
+                      style={{ color: "var(--text-muted)" }}>
                       No tasks added yet
                     </span>
                   </div>
@@ -925,7 +1202,7 @@ export default function ProjectCard({
             </div>
           )}
 
-          {/* ── Bottom row: URL + Star ── */}
+          {/* Bottom row */}
           <div className="mt-auto flex items-center justify-between gap-2 pt-1">
             {projectUrl ?
               <a
@@ -933,7 +1210,8 @@ export default function ProjectCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-[#4B5563] transition-colors hover:text-[#E8610A]">
+                className="flex items-center gap-1.5 text-[11px] font-medium transition-colors hover:text-[#E8610A]"
+                style={{ color: "var(--text-secondary)" }}>
                 <svg
                   width="11"
                   height="11"
@@ -950,21 +1228,51 @@ export default function ProjectCard({
                   {new URL(projectUrl).hostname.replace("www.", "")}
                 </span>
               </a>
-            : <span className="text-[11px] italic text-[#D6D1CA]">
+            : <span
+                className="text-[11px] italic"
+                style={{ color: "var(--text-muted)" }}>
                 No link added
               </span>
             }
 
+            {/* Star button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleStar?.(id);
               }}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+              className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
+              style={
                 starred ?
-                  "border-[#E8610A] bg-[#E8610A] text-white hover:bg-[#D15508]"
-                : "border-[#EDE8E2] bg-[#F9F7F4] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-              }`}>
+                  {
+                    backgroundColor: "#E8610A",
+                    borderColor: "#E8610A",
+                    color: "#ffffff",
+                  }
+                : {
+                    backgroundColor: "var(--bg-base)",
+                    borderColor: "var(--border)",
+                    color: "var(--text-secondary)",
+                  }
+              }
+              onMouseEnter={(e) => {
+                if (starred) {
+                  e.currentTarget.style.backgroundColor = "#D15508";
+                } else {
+                  e.currentTarget.style.backgroundColor = accentHoverBg;
+                  e.currentTarget.style.borderColor = accentHoverBorder;
+                  e.currentTarget.style.color = "#E8610A";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (starred) {
+                  e.currentTarget.style.backgroundColor = "#E8610A";
+                } else {
+                  e.currentTarget.style.backgroundColor = "var(--bg-base)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }
+              }}>
               <svg
                 width="13"
                 height="13"
@@ -988,15 +1296,13 @@ export default function ProjectCard({
         </div>
       </div>
 
-      {/* ── Day Task Modal (opened from strip) ── */}
       {selectedDay && isOwner && (
         <DayTaskModal
           dateStr={selectedDay}
           tasks={dailyPlan[selectedDay] ?? []}
           onClose={() => setSelectedDay(null)}
-          onToggle={(taskId) => {
-            handleToggleTask(selectedDay, taskId);
-          }}
+          onToggle={(taskId) => handleToggleTask(selectedDay, taskId)}
+          isDark={isDark}
         />
       )}
 

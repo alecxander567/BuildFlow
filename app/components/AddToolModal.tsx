@@ -175,20 +175,29 @@ export function AddToolModal({
         onClick={onClose}
       />
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl shadow-black/10"
+        className="relative z-10 w-full max-w-md rounded-2xl border shadow-2xl"
         style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--bg-card)",
           animation: "modalIn 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
         }}>
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-[#F3F0EB] px-6 py-5">
+        <div
+          className="flex items-start justify-between border-b px-6 py-5"
+          style={{ borderColor: "var(--divide)" }}>
           <div>
             <h2
-              className="text-base font-bold text-[#1A1916]"
-              style={{ fontFamily: "'Sora', sans-serif" }}>
+              className="text-base font-bold"
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "'Sora', sans-serif",
+              }}>
               Add Item
             </h2>
             {activeCategory && (
-              <p className="mt-0.5 text-xs text-[#B0ADA7]">
+              <p
+                className="mt-0.5 text-xs"
+                style={{ color: "var(--text-muted)" }}>
                 Adding to &ldquo;{activeCategory}&rdquo; — shared across all
                 projects
               </p>
@@ -197,7 +206,21 @@ export function AddToolModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#EDE8E2] text-[#B0ADA7] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+            className="flex h-8 w-8 items-center justify-center rounded-xl border transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              color: "var(--text-muted)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.backgroundColor = "var(--bg-accent-soft)";
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}>
             <svg
               width="14"
               height="14"
@@ -217,7 +240,9 @@ export function AddToolModal({
         <div className="px-6 py-5">
           <div className="flex flex-col gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+              <label
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-widest"
+                style={{ color: "var(--text-muted)" }}>
                 Item Name
               </label>
               <input
@@ -235,20 +260,30 @@ export function AddToolModal({
                     onAdd();
                   }
                 }}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] ${
                   toolError ?
-                    "border-red-300 bg-red-50"
-                  : "border-[#E8E4DE] bg-[#FDFCFB]"
+                    "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                  : "border-[var(--border)] bg-[var(--bg-base)]"
                 }`}
+                style={{
+                  color: "var(--text-primary)",
+                  placeholderColor: "var(--text-muted)",
+                }}
               />
               {toolError && (
-                <p className="mt-1.5 text-xs text-red-500">{toolError}</p>
+                <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">
+                  {toolError}
+                </p>
               )}
             </div>
 
             {activeCategory && suggestions.length > 0 && (
               <div>
-                <p className="mb-2 text-[11px] text-[#B0ADA7]">Quick pick</p>
+                <p
+                  className="mb-2 text-[11px]"
+                  style={{ color: "var(--text-muted)" }}>
+                  Quick pick
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {suggestions.map((suggestion) => {
                     const alreadyAdded =
@@ -263,12 +298,20 @@ export function AddToolModal({
                           onToolErrorChange("");
                         }}
                         className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
-                          alreadyAdded ?
-                            "cursor-not-allowed border-[#E8E4DE] bg-[#F3F4F6] text-[#C4C2BE] line-through"
+                          alreadyAdded ? "cursor-not-allowed line-through"
                           : newToolName === suggestion ?
-                            "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                          : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
-                        }`}>
+                            "border-[var(--accent)] bg-[var(--bg-accent-soft)] text-[var(--accent)]"
+                          : "border-[var(--border)] bg-[var(--bg-base)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]"
+                        }`}
+                        style={
+                          alreadyAdded ?
+                            {
+                              borderColor: "var(--border)",
+                              backgroundColor: "var(--bg-hover)",
+                              color: "var(--text-muted)",
+                            }
+                          : undefined
+                        }>
                         {suggestion}
                       </button>
                     );
@@ -281,13 +324,33 @@ export function AddToolModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
+                className="flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--bg-card)",
+                  color: "var(--text-secondary)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--bg-base)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--bg-card)";
+                }}>
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={onAdd}
-                className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
+                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                style={{
+                  backgroundColor: "var(--accent)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--accent-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--accent)";
+                }}>
                 Add Item
               </button>
             </div>

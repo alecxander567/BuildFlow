@@ -69,7 +69,7 @@ export function AddCategoryModal({
       subtitle="Added to your shared catalog — available in all projects">
       <div className="flex flex-col gap-4">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[#B0ADA7]">
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
             Category Name
           </label>
           <input
@@ -87,10 +87,10 @@ export function AddCategoryModal({
                 handleAdd();
               }
             }}
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#1A1916] placeholder:text-[#B0ADA7] outline-none transition-colors focus:border-[#E8610A] ${
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] bg-[var(--bg-card)] outline-none transition-colors focus:border-[var(--accent)] ${
               categoryError ?
-                "border-red-300 bg-red-50"
-              : "border-[#E8E4DE] bg-[#FDFCFB]"
+                "border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800"
+              : "border-[var(--border)]"
             }`}
           />
           {categoryError && (
@@ -99,7 +99,9 @@ export function AddCategoryModal({
         </div>
 
         <div>
-          <p className="mb-2 text-[11px] text-[#B0ADA7]">Quick pick</p>
+          <p className="mb-2 text-[11px] text-[var(--text-muted)]">
+            Quick pick
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {CATEGORY_SUGGESTIONS.map((suggestion) => {
               const taken = existingCategories[suggestion] !== undefined;
@@ -114,10 +116,10 @@ export function AddCategoryModal({
                   }}
                   className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
                     taken ?
-                      "cursor-not-allowed border-[#E8E4DE] bg-[#F3F4F6] text-[#C4C2BE] line-through"
+                      "cursor-not-allowed border-[var(--border)] bg-[var(--bg-hover)] text-[var(--text-muted)] line-through"
                     : newCategoryName === suggestion ?
-                      "border-[#F5C89A] bg-[#FEF0E7] text-[#E8610A]"
-                    : "border-[#E8E4DE] bg-[#FDFCFB] text-[#72706A] hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+                      "border-[var(--accent)] bg-[var(--bg-accent-soft)] text-[var(--accent)]"
+                    : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]"
                   }`}>
                   {suggestion}
                 </button>
@@ -130,13 +132,13 @@ export function AddCategoryModal({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-xl border border-[#E8E4DE] bg-white py-2.5 text-sm font-medium text-[#72706A] transition-colors hover:bg-[#F9F7F4]">
+            className="flex-1 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]">
             Cancel
           </button>
           <button
             type="button"
             onClick={handleAdd}
-            className="flex-1 rounded-xl bg-[#E8610A] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508]">
+            className="flex-1 rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]">
             Add Category
           </button>
         </div>

@@ -53,34 +53,35 @@ function getProgressStatus(progress: number, endDate?: string | null) {
       label: "Complete",
       color: "text-[#16A34A]",
       bg: "bg-[#16A34A]",
-      lightBg: "bg-[#F0FDF4]",
-      border: "border-[#BBF7D0]",
+      lightBg: "bg-[#F0FDF4] dark:bg-[#16A34A]/10",
+      border: "border-[#BBF7D0] dark:border-[#16A34A]/30",
     };
   if (daysLeft !== null && daysLeft < 0)
     return {
       label: "Overdue",
       color: "text-[#DC2626]",
       bg: "bg-[#DC2626]",
-      lightBg: "bg-[#FEF2F2]",
-      border: "border-[#FECACA]",
+      lightBg: "bg-[#FEF2F2] dark:bg-[#DC2626]/10",
+      border: "border-[#FECACA] dark:border-[#DC2626]/30",
     };
   if (progress > 0)
     return {
       label: "In Progress",
       color: "text-[#7C3AED]",
       bg: "bg-[#7C3AED]",
-      lightBg: "bg-[#F5F3FF]",
-      border: "border-[#DDD6FE]",
+      lightBg: "bg-[#F5F3FF] dark:bg-[#7C3AED]/10",
+      border: "border-[#DDD6FE] dark:border-[#7C3AED]/30",
     };
   return {
     label: "Not Started",
-    color: "text-[#B0ADA7]",
-    bg: "bg-[#D6D1CA]",
-    lightBg: "bg-[#F9F7F4]",
-    border: "border-[#E8E4DE]",
+    color: "text-[var(--text-muted)]",
+    bg: "bg-[var(--border-dashed)]",
+    lightBg: "bg-[var(--bg-base)]",
+    border: "border-[var(--border)]",
   };
 }
 
+// FIXED: Added colon after Record and proper angle brackets
 const priorityConfig: Record<
   string,
   { dot: string; text: string; bg: string; border: string }
@@ -88,43 +89,75 @@ const priorityConfig: Record<
   High: {
     dot: "bg-[#DC2626]",
     text: "text-[#DC2626]",
-    bg: "bg-[#FEF2F2]",
-    border: "border-[#FECACA]",
+    bg: "bg-[#FEF2F2] dark:bg-[#DC2626]/10",
+    border: "border-[#FECACA] dark:border-[#DC2626]/30",
   },
   Moderate: {
     dot: "bg-[#D97706]",
     text: "text-[#D97706]",
-    bg: "bg-[#FFFBEB]",
-    border: "border-[#FDE68A]",
+    bg: "bg-[#FFFBEB] dark:bg-[#D97706]/10",
+    border: "border-[#FDE68A] dark:border-[#D97706]/30",
   },
   Low: {
     dot: "bg-[#16A34A]",
     text: "text-[#16A34A]",
-    bg: "bg-[#F0FDF4]",
-    border: "border-[#BBF7D0]",
+    bg: "bg-[#F0FDF4] dark:bg-[#16A34A]/10",
+    border: "border-[#BBF7D0] dark:border-[#16A34A]/30",
   },
 };
 
 const typeConfig: Record<string, { bg: string; text: string }> = {
-  Engineering: { bg: "bg-[#EFF6FF]", text: "text-[#1D4ED8]" },
-  Technology: { bg: "bg-[#F0FDF4]", text: "text-[#15803D]" },
-  Research: { bg: "bg-[#FDF4FF]", text: "text-[#7E22CE]" },
-  Medical: { bg: "bg-[#FFF1F2]", text: "text-[#BE123C]" },
-  "Art & Design": { bg: "bg-[#FFF7ED]", text: "text-[#C2410C]" },
-  Literature: { bg: "bg-[#FEFCE8]", text: "text-[#A16207]" },
-  Business: { bg: "bg-[#F0FDFA]", text: "text-[#0F766E]" },
-  Others: { bg: "bg-[#F9FAFB]", text: "text-[#4B5563]" },
+  Engineering: {
+    bg: "bg-[#EFF6FF] dark:bg-[#1D4ED8]/10",
+    text: "text-[#1D4ED8] dark:text-[#60A5FA]",
+  },
+  Technology: {
+    bg: "bg-[#F0FDF4] dark:bg-[#15803D]/10",
+    text: "text-[#15803D] dark:text-[#4ADE80]",
+  },
+  Research: {
+    bg: "bg-[#FDF4FF] dark:bg-[#7E22CE]/10",
+    text: "text-[#7E22CE] dark:text-[#C084FC]",
+  },
+  Medical: {
+    bg: "bg-[#FFF1F2] dark:bg-[#BE123C]/10",
+    text: "text-[#BE123C] dark:text-[#FB7185]",
+  },
+  "Art & Design": {
+    bg: "bg-[#FFF7ED] dark:bg-[#C2410C]/10",
+    text: "text-[#C2410C] dark:text-[#FB923C]",
+  },
+  Literature: {
+    bg: "bg-[#FEFCE8] dark:bg-[#A16207]/10",
+    text: "text-[#A16207] dark:text-[#FACC15]",
+  },
+  Business: {
+    bg: "bg-[#F0FDFA] dark:bg-[#0F766E]/10",
+    text: "text-[#0F766E] dark:text-[#2DD4BF]",
+  },
+  Others: {
+    bg: "bg-[#F9FAFB] dark:bg-[var(--bg-hover)]",
+    text: "text-[#4B5563] dark:text-[var(--text-secondary)]",
+  },
 };
 
 const placeholderGradients: Record<string, string> = {
-  Engineering: "from-[#DBEAFE] to-[#EFF6FF]",
-  Technology: "from-[#DCFCE7] to-[#F0FDF4]",
-  Research: "from-[#F3E8FF] to-[#FDF4FF]",
-  Medical: "from-[#FFE4E6] to-[#FFF1F2]",
-  "Art & Design": "from-[#FFEDD5] to-[#FFF7ED]",
-  Literature: "from-[#FEF9C3] to-[#FEFCE8]",
-  Business: "from-[#CCFBF1] to-[#F0FDFA]",
-  Others: "from-[#F3F4F6] to-[#F9FAFB]",
+  Engineering:
+    "from-[#DBEAFE] to-[#EFF6FF] dark:from-[#1D4ED8]/20 dark:to-[#1D4ED8]/5",
+  Technology:
+    "from-[#DCFCE7] to-[#F0FDF4] dark:from-[#15803D]/20 dark:to-[#15803D]/5",
+  Research:
+    "from-[#F3E8FF] to-[#FDF4FF] dark:from-[#7E22CE]/20 dark:to-[#7E22CE]/5",
+  Medical:
+    "from-[#FFE4E6] to-[#FFF1F2] dark:from-[#BE123C]/20 dark:to-[#BE123C]/5",
+  "Art & Design":
+    "from-[#FFEDD5] to-[#FFF7ED] dark:from-[#C2410C]/20 dark:to-[#C2410C]/5",
+  Literature:
+    "from-[#FEF9C3] to-[#FEFCE8] dark:from-[#A16207]/20 dark:to-[#A16207]/5",
+  Business:
+    "from-[#CCFBF1] to-[#F0FDFA] dark:from-[#0F766E]/20 dark:to-[#0F766E]/5",
+  Others:
+    "from-[#F3F4F6] to-[#F9FAFB] dark:from-[var(--bg-hover)] dark:to-[var(--bg-base)]",
 };
 
 const placeholderIcons: Record<string, React.ReactElement> = {
@@ -335,7 +368,6 @@ export default function ProjectOverviewModal({
   const completedTasks = getCompletedTasks();
   const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-  // Helper function to get hostname from URL
   const getHostname = (url: string) => {
     try {
       return new URL(url).hostname.replace("www.", "");
@@ -351,7 +383,7 @@ export default function ProjectOverviewModal({
         if (e.target === overlayRef.current) onClose();
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border border-[#EDE8E2] bg-white shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* ── Cover banner ── */}
         <div className="relative h-40 w-full shrink-0 overflow-hidden">
           {imageUrl ?
@@ -367,18 +399,18 @@ export default function ProjectOverviewModal({
           }
 
           {/* Gradient fade bottom */}
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--bg-card)]/60 to-transparent" />
 
-          {/* Top bar: star | priority badge + close — all in one row */}
+          {/* Top bar */}
           <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2">
-            {/* Star button (left) */}
+            {/* Star button */}
             {onToggleStar ?
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleStar(id);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 backdrop-blur-sm transition-colors hover:bg-[#FEF0E7]">
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-sm transition-colors hover:bg-[var(--bg-accent-soft)]">
                 <svg
                   width="16"
                   height="16"
@@ -388,13 +420,17 @@ export default function ProjectOverviewModal({
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={starred ? "text-[#E8610A]" : "text-[#72706A]"}>
+                  className={
+                    starred ?
+                      "text-[var(--accent)]"
+                    : "text-[var(--text-secondary)]"
+                  }>
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
               </button>
             : <div />}
 
-            {/* Right side: priority badge + close button */}
+            {/* Right side: priority badge + close */}
             <div className="flex items-center gap-2">
               <div
                 className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold backdrop-blur-sm ${p.bg} ${p.text} ${p.border}`}>
@@ -403,7 +439,7 @@ export default function ProjectOverviewModal({
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#EDE8E2] bg-white/95 text-[#72706A] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-card)]/95 text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]">
                 <svg
                   width="13"
                   height="13"
@@ -431,7 +467,7 @@ export default function ProjectOverviewModal({
                 {projectType}
               </span>
               <h2
-                className="text-xl font-bold text-[#1A1916] leading-tight"
+                className="text-xl font-bold text-[var(--text-primary)] leading-tight"
                 style={{ fontFamily: "'Sora', sans-serif" }}>
                 {title}
               </h2>
@@ -439,7 +475,7 @@ export default function ProjectOverviewModal({
             {isOwner && onEdit && (
               <button
                 onClick={() => onEdit(id)}
-                className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[#EDE8E2] px-3 py-1.5 text-xs font-semibold text-[#374151] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] hover:text-[#E8610A]">
+                className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]">
                 <svg
                   width="12"
                   height="12"
@@ -459,23 +495,23 @@ export default function ProjectOverviewModal({
 
           {/* Description */}
           {description && (
-            <p className="text-sm leading-relaxed text-[#374151]">
+            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
               {description}
             </p>
           )}
 
           {/* ── Tasks Overview ── */}
           {totalTasks > 0 && (
-            <div className="flex flex-col gap-2 p-3 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4]">
+            <div className="flex flex-col gap-2 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg-base)]">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#1A1916]">
+                <span className="text-xs font-bold text-[var(--text-primary)]">
                   Tasks Overview
                 </span>
-                <span className="text-xs font-semibold text-[#1A1916]">
+                <span className="text-xs font-semibold text-[var(--text-primary)]">
                   {completedTasks}/{totalTasks}
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-[#E8E4DE]">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border)]">
                 <div
                   className="h-full rounded-full bg-[#16A34A] transition-all duration-500"
                   style={{ width: `${taskProgress}%` }}
@@ -491,11 +527,11 @@ export default function ProjectOverviewModal({
               <span className={`text-sm font-bold ${status.color}`}>
                 {status.label}
               </span>
-              <span className="text-base font-bold text-[#1A1916]">
+              <span className="text-base font-bold text-[var(--text-primary)]">
                 {clampedProgress}%
               </span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/80">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--bg-card)]/80">
               <div
                 className={`h-full rounded-full transition-all duration-700 ${status.bg}`}
                 style={{ width: `${clampedProgress}%` }}
@@ -507,36 +543,36 @@ export default function ProjectOverviewModal({
           {(startDate || endDate) && (
             <div className="grid grid-cols-3 gap-2">
               {startDate && (
-                <div className="flex flex-col gap-1 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] p-3">
-                  <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">
+                <div className="flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-base)] p-3">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Start
                   </span>
-                  <span className="text-sm font-bold text-[#1A1916]">
+                  <span className="text-sm font-bold text-[var(--text-primary)]">
                     {formatDate(startDate)}
                   </span>
                 </div>
               )}
               {endDate && (
-                <div className="flex flex-col gap-1 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] p-3">
-                  <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">
+                <div className="flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-base)] p-3">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     End
                   </span>
-                  <span className="text-sm font-bold text-[#1A1916]">
+                  <span className="text-sm font-bold text-[var(--text-primary)]">
                     {formatDate(endDate)}
                   </span>
                 </div>
               )}
               {(durationLabel || daysLeft !== null) && (
-                <div className="flex flex-col gap-1 rounded-xl border border-[#EDE8E2] bg-[#F9F7F4] p-3">
-                  <span className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider">
+                <div className="flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-base)] p-3">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     {clampedProgress >= 100 ? "Duration" : "Remaining"}
                   </span>
                   <span
                     className={`text-sm font-bold ${
-                      clampedProgress >= 100 ? "text-[#1A1916]"
+                      clampedProgress >= 100 ? "text-[var(--text-primary)]"
                       : daysLeft !== null && daysLeft < 0 ? "text-[#DC2626]"
                       : daysLeft !== null && daysLeft <= 3 ? "text-[#D97706]"
-                      : "text-[#1A1916]"
+                      : "text-[var(--text-primary)]"
                     }`}>
                     {clampedProgress >= 100 ?
                       (durationLabel ?? "—")
@@ -556,7 +592,7 @@ export default function ProjectOverviewModal({
           {/* ── Tools ── */}
           {allTools.length > 0 && (
             <div className="flex flex-col gap-2.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4B5563]">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                 Tools & Stack
               </span>
               {(
@@ -567,14 +603,14 @@ export default function ProjectOverviewModal({
                   {Object.entries(toolsByCategory).map(([category, tools]) =>
                     tools.length > 0 ?
                       <div key={category} className="flex flex-col gap-1.5">
-                        <span className="text-xs font-semibold text-[#6B7280]">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)]">
                           {category}
                         </span>
                         <div className="flex flex-wrap gap-1.5">
                           {tools.map((tool) => (
                             <span
                               key={tool}
-                              className="rounded-full border border-[#D1CEC9] bg-[#F2EDE7] px-3 py-1 text-xs font-semibold text-[#374151]">
+                              className="rounded-full border border-[var(--border)] bg-[var(--bg-hover)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
                               {tool}
                             </span>
                           ))}
@@ -587,7 +623,7 @@ export default function ProjectOverviewModal({
                   {allTools.map((tool) => (
                     <span
                       key={tool}
-                      className="rounded-full border border-[#D1CEC9] bg-[#F2EDE7] px-3 py-1 text-xs font-semibold text-[#374151]">
+                      className="rounded-full border border-[var(--border)] bg-[var(--bg-hover)] px-3 py-1 text-xs font-semibold text-[var(--text-secondary)]">
                       {tool}
                     </span>
                   ))}
@@ -597,13 +633,14 @@ export default function ProjectOverviewModal({
           )}
 
           {/* ── Footer ── */}
-          <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t border-[#EDE8E2]">
+          <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t border-[var(--border)]">
             {projectUrl ?
+              // FIXED: Added the opening <a> tag
               <a
                 href={projectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-semibold text-[#374151] transition-colors hover:text-[#E8610A]">
+                className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]">
                 <svg
                   width="12"
                   height="12"
@@ -620,13 +657,13 @@ export default function ProjectOverviewModal({
                   {getHostname(projectUrl)}
                 </span>
               </a>
-            : <span className="text-xs font-medium text-[#9CA3AF]">
+            : <span className="text-xs font-medium text-[var(--text-muted)]">
                 No link added
               </span>
             }
             <button
               onClick={onClose}
-              className="flex items-center gap-1 rounded-lg border border-[#E8610A] bg-[#FEF0E7] px-3 py-1.5 text-xs font-semibold text-[#E8610A] transition-colors hover:bg-[#E8610A] hover:text-white">
+              className="flex items-center gap-1 rounded-lg border border-[var(--accent)] bg-[var(--bg-accent-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)] hover:text-white">
               Close
             </button>
           </div>

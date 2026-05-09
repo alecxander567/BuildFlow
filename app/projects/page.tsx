@@ -20,22 +20,22 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
     <div
       className={`relative overflow-hidden rounded-2xl border p-5 transition-shadow hover:shadow-md ${
         accent ?
-          "border-[#F5C89A] bg-gradient-to-br from-[#FEF0E7] to-white"
-        : "border-[#EDE8E2] bg-white"
+          "border-[var(--accent)] bg-gradient-to-br from-[var(--bg-accent-soft)] to-[var(--bg-card)]"
+        : "border-[var(--border)] bg-[var(--bg-card)]"
       }`}>
       <div
         className={`absolute -right-4 -top-4 h-20 w-20 rounded-full opacity-10 ${
-          accent ? "bg-[#E8610A]" : "bg-[#B0ADA7]"
+          accent ? "bg-[var(--accent)]" : "bg-[var(--text-muted)]"
         }`}
       />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-[#B0ADA7] uppercase tracking-wide">
+          <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
             {label}
           </p>
           <p
             className={`mt-1.5 text-3xl font-bold tracking-tight ${
-              accent ? "text-[#E8610A]" : "text-[#1A1916]"
+              accent ? "text-[var(--accent)]" : "text-[var(--text-primary)]"
             }`}
             style={{ fontFamily: "'Sora', sans-serif" }}>
             {value}
@@ -43,7 +43,9 @@ function StatCard({ label, value, icon, accent }: StatCardProps) {
         </div>
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-            accent ? "bg-[#E8610A] text-white" : "bg-[#F2EDE7] text-[#72706A]"
+            accent ?
+              "bg-[var(--accent)] text-white"
+            : "bg-[var(--bg-hover)] text-[var(--text-secondary)]"
           }`}>
           {icon}
         </div>
@@ -115,18 +117,18 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center gap-3 mb-4">
-      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FEF0E7] text-[#E8610A] shrink-0">
+      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-accent-soft)] text-[var(--accent)] shrink-0">
         {icon}
       </div>
       <div>
         <h2
-          className="text-sm font-bold text-[#1A1916]"
+          className="text-sm font-bold text-[var(--text-primary)]"
           style={{ fontFamily: "'Sora', sans-serif" }}>
           {title}
         </h2>
-        <p className="text-xs text-[#B0ADA7]">{subtitle}</p>
+        <p className="text-xs text-[var(--text-muted)]">{subtitle}</p>
       </div>
-      <div className="flex-1 h-px bg-[#EDE8E2] ml-2" />
+      <div className="flex-1 h-px bg-[var(--border)] ml-2" />
     </div>
   );
 }
@@ -166,7 +168,7 @@ export default function ProjectsPage() {
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-[#F9F7F4]"
+      className="flex h-screen overflow-hidden bg-[var(--bg-base)]"
       style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <Sidebar />
 
@@ -184,8 +186,8 @@ export default function ProjectsPage() {
           {loading && (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#E8610A] border-t-transparent" />
-                <p className="mt-2 text-sm text-[#72706A]">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--accent)] border-t-transparent" />
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
                   Loading projects...
                 </p>
               </div>
@@ -195,7 +197,7 @@ export default function ProjectsPage() {
           {/* ── Error State ── */}
           {error && !loading && (
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30">
                 <svg
                   width="24"
                   height="24"
@@ -211,14 +213,14 @@ export default function ProjectsPage() {
                 </svg>
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold text-[#1A1916]">
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
                   Something went wrong
                 </p>
-                <p className="mt-1 text-xs text-[#B0ADA7]">{error}</p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">{error}</p>
               </div>
               <button
                 onClick={refetch}
-                className="rounded-xl bg-[#E8610A] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                className="rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] active:scale-[0.987]">
                 Try Again
               </button>
             </div>
@@ -232,11 +234,11 @@ export default function ProjectsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h1
-                      className="text-base font-bold text-[#1A1916] sm:text-lg"
+                      className="text-base font-bold text-[var(--text-primary)] sm:text-lg"
                       style={{ fontFamily: "'Sora', sans-serif" }}>
                       Projects
                     </h1>
-                    <p className="mt-0.5 text-xs text-[#B0ADA7]">
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                       {`${projects.length} project${projects.length !== 1 ? "s" : ""} total`}
                     </p>
                   </div>
@@ -245,7 +247,7 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {/* Sort dropdown */}
                     <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
                         <SortIcon />
                       </span>
                       <select
@@ -253,7 +255,7 @@ export default function ProjectsPage() {
                         onChange={(e) =>
                           setSortBy(e.target.value as SortOption)
                         }
-                        className="h-9 appearance-none rounded-xl border border-[#EDE8E2] bg-white pl-9 pr-7 text-xs text-[#72706A] transition-colors focus:border-[#E8610A] focus:outline-none focus:ring-2 focus:ring-[#E8610A]/10 cursor-pointer">
+                        className="h-9 appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] pl-9 pr-7 text-xs transition-colors focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/10 cursor-pointer">
                         <optgroup label="Featured">
                           <option value="starred">Starred First</option>
                         </optgroup>
@@ -278,7 +280,7 @@ export default function ProjectsPage() {
                           <option value="title-desc">Title: Z → A</option>
                         </optgroup>
                       </select>
-                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#B0ADA7]">
+                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
                         <svg
                           width="11"
                           height="11"
@@ -294,14 +296,14 @@ export default function ProjectsPage() {
                     </div>
 
                     {/* View mode toggle */}
-                    <div className="flex gap-1 rounded-xl border border-[#EDE8E2] bg-white p-1">
+                    <div className="flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-1">
                       <button
                         onClick={() => setViewMode("grid")}
                         title="Grid view"
                         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                           viewMode === "grid" ?
-                            "bg-[#E8610A] text-white shadow-sm"
-                          : "text-[#B0ADA7] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+                            "bg-[var(--accent)] text-white shadow-sm"
+                          : "text-[var(--text-muted)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]"
                         }`}>
                         <GridIcon />
                       </button>
@@ -310,8 +312,8 @@ export default function ProjectsPage() {
                         title="List view"
                         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
                           viewMode === "list" ?
-                            "bg-[#E8610A] text-white shadow-sm"
-                          : "text-[#B0ADA7] hover:bg-[#FEF0E7] hover:text-[#E8610A]"
+                            "bg-[var(--accent)] text-white shadow-sm"
+                          : "text-[var(--text-muted)] hover:bg-[var(--bg-accent-soft)] hover:text-[var(--accent)]"
                         }`}>
                         <ListIcon />
                       </button>
@@ -399,16 +401,16 @@ export default function ProjectsPage() {
 
                 {/* ── Bulk selection bar ── */}
                 {isSomeSelected && (
-                  <div className="flex items-center justify-between rounded-xl border border-[#F5C89A] bg-[#FEF0E7] px-4 py-2.5">
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--accent)] bg-[var(--bg-accent-soft)] px-4 py-2.5">
                     <div className="flex items-center gap-3">
                       <label className="flex cursor-pointer items-center gap-2.5">
                         <input
                           type="checkbox"
                           checked={isAllSelected}
                           onChange={selectAll}
-                          className="h-4 w-4 rounded border-[#E8610A] text-[#E8610A] focus:ring-[#E8610A]"
+                          className="h-4 w-4 rounded border-[var(--accent)] text-[var(--accent)] focus:ring-[var(--accent)]"
                         />
-                        <span className="text-sm font-medium text-[#1A1916]">
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
                           {selectedProjectIds.size}{" "}
                           {selectedProjectIds.size === 1 ?
                             "project"
@@ -418,7 +420,7 @@ export default function ProjectsPage() {
                       </label>
                       <button
                         onClick={clearSelection}
-                        className="text-xs text-[#B0ADA7] hover:text-[#72706A] transition-colors">
+                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
                         Clear
                       </button>
                     </div>
@@ -443,10 +445,10 @@ export default function ProjectsPage() {
                   </div>
                 )}
 
-                {/* ── Empty: no projects at all ── */}
+                {/* ── Empty state ── */}
                 {projects.length === 0 && (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
-                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-dashed)] bg-[var(--bg-card)] py-16 px-6 text-center">
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--bg-accent-soft)]">
                       <svg
                         width="26"
                         height="26"
@@ -462,15 +464,15 @@ export default function ProjectsPage() {
                       </svg>
                     </div>
                     <h3
-                      className="mb-1 text-sm font-semibold text-[#1A1916]"
+                      className="mb-1 text-sm font-semibold text-[var(--text-primary)]"
                       style={{ fontFamily: "'Sora', sans-serif" }}>
                       No projects yet
                     </h3>
-                    <p className="mb-5 max-w-xs text-xs leading-relaxed text-[#B0ADA7]">
+                    <p className="mb-5 max-w-xs text-xs leading-relaxed text-[var(--text-muted)]">
                       Create your first project to start tracking tasks,
                       progress, and your team&apos;s work.
                     </p>
-                    <button className="flex items-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                    <button className="flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] active:scale-[0.987]">
                       <svg
                         width="14"
                         height="14"

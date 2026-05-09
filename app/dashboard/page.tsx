@@ -70,8 +70,11 @@ export default function DashboardPage() {
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-[#F9F7F4]"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      className="flex h-screen overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-base)",
+        fontFamily: "'DM Sans', sans-serif",
+      }}>
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
@@ -86,11 +89,14 @@ export default function DashboardPage() {
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2
-                    className="text-base font-bold text-[#1A1916] sm:text-lg"
-                    style={{ fontFamily: "'Sora', sans-serif" }}>
+                    className="text-base font-bold sm:text-lg"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      color: "var(--text-primary)",
+                    }}>
                     All Projects
                   </h2>
-                  <p className="text-xs text-[#B0ADA7]">
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {isLoading ?
                       "Loading…"
                     : `${filteredProjects.length} project${filteredProjects.length !== 1 ? "s" : ""}`
@@ -98,16 +104,44 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-1 rounded-xl border border-[#EDE8E2] bg-white p-1 overflow-x-auto">
+                {/* Filter tabs */}
+                <div
+                  className="flex items-center gap-1 rounded-xl p-1 overflow-x-auto border"
+                  style={{
+                    backgroundColor: "var(--bg-card)",
+                    borderColor: "var(--border)",
+                  }}>
                   {FILTER_TABS.map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                      style={
                         activeTab === tab ?
-                          "bg-[#E8610A] text-white"
-                        : "text-[#72706A] hover:bg-[#F2EDE7] hover:text-[#1A1916]"
-                      }`}>
+                          { backgroundColor: "var(--accent)", color: "#fff" }
+                        : {
+                            color: "var(--text-secondary)",
+                            backgroundColor: "transparent",
+                          }
+                      }
+                      onMouseEnter={(e) => {
+                        if (activeTab !== tab) {
+                          (
+                            e.currentTarget as HTMLElement
+                          ).style.backgroundColor = "var(--bg-hover)";
+                          (e.currentTarget as HTMLElement).style.color =
+                            "var(--text-primary)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (activeTab !== tab) {
+                          (
+                            e.currentTarget as HTMLElement
+                          ).style.backgroundColor = "transparent";
+                          (e.currentTarget as HTMLElement).style.color =
+                            "var(--text-secondary)";
+                        }
+                      }}>
                       {tab}
                     </button>
                   ))}
@@ -120,28 +154,43 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* ── Loading state ── */}
+              {/* Loading state */}
               {isLoading && (
                 <div className="flex items-center justify-center py-16">
                   <div className="text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#E8610A] border-t-transparent" />
-                    <p className="mt-2 text-sm text-[#72706A]">
+                    <div
+                      className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+                      style={{
+                        borderColor: "var(--accent)",
+                        borderTopColor: "transparent",
+                      }}
+                    />
+                    <p
+                      className="mt-2 text-sm"
+                      style={{ color: "var(--text-secondary)" }}>
                       Loading projects...
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* ── Empty: no projects ── */}
+              {/* Empty: no projects */}
               {!isLoading && !error && projects.length === 0 && (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-16 px-6 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEF0E7]">
+                <div
+                  className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-16 px-6 text-center"
+                  style={{
+                    backgroundColor: "var(--bg-card)",
+                    borderColor: "var(--border-dashed)",
+                  }}>
+                  <div
+                    className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
+                    style={{ backgroundColor: "var(--bg-accent-soft)" }}>
                     <svg
                       width="26"
                       height="26"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#E8610A"
+                      stroke="var(--accent)"
                       strokeWidth="1.75"
                       strokeLinecap="round"
                       strokeLinejoin="round">
@@ -151,17 +200,31 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <h3
-                    className="mb-1 text-sm font-semibold text-[#1A1916]"
-                    style={{ fontFamily: "'Sora', sans-serif" }}>
+                    className="mb-1 text-sm font-semibold"
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      color: "var(--text-primary)",
+                    }}>
                     No projects yet
                   </h3>
-                  <p className="mb-5 max-w-xs text-xs leading-relaxed text-[#B0ADA7]">
+                  <p
+                    className="mb-5 max-w-xs text-xs leading-relaxed"
+                    style={{ color: "var(--text-muted)" }}>
                     Create your first project to start tracking tasks, progress,
                     and your team&apos;s work.
                   </p>
                   <button
                     onClick={() => router.push("/AddProjectPage")}
-                    className="flex items-center gap-2 rounded-xl bg-[#E8610A] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#D15508] active:scale-[0.987]">
+                    className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors active:scale-[0.987]"
+                    style={{ backgroundColor: "var(--accent)" }}
+                    onMouseEnter={(e) =>
+                      ((e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--accent-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      ((e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--accent)")
+                    }>
                     <svg
                       width="14"
                       height="14"
@@ -179,24 +242,32 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* ── Empty: filter has no results ── */}
+              {/* Empty: filter has no results */}
               {!isLoading &&
                 !error &&
                 projects.length > 0 &&
                 filteredProjects.length === 0 && (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#D6D1CA] bg-white py-12 px-6 text-center">
-                    <p className="text-sm font-medium text-[#72706A]">
+                  <div
+                    className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-12 px-6 text-center"
+                    style={{
+                      backgroundColor: "var(--bg-card)",
+                      borderColor: "var(--border-dashed)",
+                    }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-secondary)" }}>
                       No projects match this filter.
                     </p>
                     <button
                       onClick={() => setActiveTab("All")}
-                      className="mt-3 text-xs font-semibold text-[#E8610A] hover:underline">
+                      className="mt-3 text-xs font-semibold hover:underline"
+                      style={{ color: "var(--accent)" }}>
                       Clear filter
                     </button>
                   </div>
                 )}
 
-              {/* ── Project grid ── */}
+              {/* Project grid */}
               {!isLoading && filteredProjects.length > 0 && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProjects.map((project) => (
