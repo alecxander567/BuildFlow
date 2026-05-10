@@ -54,7 +54,7 @@ export default function AddProjectPage() {
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>({});
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-  const [imageUrl, setImageUrl] = useState(""); // ADD THIS LINE
+  const [imageUrl, setImageUrl] = useState("");
   // Add local catalog state to manage updates
   const [localCatalog, setLocalCatalog] = useState<Record<string, string[]>>(
     {},
@@ -83,7 +83,7 @@ export default function AddProjectPage() {
       setEndDate(target.endDate ?? "");
       setSelectedTools(target.selectedTools ?? {});
       setDailyPlan(target.dailyPlan ?? {});
-      setImageUrl(target.imageUrl ?? ""); 
+      setImageUrl(target.imageUrl ?? "");
     }
   }, [isReady, isEditMode, target]);
 
@@ -110,7 +110,7 @@ export default function AddProjectPage() {
         endDate: endDate || null,
         selectedTools,
         dailyPlan,
-        imageUrl, 
+        imageUrl,
       });
       sessionStorage.setItem(
         "pendingToast",
@@ -130,7 +130,7 @@ export default function AddProjectPage() {
       description: description.trim(),
       projectType,
       priority,
-      imageUrl: imageUrl, // CHANGE THIS from empty string to imageUrl
+      imageUrl: imageUrl,
       projectUrl: projectUrl.trim(),
       startDate: startDate || null,
       endDate: endDate || null,
@@ -311,8 +311,8 @@ export default function AddProjectPage() {
                   // Only the selections for THIS project
                   selectedTools={selectedTools}
                   onSelectedToolsChange={setSelectedTools}
-                  imageUrl={imageUrl} 
-                  onImageUrlChange={setImageUrl} 
+                  imageUrl={imageUrl}
+                  onImageUrlChange={setImageUrl}
                   isEditMode={isEditMode}
                   loading={loading}
                   redirecting={redirecting}
