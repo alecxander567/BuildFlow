@@ -110,6 +110,8 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
   const dailyPlan = (raw.dailyPlan as DailyPlan) ?? {};
   const startDate = (raw.startDate as string) ?? null;
   const endDate = (raw.endDate as string) ?? null;
+  const starredBy = (raw.starredBy as string[]) ?? [];
+
   return {
     id,
     title: (raw.title as string) ?? "",
@@ -125,8 +127,8 @@ function toProject(id: string, raw: Record<string, unknown>): Project {
     progress: computeProgress(dailyPlan, startDate, endDate),
     selectedTools: (raw.selectedTools as Record<string, string[]>) ?? {},
     dailyPlan,
-    starred: (raw.starred as boolean) ?? false,
-    starredBy: (raw.starredBy as string[]) ?? [],
+    starred: starredBy.length > 0, // Derive starred from starredBy array
+    starredBy,
     teamMembers: (raw.teamMembers as TeamMember[]) ?? [],
   };
 }
@@ -357,7 +359,11 @@ export function useProjects(user: User | null, authLoading: boolean) {
 
       if (!project) return { success: false, message: "Project not found" };
 
-      const updatedStarredBy = [...(project.starredBy || []), user.uid];
+      // Only add if not already in the array
+      let updatedStarredBy = [...(project.starredBy || [])];
+      if (!updatedStarredBy.includes(user.uid)) {
+        updatedStarredBy.push(user.uid);
+      }
 
       await updateDoc(projectRef, {
         starred: true,
@@ -401,12 +407,16 @@ export function useProjects(user: User | null, authLoading: boolean) {
 
       if (!project) return { success: false, message: "Project not found" };
 
+      // Remove current user from starredBy array
       const updatedStarredBy = (project.starredBy || []).filter(
         (uid) => uid !== user.uid,
       );
 
+      // Set starred to true only if there are still other users who starred it
+      const shouldBeStarred = updatedStarredBy.length > 0;
+
       await updateDoc(projectRef, {
-        starred: updatedStarredBy.length > 0,
+        starred: shouldBeStarred,
         starredBy: updatedStarredBy,
       });
 
@@ -415,7 +425,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
           p.id === id ?
             {
               ...p,
-              starred: updatedStarredBy.length > 0,
+              starred: shouldBeStarred,
               starredBy: updatedStarredBy,
             }
           : p,
@@ -440,8 +450,20 @@ export function useProjects(user: User | null, authLoading: boolean) {
   ): Promise<{ success: boolean; message: string }> => {
     const project = projects.find((p) => p.id === id);
     if (!project) return { success: false, message: "Project not found" };
+    if (!user)
+      return {
+        success: false,
+        message: "You must be logged in to star projects",
+      };
 
-    return project.starred ? unstarProject(id) : starProject(id);
+    // Check if the current user has already starred this project
+    const hasStarred = project.starredBy?.includes(user.uid) || false;
+
+    if (hasStarred) {
+      return unstarProject(id);
+    } else {
+      return starProject(id);
+    }
   };
 
   useEffect(() => {

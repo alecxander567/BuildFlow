@@ -8,6 +8,7 @@ import {
 } from "@/app/hooks/useProject";
 import ToolsField from "./ToolsField";
 import DailyTasksField from "./DailTasksField";
+import CloudinaryUpload from "./CloudinaryUpload";
 
 export const PROJECT_TYPES: ProjectType[] = [
   "Engineering",
@@ -71,6 +72,9 @@ type Props = {
   // Per-project selection
   selectedTools: Record<string, string[]>;
   onSelectedToolsChange: (value: Record<string, string[]>) => void;
+  // Image URL from Cloudinary
+  imageUrl: string;
+  onImageUrlChange: (value: string) => void;
   // Form action props
   isEditMode: boolean;
   loading: boolean;
@@ -100,42 +104,13 @@ export default function ProjectFormFields({
   onCatalogChange,
   selectedTools,
   onSelectedToolsChange,
+  imageUrl,
+  onImageUrlChange,
   isEditMode,
   loading,
   redirecting,
   onCancel,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleFileSelect = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
-    setCoverFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setCoverPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFileSelect(file);
-  };
-
-  const removeImage = () => {
-    setCoverFile(null);
-    setCoverPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   return (
     <>
       {/* Title */}
@@ -397,7 +372,7 @@ export default function ProjectFormFields({
         onSelectedToolsChange={onSelectedToolsChange}
       />
 
-      {/* Cover Image */}
+      {/* Cover Image with Cloudinary */}
       <div
         className="rounded-2xl border p-5"
         style={{
@@ -420,133 +395,57 @@ export default function ProjectFormFields({
           </span>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-
-        {coverPreview ?
-          <div
-            className="relative overflow-hidden rounded-xl border"
-            style={{ borderColor: "var(--border)" }}>
-            <img
-              src={coverPreview}
-              alt="Cover preview"
-              className="h-40 w-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1A1916] dark:text-[#1A1916] transition-colors hover:bg-white">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Replace
-              </button>
-              <button
-                type="button"
-                onClick={removeImage}
-                className="flex items-center gap-1.5 rounded-lg bg-red-500/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-500">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-                Remove
-              </button>
-            </div>
-            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1">
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <span className="max-w-[180px] truncate text-[10px] font-medium text-white">
-                {coverFile?.name}
-              </span>
-            </div>
+        {/* Cover Image with Cloudinary */}
+        <div
+          className="rounded-2xl border p-5"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--bg-card)",
+          }}>
+          <div className="mb-3 flex items-center justify-between">
+            <label
+              className="block text-xs font-semibold uppercase tracking-widest"
+              style={{ color: "var(--text-muted)" }}>
+              Cover Image
+            </label>
+            <span
+              className="rounded-md px-2 py-0.5 text-[10px] font-medium"
+              style={{
+                backgroundColor: "var(--bg-hover)",
+                color: "var(--text-muted)",
+              }}>
+              Optional
+            </span>
           </div>
-        : <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleFileDrop}
-            className={`flex w-full flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-all ${
-              isDragging ?
-                "border-[var(--accent)] bg-[var(--bg-accent-soft)]"
-              : "border-[var(--border-dashed)] bg-[var(--bg-base)] hover:border-[var(--accent)] hover:bg-[var(--bg-accent-soft)]"
-            }`}>
+
+          {imageUrl && (
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                isDragging ?
-                  "border-[var(--accent)] bg-[var(--bg-accent-soft)] text-[var(--accent)]"
-                : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)]"
-              }`}>
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
+              className="mb-3 w-full overflow-hidden rounded-xl border"
+              style={{
+                height: "180px",
+                borderColor: "var(--border)",
+                backgroundColor: "var(--bg-base)",
+              }}>
+              <img
+                src={imageUrl}
+                alt="Cover preview"
+                className="h-full w-full object-contain"
+              />
             </div>
-            <div>
-              <p
-                className={`text-sm font-medium transition-colors ${isDragging ? "text-[var(--accent)]" : ""}`}
-                style={
-                  !isDragging ? { color: "var(--text-secondary)" } : undefined
-                }>
-                {isDragging ?
-                  "Drop image here"
-                : "Click to upload or drag & drop"}
-              </p>
-              <p
-                className="mt-0.5 text-[11px]"
-                style={{ color: "var(--text-muted)" }}>
-                PNG, JPG, WEBP · Max 10MB · Will be uploaded to Cloudinary
-              </p>
-            </div>
-          </button>
-        }
+          )}
+
+          <CloudinaryUpload
+            onUpload={onImageUrlChange}
+            currentImageUrl={imageUrl}
+            buttonText={imageUrl ? "Change Image" : "Upload Project Image"}
+          />
+
+          <p
+            className="mt-2 text-[11px]"
+            style={{ color: "var(--text-muted)" }}>
+            PNG, JPG, WEBP · Images are stored in Cloudinary
+          </p>
+        </div>
       </div>
 
       {/* Actions */}

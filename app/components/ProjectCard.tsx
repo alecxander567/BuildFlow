@@ -828,12 +828,15 @@ export default function ProjectCard({
           (e.currentTarget.style.borderColor = "var(--border)")
         }>
         {/* ── Cover ── */}
-        <div className="relative h-36 w-full overflow-hidden rounded-t-2xl">
+        <div
+          className="relative h-36 w-full overflow-hidden rounded-t-2xl"
+          style={{ backgroundColor: "var(--bg-base)" }}>
+          {" "}
           {imageUrl ?
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" // ✅ object-contain
             />
           : <div
               className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
@@ -846,7 +849,6 @@ export default function ProjectCard({
               </div>
             </div>
           }
-
           {/* Priority badge */}
           <div
             className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm"
@@ -861,7 +863,6 @@ export default function ProjectCard({
             />
             {p.label}
           </div>
-
           {/* ⋯ menu */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
