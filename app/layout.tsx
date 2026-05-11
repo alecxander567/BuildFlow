@@ -1,5 +1,7 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import ChatWrapper from "./components/ChatWrapper";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,9 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeInitializer />
         {children}
+        <ChatWrapper />
       </body>
     </html>
   );
