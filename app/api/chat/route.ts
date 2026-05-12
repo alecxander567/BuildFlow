@@ -4,13 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 // Helper function to check for restricted topics
 function isRestrictedTopic(message: string): boolean {
   const restrictedPatterns = [
-    // Political
     /\b(politics?|election|president|democrat|republican|voting|political party|congress|senate|government|politician)\b/i,
-    // Religious
     /\b(religion|god|jesus|allah|buddha|church|mosque|temple|prayer|bible|quran|spiritual|faith|holy)\b/i,
-    // Relationships
     /\b(dating|relationship|marriage|girlfriend|boyfriend|wife|husband|love|romance|breakup|divorce)\b/i,
-    // Personal advice
     /\b(investment|stocks|medical|diagnosis|treatment|lawyer|legal advice|therapy)\b/i,
   ];
 

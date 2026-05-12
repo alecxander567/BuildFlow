@@ -44,8 +44,6 @@ export default function Chat() {
         content: msg.text,
       }));
 
-      console.log("Sending to API:", apiMessages); // Debug log
-
       // Call our API route
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -56,7 +54,6 @@ export default function Chat() {
       });
 
       const data = await response.json();
-      console.log("API Response:", data); // Debug log
 
       if (!response.ok) {
         throw new Error(data.error || data.details || "Failed to get response");

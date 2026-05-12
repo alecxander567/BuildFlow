@@ -123,30 +123,70 @@ const navItems = [
   },
 ];
 
-const bottomItems = [
+const settingsItem = {
+  icon: (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+    </svg>
+  ),
+  label: "Settings",
+  href: "/settings",
+};
+
+const helpItem = {
+  icon: (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+  label: "Help",
+  href: "/help",
+};
+
+const helpSubItems = [
   {
     icon: (
       <svg
-        width="18"
-        height="18"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
       </svg>
     ),
-    label: "Settings",
-    href: "/settings",
+    label: "Getting Started",
+    href: "/help/getting-started",
   },
   {
     icon: (
       <svg
-        width="18"
-        height="18"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -158,8 +198,27 @@ const bottomItems = [
         <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
     ),
-    label: "Help",
-    href: "/help",
+    label: "FAQ",
+    href: "/help/faq",
+  },
+  {
+    icon: (
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+    label: "Report a Bug",
+    href: "/help/report-bug",
   },
 ];
 
@@ -179,7 +238,24 @@ const SignOutIcon = () => (
   </svg>
 );
 
-// Shared hover handlers — avoids repeating inline lambdas
+const ChevronIcon = ({ open }: { open: boolean }) => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{
+      transition: "transform 0.2s ease",
+      transform: open ? "rotate(180deg)" : "rotate(0deg)",
+    }}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 const navHover = {
   enter: (
     e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
@@ -228,6 +304,121 @@ function NavItem({
       </span>
       <span className="flex-1 text-left">{item.label}</span>
     </Link>
+  );
+}
+
+function HelpNavItem({
+  onClose,
+  pathname,
+}: {
+  onClose: () => void;
+  pathname: string;
+}) {
+  const isHelpActive = pathname.startsWith("/help");
+  const [open, setOpen] = useState(isHelpActive);
+
+  // Auto-open if navigating to a help sub-page
+  useEffect(() => {
+    if (isHelpActive) setOpen(true);
+  }, [isHelpActive]);
+
+  return (
+    <div>
+      {/* Help toggle button */}
+      <button
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors"
+        style={{
+          backgroundColor:
+            isHelpActive && !open ? "var(--bg-accent-soft)" : "transparent",
+          color: isHelpActive ? "var(--accent)" : "var(--text-secondary)",
+        }}
+        onMouseEnter={(e) => {
+          if (!isHelpActive) {
+            (e.currentTarget as HTMLElement).style.backgroundColor =
+              "var(--bg-accent-soft)";
+            (e.currentTarget as HTMLElement).style.color = "var(--accent)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isHelpActive) {
+            (e.currentTarget as HTMLElement).style.backgroundColor =
+              "transparent";
+            (e.currentTarget as HTMLElement).style.color =
+              "var(--text-secondary)";
+          }
+        }}>
+        <span
+          style={{
+            color: isHelpActive ? "var(--accent)" : "var(--text-muted)",
+          }}>
+          {helpItem.icon}
+        </span>
+        <span className="flex-1 text-left">{helpItem.label}</span>
+        <span
+          style={{
+            color: isHelpActive ? "var(--accent)" : "var(--text-muted)",
+          }}>
+          <ChevronIcon open={open} />
+        </span>
+      </button>
+
+      {/* Submenu */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.2s ease",
+        }}>
+        <div style={{ overflow: "hidden" }}>
+          <div
+            className="ml-4 mt-0.5 mb-0.5 flex flex-col gap-0.5 border-l pl-3"
+            style={{ borderColor: "var(--border)" }}>
+            {helpSubItems.map((sub) => {
+              const isSubActive = pathname === sub.href;
+              return (
+                <Link
+                  key={sub.href}
+                  href={sub.href}
+                  onClick={onClose}
+                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors"
+                  style={{
+                    backgroundColor:
+                      isSubActive ? "var(--bg-accent-soft)" : "transparent",
+                    color:
+                      isSubActive ? "var(--accent)" : "var(--text-secondary)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubActive) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "var(--bg-accent-soft)";
+                      (e.currentTarget as HTMLElement).style.color =
+                        "var(--accent)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubActive) {
+                      (e.currentTarget as HTMLElement).style.backgroundColor =
+                        "transparent";
+                      (e.currentTarget as HTMLElement).style.color =
+                        "var(--text-secondary)";
+                    }
+                  }}>
+                  <span
+                    style={{
+                      color:
+                        isSubActive ? "var(--accent)" : "var(--text-muted)",
+                    }}>
+                    {sub.icon}
+                  </span>
+                  {sub.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -298,14 +489,12 @@ function NavList({ onClose }: { onClose: () => void }) {
           style={{ color: "var(--text-muted)" }}>
           Support
         </p>
-        {bottomItems.map((item) => (
-          <NavItem
-            key={item.label}
-            item={item}
-            isActive={pathname === item.href}
-            onClick={onClose}
-          />
-        ))}
+        <NavItem
+          item={settingsItem}
+          isActive={pathname === settingsItem.href}
+          onClick={onClose}
+        />
+        <HelpNavItem onClose={onClose} pathname={pathname} />
       </div>
     </div>
   );
