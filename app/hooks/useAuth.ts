@@ -104,7 +104,7 @@ export function useAuth() {
       await setDoc(doc(db, "users", userCredential.user.uid), {
         uid: userCredential.user.uid,
         email: email,
-        displayName: email.split("@")[0], 
+        displayName: email.split("@")[0],
         photoURL: "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

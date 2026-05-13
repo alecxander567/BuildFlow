@@ -137,7 +137,7 @@ export default function LoginPage() {
           <h2 className="font-display text-2xl font-bold tracking-tight text-[#1A1916] mb-1.5">
             Welcome back
           </h2>
-          <p className="text-sm leading-relaxed text-[#72706A] mb-6">
+          <p className="text-sm leading-relaxed text-[#B0ADA7] mb-6">
             Sign in to your BuildFlow workspace.
           </p>
 
@@ -147,7 +147,7 @@ export default function LoginPage() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="email"
-                className="text-xs font-medium text-[#72706A]">
+                className="text-xs font-medium text-[#B0ADA7]">
                 Email address
               </label>
               <input
@@ -166,7 +166,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="pw"
-                  className="text-xs font-medium text-[#72706A]">
+                  className="text-xs font-medium text-[#B0ADA7]">
                   Password
                 </label>
                 <Link
@@ -190,7 +190,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0ADA7] hover:text-[#72706A] transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0ADA7] hover:text-[#B0ADA7] transition-colors">
                   {showPassword ?
                     <svg
                       width="16"
@@ -284,7 +284,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p className="mt-6 text-center text-sm text-[#72706A]">
+          <p className="mt-6 text-center text-sm text-[#B0ADA7]">
             No account?{" "}
             <Link
               href="/signup"

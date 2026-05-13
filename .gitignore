@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ignore Firebase Admin SDK credentials
+buildflow-2f3e7-firebase-adminsdk-fbsvc-fcf56dc75e.json

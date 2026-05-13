@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sun, Moon, Bell, History, Save, Trash2 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useSettings } from "@/app/hooks/useSettings";
+import { useNotificationPermission } from "@/app/hooks/useNotificationPermission";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
 import { AlertContainer, useAlert } from "../components/Alert";
@@ -22,6 +23,13 @@ export default function SettingsPage() {
     formatTimestamp,
   } = useSettings(user?.email);
 
+  const {
+    notificationsEnabled,
+    loading: notificationLoading,
+    permissionState,
+    toggleNotifications,
+  } = useNotificationPermission();
+
   const { toasts, remove, show } = useAlert();
   const [showClearLogsConfirm, setShowClearLogsConfirm] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
@@ -37,6 +45,29 @@ export default function SettingsPage() {
     setClearingLogs(false);
     setShowClearLogsConfirm(false);
     show("success", "Activity logs have been cleared.", "Logs cleared");
+  };
+
+  const handleToggleNotifications = async () => {
+    const success = await toggleNotifications();
+    if (success) {
+      show(
+        "success",
+        "Notifications enabled! You'll receive daily task reminders.",
+        "Notifications On",
+      );
+    } else if (permissionState === "denied") {
+      show(
+        "error",
+        "Notifications are blocked. Please check your browser settings to enable them.",
+        "Permission Denied",
+      );
+    } else if (!user) {
+      show(
+        "error",
+        "Please login first to enable notifications.",
+        "Login Required",
+      );
+    }
   };
 
   if (authLoading || loading) {
@@ -124,44 +155,87 @@ export default function SettingsPage() {
                 </Row>
               </Section>
 
-              <div
-                className="rounded-2xl border overflow-hidden opacity-60"
-                style={{
-                  backgroundColor: "var(--bg-card)",
-                  borderColor: "var(--border)",
-                }}>
-                <div
-                  className="px-5 py-4 border-b flex items-center gap-3"
-                  style={{ borderColor: "var(--border)" }}>
+              {/* Notifications Section - Now Active */}
+              <Section
+                icon={
                   <Bell
                     className="h-4 w-4"
                     style={{ color: "var(--text-secondary)" }}
                   />
-                  <h2
-                    className="text-sm font-bold"
-                    style={{
-                      color: "var(--text-primary)",
-                      fontFamily: "'Sora', sans-serif",
-                    }}>
-                    Notifications
-                  </h2>
-                  <span
-                    className="ml-auto px-2 py-0.5 text-xs font-semibold rounded-lg"
-                    style={{
-                      backgroundColor: "var(--bg-accent-soft)",
-                      color: "var(--accent)",
-                    }}>
-                    Coming Soon
-                  </span>
-                </div>
-                <div className="px-5 py-4">
+                }
+                title="Notifications">
+                <div className="space-y-4">
                   <Row
                     label="Push Notifications"
-                    description="Receive updates and alerts (feature coming soon)">
-                    <Toggle active={false} onToggle={() => {}} disabled />
+                    description="Receive daily task reminders and project updates">
+                    <div className="flex items-center gap-3">
+                      {permissionState === "denied" && (
+                        <span
+                          className="text-xs px-2 py-1 rounded-lg"
+                          style={{
+                            backgroundColor: "var(--bg-error)",
+                            color: "var(--error)",
+                          }}>
+                          Blocked
+                        </span>
+                      )}
+                      <Toggle
+                        active={notificationsEnabled}
+                        onToggle={handleToggleNotifications}
+                        disabled={notificationLoading}
+                        loading={notificationLoading}
+                      />
+                    </div>
                   </Row>
+
+                  {permissionState === "denied" && (
+                    <div
+                      className="mt-3 p-3 rounded-lg text-xs"
+                      style={{
+                        backgroundColor: "var(--bg-error-soft)",
+                        color: "var(--error)",
+                        border: "1px solid var(--error-border)",
+                      }}>
+                      <div className="flex items-start gap-2">
+                        <Bell className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium mb-0.5">
+                            Notifications are blocked
+                          </p>
+                          <p className="opacity-90">
+                            Please check your browser settings and allow
+                            notifications for this site, then toggle the switch
+                            again.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {notificationsEnabled && (
+                    <div
+                      className="mt-3 p-3 rounded-lg text-xs"
+                      style={{
+                        backgroundColor: "var(--bg-success-soft)",
+                        color: "var(--success)",
+                        border: "1px solid var(--success-border)",
+                      }}>
+                      <div className="flex items-start gap-2">
+                        <Bell className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium mb-0.5">
+                            Notifications enabled ✓
+                          </p>
+                          <p className="opacity-90">
+                            You'll receive daily reminders for pending tasks in
+                            your projects.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </Section>
 
               <Section
                 icon={
@@ -304,6 +378,7 @@ export default function SettingsPage() {
   );
 }
 
+// Helper Components remain the same but update Toggle to support loading
 function Section({
   icon,
   title,
@@ -373,26 +448,33 @@ function Toggle({
   active,
   onToggle,
   disabled = false,
+  loading = false,
 }: {
   active: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   return (
     <button
       onClick={onToggle}
-      disabled={disabled}
+      disabled={disabled || loading}
       className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-        disabled ? "cursor-not-allowed" : "cursor-pointer"
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
       }`}
       style={{
         backgroundColor: active ? "var(--accent)" : "var(--border)",
       }}>
-      <span
-        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-          active ? "translate-x-5" : "translate-x-0"
-        }`}
-      />
+      {loading ?
+        <span className="absolute inset-0 flex items-center justify-center">
+          <div className="h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+        </span>
+      : <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+            active ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      }
     </button>
   );
 }

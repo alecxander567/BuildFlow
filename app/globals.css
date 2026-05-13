@@ -22,6 +22,20 @@
 
   /* sidebar active nav badge ring */
   --ring-bg: #f9f7f4;
+
+  /* Notification status colors - Light mode */
+  --bg-error: #fef2f2;
+  --bg-error-soft: #fef2f2;
+  --error: #dc2626;
+  --error-border: #fecaca;
+
+  --bg-success-soft: #f0fdf4;
+  --success: #16a34a;
+  --success-border: #bbf7d0;
+
+  --bg-warning-soft: #fffbeb;
+  --warning: #d97706;
+  --warning-border: #fde68a;
 }
 
 /* ── Dark tokens ──────────────────────────────────────────── */
@@ -43,6 +57,20 @@
   --accent-hover: #f07230;
 
   --ring-bg: #0d1117;
+
+  /* Notification status colors - Dark mode */
+  --bg-error: #3b1111;
+  --bg-error-soft: #3b1111;
+  --error: #f87171;
+  --error-border: #7f2020;
+
+  --bg-success-soft: #0f2d1a;
+  --success: #4ade80;
+  --success-border: #1e5c34;
+
+  --bg-warning-soft: #362008;
+  --warning: #fbbf24;
+  --warning-border: #7a4a10;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -67,8 +95,7 @@ html.dark {
   color-scheme: dark;
 }
 
-/* app/globals.css - Add these animations at the bottom of your file */
-
+/* Animations */
 @keyframes slideUp {
   from {
     opacity: 0;
