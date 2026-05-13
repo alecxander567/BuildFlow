@@ -11,8 +11,6 @@ export default function NotificationHandler() {
 
   useEffect(() => {
     if (notification) {
-      console.log("Foreground notification:", notification);
-
       // Handle task reminder clicks
       if (
         notification.data?.type === "daily_task_reminder" ||
@@ -49,7 +47,6 @@ export default function NotificationHandler() {
 
   useEffect(() => {
     if (token) {
-      console.log("FCM Token is ready for reminders:", token);
       // Store token in localStorage for testing
       localStorage.setItem("fcmToken", token);
     }
