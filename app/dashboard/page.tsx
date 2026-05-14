@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const { toasts, remove, show } = useAlert();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (pathname !== "/dashboard") return;
@@ -52,8 +53,17 @@ export default function DashboardPage() {
   }, [pathname, show]);
 
   const filteredProjects = projects.filter((p) => {
-    if (activeTab === "All") return true;
-    return p.priority === activeTab || p.projectType === activeTab;
+    const matchesTab =
+      activeTab === "All" ||
+      p.priority === activeTab ||
+      p.projectType === activeTab;
+
+    const matchesSearch =
+      !searchQuery.trim() ||
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesTab && matchesSearch;
   });
 
   const handleDeleteProject = async (id: string) => {
@@ -78,7 +88,7 @@ export default function DashboardPage() {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
-        <TopBar />
+        <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
           <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
@@ -242,7 +252,7 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Empty: filter has no results */}
+              {/* Empty: filter/search has no results */}
               {!isLoading &&
                 !error &&
                 projects.length > 0 &&
@@ -256,13 +266,16 @@ export default function DashboardPage() {
                     <p
                       className="text-sm font-medium"
                       style={{ color: "var(--text-secondary)" }}>
-                      No projects match this filter.
+                      No projects match your search.
                     </p>
                     <button
-                      onClick={() => setActiveTab("All")}
+                      onClick={() => {
+                        setActiveTab("All");
+                        setSearchQuery("");
+                      }}
                       className="mt-3 text-xs font-semibold hover:underline"
                       style={{ color: "var(--accent)" }}>
-                      Clear filter
+                      Clear filters
                     </button>
                   </div>
                 )}

@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 
-export default function TopBar() {
+interface TopBarProps {
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
+}
+
+export default function TopBar({
+  searchQuery = "",
+  onSearchChange,
+}: TopBarProps) {
   return (
     <div
       className="flex items-center justify-between gap-3 border-b px-4 py-3 md:px-8 md:py-4"
@@ -30,7 +38,9 @@ export default function TopBar() {
         <input
           type="text"
           placeholder="Search projects, tasks…"
-          className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus:border-[#E8610A]"
+          value={searchQuery}
+          onChange={(e) => onSearchChange?.(e.target.value)}
+          className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus:border-[#E8610A] placeholder:text-[var(--text-muted)]"
           style={{
             backgroundColor: "var(--bg-base)",
             borderColor: "var(--border)",

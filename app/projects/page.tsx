@@ -127,6 +127,8 @@ export default function ProjectsPage() {
     setViewMode,
     sortBy,
     setSortBy,
+    searchQuery,
+    setSearchQuery,
     stats,
     selectedProjectIds,
     selectAll,
@@ -156,7 +158,7 @@ export default function ProjectsPage() {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
-        <TopBar />
+        <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
         <main className="flex-1 overflow-y-auto">
           <AlertContainer
@@ -165,7 +167,7 @@ export default function ProjectsPage() {
             position="top-right"
           />
 
-          {/* ── Loading State ── */}
+          {/* Loading */}
           {loading && (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
@@ -177,7 +179,7 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          {/* ── Error State ── */}
+          {/* Error */}
           {error && !loading && (
             <div className="flex h-full flex-col items-center justify-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30">
@@ -209,11 +211,11 @@ export default function ProjectsPage() {
             </div>
           )}
 
-          {/* ── Main Content ── */}
+          {/* Main Content */}
           {!loading && !error && (
             <div className="px-4 py-5 sm:px-6 md:px-8 md:py-7">
               <div className="mx-auto max-w-6xl flex flex-col gap-6 md:gap-7">
-                {/* ── Page header ── */}
+                {/* Page header */}
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h1
@@ -223,12 +225,12 @@ export default function ProjectsPage() {
                     </h1>
                     <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                       {`${projects.length} project${projects.length !== 1 ? "s" : ""} total`}
+                      {searchQuery && ` · filtering by "${searchQuery}"`}
                     </p>
                   </div>
 
-                  {/* Controls: sort + view toggle */}
+                  {/* Controls */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Sort dropdown */}
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
                         <SortIcon />
@@ -241,10 +243,6 @@ export default function ProjectsPage() {
                         className="h-9 appearance-none rounded-xl border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-secondary)] pl-9 pr-7 text-xs transition-colors focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/10 cursor-pointer">
                         <optgroup label="Featured">
                           <option value="starred">Starred First</option>
-                        </optgroup>
-                        <optgroup label="Popularity">
-                          <option value="most-popular">Most Popular</option>
-                          <option value="least-popular">Least Popular</option>
                         </optgroup>
                         <optgroup label="Date">
                           <option value="newest">Newest First</option>
@@ -278,7 +276,6 @@ export default function ProjectsPage() {
                       </span>
                     </div>
 
-                    {/* View mode toggle */}
                     <div className="flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-1">
                       <button
                         onClick={() => setViewMode("grid")}
@@ -304,7 +301,7 @@ export default function ProjectsPage() {
                   </div>
                 </div>
 
-                {/* ── Stats ── */}
+                {/* Stats */}
                 {stats.total > 0 && (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                     <StatCard
@@ -381,7 +378,7 @@ export default function ProjectsPage() {
                   </div>
                 )}
 
-                {/* ── Bulk selection bar ── */}
+                {/* Bulk selection bar */}
                 {isSomeSelected && (
                   <div className="flex items-center justify-between rounded-xl border border-[var(--accent)] bg-[var(--bg-accent-soft)] px-4 py-2.5">
                     <div className="flex items-center gap-3">
@@ -427,7 +424,7 @@ export default function ProjectsPage() {
                   </div>
                 )}
 
-                {/* ── Empty state ── */}
+                {/* Empty state */}
                 {projects.length === 0 && (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-dashed)] bg-[var(--bg-card)] py-16 px-6 text-center">
                     <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--bg-accent-soft)]">
@@ -472,7 +469,7 @@ export default function ProjectsPage() {
                   </div>
                 )}
 
-                {/* ── My Projects ── */}
+                {/* My Projects */}
                 {myProjects.length > 0 && (
                   <section>
                     <SectionHeader
@@ -523,7 +520,7 @@ export default function ProjectsPage() {
                   </section>
                 )}
 
-                {/* ── Other Users' Projects ── */}
+                {/* Other Users' Projects */}
                 {otherProjects.length > 0 && (
                   <section>
                     <SectionHeader

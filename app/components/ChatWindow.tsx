@@ -49,7 +49,13 @@ export default function ChatWindow({
 
   return (
     <div
-      className="fixed bottom-24 right-6 z-50 flex h-[500px] w-[380px] flex-col overflow-hidden rounded-2xl shadow-2xl"
+      className="
+        fixed z-50 flex flex-col overflow-hidden rounded-2xl shadow-2xl
+        /* Mobile: centered, nearly full screen */
+        inset-x-4 bottom-24 top-auto max-h-[70vh]
+        /* Desktop: bottom-right corner, fixed size */
+        sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[500px] sm:w-[380px] sm:max-h-none
+      "
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
@@ -60,7 +66,6 @@ export default function ChatWindow({
         className="flex items-center justify-between border-b px-4 py-3"
         style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2.5">
-          {/* Bot avatar in header */}
           <div
             className="flex h-7 w-7 items-center justify-center rounded-full"
             style={{ backgroundColor: "var(--bg-secondary)" }}>
@@ -118,7 +123,6 @@ export default function ChatWindow({
             className={`mb-3 flex items-end gap-2 ${
               message.sender === "user" ? "justify-end" : "justify-start"
             }`}>
-            {/* Bot avatar beside AI messages */}
             {message.sender !== "user" && (
               <div
                 className="mb-4 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
@@ -164,7 +168,6 @@ export default function ChatWindow({
           </div>
         ))}
 
-        {/* Loading indicator with avatar */}
         {isLoading && (
           <div className="mb-3 flex items-end gap-2 justify-start">
             <div
