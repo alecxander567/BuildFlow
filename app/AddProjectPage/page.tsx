@@ -206,12 +206,11 @@ export default function AddProjectPage() {
             <input
               type="text"
               placeholder="Search projects, tasks…"
-              className="w-full rounded-xl border py-2 pl-9 pr-4 text-sm outline-none transition-colors"
+              className="w-full rounded-xl border py-2 pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-[var(--text-muted)]"
               style={{
                 borderColor: "var(--border)",
                 backgroundColor: "var(--bg-base)",
                 color: "var(--text-primary)",
-                placeholderColor: "var(--text-muted)",
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = "var(--accent)";
