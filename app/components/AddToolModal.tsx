@@ -260,14 +260,13 @@ export function AddToolModal({
                     onAdd();
                   }
                 }}
-                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] ${
+                className={`w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-[var(--accent)] placeholder:text-[var(--text-muted)] ${
                   toolError ?
                     "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
                   : "border-[var(--border)] bg-[var(--bg-base)]"
                 }`}
                 style={{
                   color: "var(--text-primary)",
-                  placeholderColor: "var(--text-muted)",
                 }}
               />
               {toolError && (
