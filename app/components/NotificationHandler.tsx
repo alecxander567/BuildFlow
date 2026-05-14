@@ -4,50 +4,64 @@
 import { useEffect } from "react";
 import { useFCM } from "@/app/hooks/useFCM";
 import { useRouter } from "next/navigation";
+import { db, auth } from "@/app/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function NotificationHandler() {
   const { token, notification } = useFCM();
   const router = useRouter();
 
   useEffect(() => {
-    if (notification) {
-      // Handle task reminder clicks
-      if (
-        notification.data?.type === "daily_task_reminder" ||
-        notification.data?.type === "task_reminder"
-      ) {
-        // Show custom notification
-        if (Notification.permission === "granted") {
-          const notificationObj = new Notification(
-            notification.notification?.title || "Task Reminder",
-            {
-              body: notification.notification?.body || "You have pending tasks",
-              icon: "/icon.png",
-              data: {
-                projectId: notification.data?.projectId,
-                url: "/projects",
-              },
-            },
-          );
+    if (!notification) return;
 
-          // Handle notification click
-          notificationObj.onclick = (event) => {
-            event.preventDefault();
-            window.focus();
-            router.push(
-              notification.data?.projectId ?
-                `/project/${notification.data.projectId}`
-              : "/projects",
-            );
-          };
-        }
-      }
+    const isTaskReminder =
+      notification.data?.type === "daily_task_reminder" ||
+      notification.data?.type === "task_reminder";
+
+    // 1. Write to Firestore so the TopBar bell reflects it in real time
+    const user = auth.currentUser;
+    if (user) {
+      const type = isTaskReminder ? "warning" : "info";
+      addDoc(collection(db, "notifications"), {
+        userId: user.uid,
+        title: notification.notification?.title ?? "Notification",
+        message: notification.notification?.body ?? "",
+        type,
+        read: false,
+        projectId: notification.data?.projectId ?? null,
+        taskId: notification.data?.taskId ?? null,
+        deleted: false,
+        createdAt: serverTimestamp(),
+      }).catch((err) =>
+        console.error("Failed to write foreground notification:", err),
+      );
+    }
+
+    // 2. Show a browser Notification for foreground messages
+    if (isTaskReminder && Notification.permission === "granted") {
+      const notifObj = new Notification(
+        notification.notification?.title || "Task Reminder",
+        {
+          body: notification.notification?.body || "You have pending tasks",
+          icon: "/icon.png",
+          data: { projectId: notification.data?.projectId },
+        },
+      );
+
+      notifObj.onclick = (event) => {
+        event.preventDefault();
+        window.focus();
+        router.push(
+          notification.data?.projectId ?
+            `/project/${notification.data.projectId}`
+          : "/projects",
+        );
+      };
     }
   }, [notification, router]);
 
   useEffect(() => {
     if (token) {
-      // Store token in localStorage for testing
       localStorage.setItem("fcmToken", token);
     }
   }, [token]);

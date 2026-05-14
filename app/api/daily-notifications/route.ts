@@ -7,7 +7,6 @@ import {
   logNotification,
 } from "@/app/lib/notificationService";
 
-// Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -39,22 +38,24 @@ export async function GET(request: Request) {
 
       if (!alreadySent && task.fcmToken) {
         try {
+          const title = `📋 Daily Task Reminder: ${task.projectTitle}`;
+          const body = `Don't forget: "${task.taskText}"`;
+
           const message = {
-            notification: {
-              title: `📋 Daily Task Reminder: ${task.projectTitle}`,
-              body: `Don't forget: "${task.taskText}"`,
-            },
+            notification: { title, body },
             data: {
+              userId: task.userId, // needed by SW to write to Firestore
               projectId: task.projectId,
               taskId: task.id,
               type: "daily_task_reminder",
               clickAction: "/projects",
             },
-            token: task.fcmToken, // Use the token directly
+            token: task.fcmToken,
           };
 
           const response = await admin.messaging().send(message);
 
+          // Log dedup record (existing)
           await logNotification(
             task.userId,
             task.projectId,
@@ -62,11 +63,20 @@ export async function GET(request: Request) {
             task.taskText,
           );
 
-          results.push({
-            task: task.id,
-            status: "sent",
-            messageId: response,
+          // Write to notifications collection so the in-app bell shows it
+          await admin.firestore().collection("notifications").add({
+            userId: task.userId,
+            title,
+            message: body,
+            type: "warning",
+            read: false,
+            projectId: task.projectId,
+            taskId: task.id,
+            deleted: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
           });
+
+          results.push({ task: task.id, status: "sent", messageId: response });
         } catch (error) {
           console.error(
             `Failed to send notification for task ${task.id}:`,
