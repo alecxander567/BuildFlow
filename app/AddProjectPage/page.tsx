@@ -137,6 +137,8 @@ export default function AddProjectPage() {
       progress: 0,
       selectedTools,
       dailyPlan,
+      starred: false,
+      starredBy: [],
     });
 
     if (!success) {
