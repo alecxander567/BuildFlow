@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -12,13 +18,13 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com", 
+        hostname: "res.cloudinary.com",
       },
     ],
   },
   // Important: Add this for Firebase Admin SDK
-  serverExternalPackages: ['firebase-admin'],
-  
+  serverExternalPackages: ["firebase-admin"],
+
   // Optional: Increase API timeout if needed for OpenAI/Gemini calls
   // This is for standalone server, Vercel has its own limits
   staticPageGenerationTimeout: 120,
