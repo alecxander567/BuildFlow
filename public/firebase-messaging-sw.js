@@ -33,7 +33,6 @@ messaging.onBackgroundMessage((payload) => {
     data: payload.data,
   };
 
-  // Write to Firestore so the in-app bell picks it up
   const userId = payload.data?.userId;
   if (userId) {
     const type =
@@ -72,5 +71,35 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    (async () => {
+      const allClients = await clients.matchAll({ type: "window" });
+      const hasAuthInProgress = allClients.some(
+        (c) =>
+          c.url.includes("accounts.google.com") ||
+          c.url.includes("github.com/login") ||
+          c.url.includes("/__/auth/"),
+      );
+
+      if (hasAuthInProgress) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+
+      await clients.claim();
+    })(),
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const url = event.request.url;
+
+  if (
+    url.includes("identitytoolkit.googleapis.com") ||
+    url.includes("securetoken.googleapis.com") ||
+    url.includes("accounts.google.com") ||
+    url.includes("github.com/login/oauth") ||
+    url.includes("/__/auth/")
+  ) {
+    return;
+  }
 });
