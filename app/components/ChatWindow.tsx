@@ -49,21 +49,18 @@ export default function ChatWindow({
 
   return (
     <div
-      className="
-        fixed z-50 flex flex-col overflow-hidden rounded-2xl shadow-2xl
-        /* Mobile: centered, nearly full screen */
-        inset-x-4 bottom-24 top-auto max-h-[70vh]
-        /* Desktop: bottom-right corner, fixed size */
-        sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[500px] sm:w-[380px] sm:max-h-none
-      "
+      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl shadow-2xl
+        inset-x-4 bottom-24 h-[420px]
+        sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[500px] sm:w-[380px]"
       style={{
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
         animation: "slideUp 0.2s ease-out",
       }}>
-      {/* Header */}
+
+      {/* Header — fixed, never scrolls */}
       <div
-        className="flex items-center justify-between border-b px-4 py-3"
+        className="flex-shrink-0 flex items-center justify-between border-b px-4 py-3"
         style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2.5">
           <div
@@ -115,8 +112,8 @@ export default function ChatWindow({
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      {/* Messages — scrollable, fills remaining space */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -138,15 +135,11 @@ export default function ChatWindow({
 
             <div
               className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-                message.sender === "user" ?
-                  "rounded-br-none"
-                : "rounded-bl-none"
+                message.sender === "user" ? "rounded-br-none" : "rounded-bl-none"
               }`}
               style={{
                 backgroundColor:
-                  message.sender === "user" ?
-                    "var(--accent)"
-                  : "var(--bg-secondary)",
+                  message.sender === "user" ? "var(--accent)" : "var(--bg-secondary)",
                 color:
                   message.sender === "user" ? "white" : "var(--text-primary)",
               }}>
@@ -215,8 +208,10 @@ export default function ChatWindow({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="border-t p-4" style={{ borderColor: "var(--border)" }}>
+      {/* Input — fixed at bottom, never scrolls */}
+      <div
+        className="flex-shrink-0 border-t p-4"
+        style={{ borderColor: "var(--border)" }}>
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -226,7 +221,7 @@ export default function ChatWindow({
             onKeyPress={handleKeyPress}
             placeholder="Type your message..."
             disabled={isLoading}
-            className="flex-1 rounded-xl border px-3 py-2 text-sm outline-none transition-colors"
+            className="flex-1 rounded-xl border px-3 py-2 text-sm outline-none transition-colors placeholder:text-[var(--text-muted)]"
             style={{
               backgroundColor: "var(--bg-primary)",
               borderColor: "var(--border)",
