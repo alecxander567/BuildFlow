@@ -142,11 +142,20 @@ export function useAnalytics() {
     const toolCounts: Record<string, { count: number; category: string }> = {};
 
     filteredProjects.forEach((project) => {
+      // Track which normalized tool keys we've already counted for this project
+      // to prevent double-counting when old + new category names both exist
+      const seenInProject = new Set<string>();
+
       Object.entries(project.selectedTools || {}).forEach(
         ([category, tools]) => {
           const normalizedCategory = normalizeCategory(category);
           tools.forEach((tool) => {
             const key = `${normalizedCategory}:${tool}`;
+
+            // Skip if already counted for this project
+            if (seenInProject.has(key)) return;
+            seenInProject.add(key);
+
             if (!toolCounts[key])
               toolCounts[key] = { count: 0, category: normalizedCategory };
             toolCounts[key].count++;
