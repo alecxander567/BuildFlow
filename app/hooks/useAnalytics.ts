@@ -41,6 +41,16 @@ export interface ProductivityMetrics {
   projectCompletionRate: number;
 }
 
+// Normalizes inconsistent category names saved across older projects
+// so they all merge into a single canonical category in analytics.
+function normalizeCategory(cat: string): string {
+  const lower = cat.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (lower.includes("framework") || lower.includes("librar")) {
+    return "Frameworks & Libraries";
+  }
+  return cat;
+}
+
 export function useAnalytics() {
   const { user, authLoading } = useAuth();
   const { projects: allProjects, loading: projectsLoading } = useProjects(
@@ -134,9 +144,11 @@ export function useAnalytics() {
     filteredProjects.forEach((project) => {
       Object.entries(project.selectedTools || {}).forEach(
         ([category, tools]) => {
+          const normalizedCategory = normalizeCategory(category);
           tools.forEach((tool) => {
-            const key = `${category}:${tool}`;
-            if (!toolCounts[key]) toolCounts[key] = { count: 0, category };
+            const key = `${normalizedCategory}:${tool}`;
+            if (!toolCounts[key])
+              toolCounts[key] = { count: 0, category: normalizedCategory };
             toolCounts[key].count++;
           });
         },
