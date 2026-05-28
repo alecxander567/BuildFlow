@@ -1,4 +1,4 @@
-// app/hooks/useAuth.ts (updated version)
+// app/hooks/useAuth.ts
 import { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -13,14 +13,12 @@ import {
 import { FirebaseError } from "firebase/app";
 import { auth, db } from "@/app/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 
 export type AuthStatus = {
   type: "success" | "error";
   message: string;
 } | null;
 
-// Helper function to create/update user in Firestore
 async function syncUserToFirestore(user: User) {
   if (!user) return;
 
@@ -28,7 +26,6 @@ async function syncUserToFirestore(user: User) {
   const userDoc = await getDoc(userRef);
 
   if (!userDoc.exists()) {
-    // Create new user document
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
@@ -38,7 +35,6 @@ async function syncUserToFirestore(user: User) {
       updatedAt: new Date().toISOString(),
     });
   } else {
-    // Update existing user document with latest info
     await setDoc(
       userRef,
       {
@@ -53,7 +49,6 @@ async function syncUserToFirestore(user: User) {
 }
 
 export function useAuth() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<AuthStatus>(null);
@@ -63,11 +58,15 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
-      // Sync user to Firestore when they log in
       if (firebaseUser) {
-        await syncUserToFirestore(firebaseUser);
+        try {
+          await syncUserToFirestore(firebaseUser);
+        } catch (e) {
+          console.error("Firestore sync failed, continuing anyway:", e);
+        }
       }
 
+      // Always runs — no more stuck loading state
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -100,7 +99,6 @@ export function useAuth() {
         password,
       );
 
-      // Create user document in Firestore
       await setDoc(doc(db, "users", userCredential.user.uid), {
         uid: userCredential.user.uid,
         email: email,
@@ -110,11 +108,11 @@ export function useAuth() {
         updatedAt: new Date().toISOString(),
       });
 
+      // No router.push here — the useEffect in SignUpPage handles redirect
       setStatus({
         type: "success",
         message: "Account created successfully! Welcome to BuildFlow.",
       });
-      router.push("/dashboard");
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       const message =
@@ -139,11 +137,10 @@ export function useAuth() {
         password,
       );
 
-      // Ensure user exists in Firestore
       await syncUserToFirestore(userCredential.user);
 
+      // No router.push here — the useEffect in LoginPage handles redirect
       setStatus({ type: "success", message: "Signed in successfully!" });
-      router.push("/dashboard");
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       const message =
@@ -166,7 +163,6 @@ export function useAuth() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      // Create/update user in Firestore with Google data
       await setDoc(
         doc(db, "users", result.user.uid),
         {
@@ -183,10 +179,11 @@ export function useAuth() {
         { merge: true },
       );
 
-      router.push("/dashboard");
+      // No router.push here — the useEffect in LoginPage handles redirect
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       if (code === "auth/popup-closed-by-user") {
+        setLoading(false);
         return;
       }
       setStatus({
@@ -206,7 +203,6 @@ export function useAuth() {
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
 
-      // Create/update user in Firestore with GitHub data
       await setDoc(
         doc(db, "users", result.user.uid),
         {
@@ -223,10 +219,13 @@ export function useAuth() {
         { merge: true },
       );
 
-      router.push("/dashboard");
+      // No router.push here — the useEffect in LoginPage handles redirect
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
-      if (code === "auth/popup-closed-by-user") return;
+      if (code === "auth/popup-closed-by-user") {
+        setLoading(false);
+        return;
+      }
       const message =
         code === "auth/account-exists-with-different-credential" ?
           "An account already exists with the same email. Try signing in with Google."
@@ -240,15 +239,11 @@ export function useAuth() {
   const logOut = async () => {
     setLoading(true);
     try {
-      // Clear any stored auth data
       sessionStorage.clear();
       localStorage.removeItem("firebase-auth-token");
 
       await signOut(auth);
       setStatus(null);
-
-      // Use replace instead of push to prevent back button issues
-      router.replace("/");
     } catch {
       setStatus({ type: "error", message: "Failed to sign out." });
     } finally {
