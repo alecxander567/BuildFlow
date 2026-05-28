@@ -34,12 +34,22 @@ export default function DashboardPage() {
   } = useProjects(user, authLoading);
 
   const { getUserById } = useUsers();
-  const projects = allProjects.filter((p) => p.userId === user?.uid);
+
+  // Only filter projects if user exists
+  const projects =
+    user ? allProjects.filter((p) => p.userId === user?.uid) : [];
 
   const { toasts, remove, show } = useAlert();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Add redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/");
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     if (pathname !== "/dashboard") return;
@@ -77,6 +87,37 @@ export default function DashboardPage() {
   };
 
   const isLoading = loading || authLoading;
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div
+        className="flex h-screen items-center justify-center"
+        style={{
+          backgroundColor: "var(--bg-base)",
+        }}>
+        <div className="text-center">
+          <div
+            className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-t-transparent"
+            style={{
+              borderColor: "var(--accent)",
+              borderTopColor: "transparent",
+            }}
+          />
+          <p
+            className="mt-3 text-sm"
+            style={{ color: "var(--text-secondary)" }}>
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if no user (this should happen from useEffect, but as a backup)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div
