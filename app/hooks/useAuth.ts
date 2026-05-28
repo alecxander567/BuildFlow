@@ -13,6 +13,7 @@ import {
 import { FirebaseError } from "firebase/app";
 import { auth, db } from "@/app/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 
 export type AuthStatus = {
   type: "success" | "error";
@@ -48,7 +49,23 @@ async function syncUserToFirestore(user: User) {
   }
 }
 
+// Sets a secure session cookie the middleware can read
+async function setSessionCookie(user: User) {
+  const idToken = await user.getIdToken();
+  await fetch("/api/auth/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+}
+
+// Clears the session cookie on logout
+async function clearSessionCookie() {
+  await fetch("/api/auth/session", { method: "DELETE" });
+}
+
 export function useAuth() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<AuthStatus>(null);
@@ -108,7 +125,9 @@ export function useAuth() {
         updatedAt: new Date().toISOString(),
       });
 
-      // No router.push here — the useEffect in SignUpPage handles redirect
+      await setSessionCookie(userCredential.user);
+
+      // useEffect in SignUpPage handles redirect to /dashboard
       setStatus({
         type: "success",
         message: "Account created successfully! Welcome to BuildFlow.",
@@ -138,8 +157,9 @@ export function useAuth() {
       );
 
       await syncUserToFirestore(userCredential.user);
+      await setSessionCookie(userCredential.user);
 
-      // No router.push here — the useEffect in LoginPage handles redirect
+      // useEffect in LoginPage handles redirect to /dashboard
       setStatus({ type: "success", message: "Signed in successfully!" });
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
@@ -179,7 +199,9 @@ export function useAuth() {
         { merge: true },
       );
 
-      // No router.push here — the useEffect in LoginPage handles redirect
+      await setSessionCookie(result.user);
+
+      // useEffect in LoginPage handles redirect to /dashboard
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       if (code === "auth/popup-closed-by-user") {
@@ -219,7 +241,9 @@ export function useAuth() {
         { merge: true },
       );
 
-      // No router.push here — the useEffect in LoginPage handles redirect
+      await setSessionCookie(result.user);
+
+      // useEffect in LoginPage handles redirect to /dashboard
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       if (code === "auth/popup-closed-by-user") {
@@ -239,11 +263,13 @@ export function useAuth() {
   const logOut = async () => {
     setLoading(true);
     try {
+      await clearSessionCookie();
       sessionStorage.clear();
       localStorage.removeItem("firebase-auth-token");
-
       await signOut(auth);
       setStatus(null);
+      // Redirect to login page after logout
+      router.replace("/");
     } catch {
       setStatus({ type: "error", message: "Failed to sign out." });
     } finally {
