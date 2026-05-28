@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import AuthAlert from "@/app/components/AuthAlert";
 
@@ -38,21 +39,47 @@ const EyeOffIcon = () => (
 );
 
 export default function SignUpPage() {
+  const router = useRouter(); // Add router
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const { signUp, loading, status, clearStatus } = useAuth();
+  const { signUp, loading, status, clearStatus, user, authLoading } = useAuth();
+
+  // Add redirect guard - redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await signUp(email, password, confirmPassword);
   };
 
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-[#F9F7F4]">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#E8610A] border-t-transparent mx-auto"></div>
+          <p className="text-sm text-[#72706A]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is logged in, don't render the signup form (redirect will happen)
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen w-full font-sans bg-[#F9F7F4]">
+      {/* Rest of your existing JSX remains exactly the same */}
       <div className="relative hidden md:flex md:w-[45%] flex-col justify-center overflow-hidden bg-[#E8610A] p-10 lg:p-14">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full"

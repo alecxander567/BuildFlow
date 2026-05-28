@@ -240,9 +240,15 @@ export function useAuth() {
   const logOut = async () => {
     setLoading(true);
     try {
+      // Clear any stored auth data
+      sessionStorage.clear();
+      localStorage.removeItem("firebase-auth-token");
+
       await signOut(auth);
       setStatus(null);
-      router.push("/");
+
+      // Use replace instead of push to prevent back button issues
+      router.replace("/");
     } catch {
       setStatus({ type: "error", message: "Failed to sign out." });
     } finally {
