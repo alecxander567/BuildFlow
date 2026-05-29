@@ -5,6 +5,7 @@ import {
   getUserStats,
   getUserAchievements,
   updateStatsAndCheckAchievements,
+  checkAndUnlockAchievements,
 } from "@/app/lib/firebase/achievementService";
 import {
   Achievement,
@@ -37,13 +38,6 @@ interface UseAchievementsReturn {
   markAchievementsAsViewed: () => void;
 }
 
-// Read the stored viewed count for a given uid directly from localStorage.
-function readStoredViewedCount(uid: string): number {
-  if (typeof window === "undefined") return 0;
-  const stored = localStorage.getItem(`achievements_viewed_${uid}`);
-  return stored !== null ? parseInt(stored, 10) : 0;
-}
-
 export function useAchievements(): UseAchievementsReturn {
   const { user } = useAuth();
   const [achievements] = useState<Achievement[]>(ACHIEVEMENTS);
@@ -57,7 +51,6 @@ export function useAchievements(): UseAchievementsReturn {
     useState<number>(0);
 
   const isInitialized = useRef(false);
-  const hasLoadedFromStorage = useRef(false);
   const syncInProgress = useRef(false);
 
   const markAchievementsAsViewed = useCallback(() => {
@@ -78,32 +71,32 @@ export function useAchievements(): UseAchievementsReturn {
     try {
       setLoading(true);
       setError(null);
-      await initializeUserStats(user.uid);
-      const [stats, achievementsData] = await Promise.all([
-        getUserStats(user.uid),
-        getUserAchievements(user.uid),
-      ]);
 
-      const newUnlockedCount = achievementsData.filter(
+      await initializeUserStats(user.uid);
+      const stats = await getUserStats(user.uid);
+
+      // ✅ Always check stats against all achievements and write any
+      // that are met but not yet recorded — this is the retroactive fix.
+      if (stats) {
+        await checkAndUnlockAchievements(user.uid, stats);
+      }
+
+      // Re-fetch AFTER the check so state reflects what's now in Firestore
+      const freshAchievements = await getUserAchievements(user.uid);
+      const newUnlockedCount = freshAchievements.filter(
         (a) => a.isUnlocked,
       ).length;
 
       setUserStats(stats);
-      setUserAchievements(achievementsData);
+      setUserAchievements(freshAchievements);
 
-      // Sync last viewed from localStorage
+      // Sync lastViewed from localStorage
       const stored = localStorage.getItem(`achievements_viewed_${user.uid}`);
       if (stored) {
         const viewed = parseInt(stored, 10);
-        if (viewed <= newUnlockedCount) {
-          setLastViewedAchievements(viewed);
-        } else {
-          setLastViewedAchievements(newUnlockedCount);
-          localStorage.setItem(
-            `achievements_viewed_${user.uid}`,
-            newUnlockedCount.toString(),
-          );
-        }
+        setLastViewedAchievements(
+          viewed <= newUnlockedCount ? viewed : newUnlockedCount,
+        );
       } else {
         setLastViewedAchievements(newUnlockedCount);
         localStorage.setItem(
@@ -119,39 +112,30 @@ export function useAchievements(): UseAchievementsReturn {
     }
   }, [user]);
 
-  // Force sync achievements based on current stats
+  // Kept for external callers but now just delegates to loadAchievementsData
   const forceSyncAchievements = useCallback(async () => {
-    if (!user?.uid || !userStats || syncInProgress.current) return [];
-
+    if (!user?.uid || syncInProgress.current) return [];
     syncInProgress.current = true;
     try {
-
-      const newlyUnlocked = await updateStatsAndCheckAchievements(
-        user.uid,
-        "projectsCreated",
-        0,
-      );
-
-      if (newlyUnlocked.length > 0) {
-        await loadAchievementsData();
-      }
-
-      return newlyUnlocked;
+      await loadAchievementsData();
+      // Return any newly unlocked since we can't easily diff here;
+      // callers that need the list should use updateStat instead.
+      return [];
     } catch (err) {
       console.error("Error force syncing achievements:", err);
       return [];
     } finally {
       syncInProgress.current = false;
     }
-  }, [user, userStats, loadAchievementsData]);
+  }, [user, loadAchievementsData]);
 
+  // Initialize once when user is available
   useEffect(() => {
     if (user && !isInitialized.current) {
       isInitialized.current = true;
       loadAchievementsData();
     } else if (!user && isInitialized.current) {
       isInitialized.current = false;
-      hasLoadedFromStorage.current = false;
       setUserStats(null);
       setUserAchievements([]);
       setLoading(false);
@@ -159,19 +143,6 @@ export function useAchievements(): UseAchievementsReturn {
       setLastViewedAchievements(0);
     }
   }, [user, loadAchievementsData]);
-
-  // Auto-sync when stats are loaded and no achievements exist
-  useEffect(() => {
-    if (user && userStats && !loading && userAchievements.length === 0) {
-      forceSyncAchievements();
-    }
-  }, [
-    user,
-    userStats,
-    loading,
-    userAchievements.length,
-    forceSyncAchievements,
-  ]);
 
   const updateStat = useCallback(
     async (
@@ -189,8 +160,6 @@ export function useAchievements(): UseAchievementsReturn {
           incrementValue,
         );
         await loadAchievementsData();
-        newlyUnlocked.forEach((achievement) => {
-        });
         return newlyUnlocked;
       } catch (err) {
         console.error("Error updating stat:", err);
