@@ -18,50 +18,68 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
     return () => clearTimeout(t);
   }, []);
 
-  // After 3s of no interaction, go semi-transparent + half-docked into the edge
-  const resetIdleTimer = () => {
-    setIdle(false);
+  const startIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
-    if (!isOpen && !isHovered) {
-      idleTimer.current = setTimeout(() => setIdle(true), 3000);
-    }
+    idleTimer.current = setTimeout(() => setIdle(true), 3000);
   };
 
+  const cancelIdleTimer = () => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    setIdle(false);
+  };
+
+  // Start idle countdown whenever chat is closed and not hovered
   useEffect(() => {
-    resetIdleTimer();
+    if (!isOpen && !isHovered) {
+      startIdleTimer();
+    } else {
+      cancelIdleTimer();
+    }
     return () => {
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isHovered]);
 
+  // When idle: slide most of the ball off-screen but leave an 10px sliver
+  // so the user can always tap/hover that sliver to wake it back up.
+  // The sliver is wide enough to be tappable on mobile (touch target ~10px
+  // of the button is still on-screen, the hit-area extends with padding).
+  const idleOffset = idle && !isHovered && !isOpen ? "26px" : "0px";
+
   return (
     <>
       <style>{`
         @keyframes cb-pop {
-          0%   { transform: translateY(-50%) translateX(38px) scale(0.5); opacity: 0; }
-          65%  { transform: translateY(-50%) translateX(-4px) scale(1.06); opacity: 1; }
-          100% { transform: translateY(-50%) translateX(0) scale(1); opacity: 1; }
+          0%   { opacity: 0; transform: translateY(-50%) translateX(40px) scale(0.5); }
+          65%  { opacity: 1; transform: translateY(-50%) translateX(-4px) scale(1.06); }
+          100% { opacity: 1; transform: translateY(-50%) translateX(0)    scale(1);    }
         }
         @keyframes cb-pulse-ring {
-          0%   { transform: scale(1);    opacity: 0.45; }
-          80%  { transform: scale(1.65); opacity: 0;    }
-          100% { transform: scale(1.65); opacity: 0;    }
+          0%   { transform: scale(1);    opacity: 0.4; }
+          80%  { transform: scale(1.7);  opacity: 0;   }
+          100% { transform: scale(1.7);  opacity: 0;   }
         }
-        .cb-ring {
-          animation: cb-pulse-ring 2.6s ease-out infinite;
-        }
+        .cb-entrance { animation: cb-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        .cb-ring      { animation: cb-pulse-ring 2.6s ease-out infinite; }
       `}</style>
 
       <div
-        className="fixed z-50 right-0 top-1/2 flex items-center justify-end"
+        className={mounted ? "cb-entrance" : ""}
         style={{
-          // Slide half off-screen when idle, fully visible when active
-          transform: `translateY(-50%) translateX(${idle && !isHovered && !isOpen ? "44%" : "0%"})`,
-          transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          position: "fixed",
+          zIndex: 50,
+          right: 0,
+          top: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          // Slide right by idleOffset, leaving a visible sliver
+          transform: `translateY(-50%) translateX(${idleOffset})`,
+          transition: "transform 0.5s cubic-bezier(0.34,1.56,0.64,1)",
           opacity: mounted ? 1 : 0,
         }}>
-        {/* Tooltip to the left — shows on hover */}
+        {/* Tooltip — left of ball, visible on hover when closed */}
         <div
           style={{
             marginRight: "8px",
@@ -72,36 +90,51 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
             transition: "opacity 0.2s ease, transform 0.2s ease",
           }}>
           <div
-            className="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold"
             style={{
+              whiteSpace: "nowrap",
+              borderRadius: "8px",
+              padding: "6px 10px",
+              fontSize: "11px",
+              fontWeight: 600,
               backgroundColor: "var(--bg-card)",
               color: "var(--text-primary)",
               border: "1px solid var(--border)",
               boxShadow: "0 4px 14px rgba(0,0,0,0.10)",
             }}>
-            AI Assistant
+            {idle ? "Tap to wake" : "AI Assistant"}
           </div>
         </div>
 
-        {/* Ball container — handles the docked flat-edge shape */}
-        <div
-          className="relative flex items-center justify-center"
-          style={{ marginRight: "-1px" }}>
-          {/* Pulse ring — only when closed & not idle */}
+        {/* Ball */}
+        <div style={{ position: "relative", marginRight: "-1px" }}>
+          {/* Pulse ring — only when fully visible and closed */}
           {!isOpen && !idle && (
             <span
-              className="cb-ring pointer-events-none absolute inset-0 rounded-full"
-              style={{ backgroundColor: "var(--accent)" }}
+              className="cb-ring"
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "9999px",
+                backgroundColor: "var(--accent)",
+                pointerEvents: "none",
+              }}
             />
           )}
 
           <button
-            onClick={onClick}
-            onMouseEnter={() => {
-              setIsHovered(true);
-              resetIdleTimer();
+            onClick={() => {
+              cancelIdleTimer();
+              onClick();
             }}
+            onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onTouchStart={() => {
+              // On mobile, a touch wakes it if idle; second tap opens chat
+              if (idle) {
+                cancelIdleTimer();
+                startIdleTimer(); // restart the 3s countdown after waking
+              }
+            }}
             aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
             style={{
               width: "36px",
@@ -109,17 +142,18 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              // Slightly flat on the right when docked, perfect circle when active
-              borderRadius: isOpen || isHovered ? "50%" : "50% 38% 38% 50%",
+              // Flat right edge when docked, circle when active
+              borderRadius: isOpen || isHovered ? "50%" : "50% 36% 36% 50%",
               backgroundColor: "var(--accent)",
-              opacity: idle && !isHovered && !isOpen ? 0.5 : 1,
+              // Dimmer when idle so it's clearly "sleeping"
+              opacity: idle && !isHovered && !isOpen ? 0.45 : 1,
               boxShadow:
                 isHovered || isOpen ?
                   "0 6px 20px rgba(0,0,0,0.22)"
                 : "0 2px 10px rgba(0,0,0,0.18)",
               transform: isHovered ? "scale(1.12)" : "scale(1)",
               transition:
-                "transform 0.2s ease, opacity 0.4s ease, border-radius 0.45s ease, box-shadow 0.2s ease",
+                "transform 0.2s ease, opacity 0.4s ease, border-radius 0.4s ease, box-shadow 0.2s ease",
               cursor: "pointer",
               border: "none",
               outline: "none",
