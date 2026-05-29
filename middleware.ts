@@ -2,20 +2,32 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/api/auth/session"];
+// Pages only logged-OUT users can visit
+const AUTH_ONLY_ROUTES = ["/", "/login", "/signup"];
 
-// Routes that authenticated users should NOT visit (e.g. login page)
-const AUTH_ROUTES = ["/", "/login", "/signup"];
+// All protected routes from the sidebar + app pages
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/projects",
+  "/achievements",
+  "/team",
+  "/analytics",
+  "/tools",
+  "/settings",
+  "/help",
+  "/AddProjectPage",
+  "/project", // individual project pages e.g. /project/[id]
+  "/profile",
+  "/workspace",
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always allow static assets and API routes (except session which is listed above)
+  // Always pass through Next.js internals, static files, and API routes
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
-    pathname.startsWith("/public") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
@@ -25,17 +37,23 @@ export function middleware(request: NextRequest) {
     request.cookies.get("session")?.value ||
     request.cookies.get("__session")?.value;
 
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route);
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
+  const isAuthRoute = AUTH_ONLY_ROUTES.includes(pathname);
 
-  // Not logged in and trying to access a protected route → send to login
-  if (!sessionCookie && !isPublicRoute) {
-    const loginUrl = new URL("/", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  // No session + protected page → force to login, no back button bypass
+  if (!sessionCookie && isProtected) {
+    const url = new URL("/", request.url);
+    url.searchParams.set("redirect", pathname);
+    const response = NextResponse.redirect(url);
+    // Clear any stale cookies just in case
+    response.cookies.set("session", "", { maxAge: 0, path: "/" });
+    response.cookies.set("__session", "", { maxAge: 0, path: "/" });
+    return response;
   }
 
-  // Already logged in and visiting login/signup → send to dashboard
+  // Has session + on login/signup → send straight to dashboard
   if (sessionCookie && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -44,5 +62,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Run on every route except static assets and image optimization
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
