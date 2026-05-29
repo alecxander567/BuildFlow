@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 export type DayTask = {
   id: string;
@@ -23,7 +23,6 @@ function generateDateRange(start: string, end: string): string[] {
   const cur = new Date(start);
   const last = new Date(end);
   if (cur > last) return [];
-  // Cap at 366 days to avoid runaway loops
   while (cur <= last && dates.length <= 366) {
     dates.push(cur.toISOString().split("T")[0]);
     cur.setDate(cur.getDate() + 1);
@@ -102,22 +101,18 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
 
   const saveEdit = () => {
     if (!editingId) return;
-
     onTasksChange(
       tasks.map((t) =>
         t.id === editingId ? { ...t, text: editingText.trim() || t.text } : t,
       ),
     );
-
     setEditingId(null);
     setEditingText("");
   };
 
   return (
     <div
-      className={`rounded-xl border transition-all duration-200 overflow-hidden ${
-        today ? "shadow-sm" : ""
-      }`}
+      className={`rounded-xl border transition-all duration-200 overflow-hidden ${today ? "shadow-sm" : ""}`}
       style={{
         borderColor: today ? "var(--accent)" : "var(--border)",
         backgroundColor:
@@ -126,18 +121,14 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
           : "var(--bg-card)",
         boxShadow: today ? "0 1px 2px 0 rgb(0 0 0 / 0.05)" : undefined,
       }}>
-      {/* Day header — always visible */}
+      {/* Day header */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left">
+        className="flex w-full items-center gap-2 px-3 py-3 text-left sm:gap-3 sm:px-4">
         {/* Day number pill */}
         <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-            today ? "text-white"
-            : past ? ""
-            : ""
-          }`}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
           style={{
             backgroundColor:
               today ? "var(--accent)"
@@ -152,10 +143,10 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
         </div>
 
         <div className="flex flex-1 min-w-0 items-center gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
               <span
-                className={`text-sm font-bold`}
+                className="text-sm font-bold"
                 style={{
                   color:
                     today ? "var(--accent)"
@@ -197,7 +188,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
           </div>
         </div>
 
-        {/* Progress mini-bar (only if tasks exist) */}
+        {/* Progress mini-bar — visible only on sm+ */}
         {total > 0 && (
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             <div
@@ -239,7 +230,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
       {/* Expandable body */}
       {open && (
         <div
-          className="border-t px-4 pb-4 pt-3"
+          className="border-t px-3 pb-4 pt-3 sm:px-4"
           style={{ borderColor: "var(--border)" }}>
           {/* Task list */}
           {tasks.length > 0 && (
@@ -247,13 +238,14 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
               {tasks.map((task) => (
                 <li
                   key={task.id}
-                  className="group flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors"
+                  className="group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors sm:gap-2.5 sm:px-2.5"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--bg-base)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "transparent";
                   }}>
+                  {/* Checkbox */}
                   <button
                     type="button"
                     onClick={() => toggleTask(task.id)}
@@ -261,6 +253,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                     style={{
                       height: "18px",
                       width: "18px",
+                      minWidth: "18px",
                       borderColor:
                         task.done ? "#16A34A" : "var(--border-dashed)",
                       backgroundColor: task.done ? "#16A34A" : "transparent",
@@ -279,6 +272,8 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                       </svg>
                     )}
                   </button>
+
+                  {/* Task text / edit input */}
                   {editingId === task.id ?
                     <input
                       value={editingText}
@@ -288,7 +283,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                         if (e.key === "Enter") saveEdit();
                       }}
                       autoFocus
-                      className="flex-1 text-sm rounded px-2 py-1 outline-none"
+                      className="flex-1 min-w-0 text-sm rounded px-2 py-1 outline-none"
                       style={{
                         backgroundColor: "var(--bg-card)",
                         borderColor: "var(--border)",
@@ -296,9 +291,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                       }}
                     />
                   : <span
-                      className={`flex-1 text-sm transition-all ${
-                        task.done ? "line-through" : ""
-                      }`}
+                      className={`flex-1 min-w-0 truncate text-sm transition-all ${task.done ? "line-through" : ""}`}
                       style={{
                         color:
                           task.done ? "var(--text-muted)" : (
@@ -309,11 +302,12 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                     </span>
                   }
 
-                  {/* Edit */}
-                  <div className="flex items-center gap-1 ml-auto">
+                  {/* Edit + Delete — always visible on mobile, hover on desktop */}
+                  <div className="flex shrink-0 items-center gap-1 ml-1">
                     <button
                       type="button"
                       onClick={() => startEdit(task)}
+                      aria-label="Edit task"
                       className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
                       style={{
                         backgroundColor: "var(--bg-base)",
@@ -343,10 +337,10 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                       </svg>
                     </button>
 
-                    {/* Delete */}
                     <button
                       type="button"
                       onClick={() => deleteTask(task.id)}
+                      aria-label="Delete task"
                       className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
                       style={{
                         backgroundColor: "var(--bg-base)",
@@ -380,10 +374,16 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
             </ul>
           )}
 
-          {/* Add task input - FIXED: Removed invalid placeholderColor */}
+          {/* ── Add-task row ──────────────────────────────────────────────
+              Key fix: the row never lets the button overlap the input.
+              On very narrow screens the input shrinks but has a min-width
+              so it stays usable; the button is always a fixed 36×36 square
+              that sits to the right with flex-shrink-0.
+          ──────────────────────────────────────────────────────────────── */}
           <div className="flex items-center gap-2">
+            {/* Input wrapper – flex-1 + min-w-0 lets it shrink gracefully */}
             <div
-              className="flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors focus-within:border-[var(--accent)]"
+              className="flex flex-1 min-w-0 items-center gap-2 rounded-lg border px-3 py-2 transition-colors"
               style={{
                 borderColor: "var(--border)",
                 backgroundColor: "var(--bg-base)",
@@ -405,6 +405,7 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="shrink-0"
                 style={{ color: "var(--text-muted)" }}>
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -415,21 +416,20 @@ function DayCard({ dateStr, dayIndex, tasks, onTasksChange }: DayCardProps) {
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Add a task for this day…"
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]"
-                style={{
-                  color: "var(--text-primary)",
-                }}
+                placeholder="Add a task…"
+                className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-[var(--text-muted)]"
+                style={{ color: "var(--text-primary)" }}
               />
             </div>
+
+            {/* Add button — shrink-0 guarantees it never collapses or overlaps */}
             <button
               type="button"
               onClick={addTask}
               disabled={!inputVal.trim()}
+              aria-label="Add task"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: "var(--accent)",
-              }}
+              style={{ backgroundColor: "var(--accent)" }}
               onMouseEnter={(e) => {
                 if (inputVal.trim()) {
                   e.currentTarget.style.backgroundColor = "var(--accent-hover)";
@@ -513,7 +513,7 @@ export default function DailyTasksField({
 
   return (
     <div
-      className="rounded-2xl border p-5"
+      className="rounded-2xl border p-4 sm:p-5"
       style={{
         borderColor: "var(--border)",
         backgroundColor: "var(--bg-card)",
@@ -548,7 +548,6 @@ export default function DailyTasksField({
         {dates.length} day{dates.length !== 1 ? "s" : ""}).
       </p>
 
-      {/* Collapsed preview or full list */}
       {!expanded ?
         <button
           type="button"
