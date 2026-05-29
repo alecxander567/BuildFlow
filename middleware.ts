@@ -2,10 +2,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Pages only logged-OUT users can visit
 const AUTH_ONLY_ROUTES = ["/", "/login", "/signup"];
 
-// All protected routes from the sidebar + app pages
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/projects",
@@ -16,7 +14,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/help",
   "/AddProjectPage",
-  "/project", // individual project pages e.g. /project/[id]
+  "/project",
   "/profile",
   "/workspace",
 ];
@@ -24,10 +22,10 @@ const PROTECTED_PREFIXES = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always pass through Next.js internals, static files, and API routes
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/static") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
@@ -35,26 +33,21 @@ export function middleware(request: NextRequest) {
 
   const sessionCookie =
     request.cookies.get("session")?.value ||
-    request.cookies.get("__session")?.value;
+    request.cookies.get("__session")?.value ||
+    "";
 
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  );
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
   const isAuthRoute = AUTH_ONLY_ROUTES.includes(pathname);
 
-  // No session + protected page → force to login, no back button bypass
   if (!sessionCookie && isProtected) {
     const url = new URL("/", request.url);
     url.searchParams.set("redirect", pathname);
-    const response = NextResponse.redirect(url);
-    // Clear any stale cookies just in case
-    response.cookies.set("session", "", { maxAge: 0, path: "/" });
-    response.cookies.set("__session", "", { maxAge: 0, path: "/" });
-    return response;
+    return NextResponse.redirect(url);
   }
 
-  // Has session + on login/signup → send straight to dashboard
-  if (sessionCookie && isAuthRoute) {
+  // IMPORTANT: only redirect if we are NOT already going to /dashboard
+  // to prevent redirect loops on slow mobile connections
+  if (sessionCookie && isAuthRoute && pathname !== "/dashboard") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -62,6 +55,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on every route except static assets and image optimization
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

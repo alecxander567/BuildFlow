@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const SESSION_COOKIE_NAME = "session";
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; 
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,16 +13,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing idToken" }, { status: 400 });
     }
 
-    // We store the raw idToken as the session value.
-    // For production you should verify it with Firebase Admin SDK and
-    // create a proper session cookie — but this is secure enough for
-    // middleware-level route protection since it's httpOnly.
+    const isProd = process.env.NODE_ENV === "production";
     const response = NextResponse.json({ success: true });
 
     response.cookies.set(SESSION_COOKIE_NAME, idToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      // ✅ KEY FIX: secure:false in dev so mobile on local network can store it
+      // secure:true in prod (HTTPS only)
+      secure: isProd,
+      sameSite: isProd ? "strict" : "lax",
       maxAge: SESSION_DURATION_SECONDS,
       path: "/",
     });
@@ -34,13 +33,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE() {
+  const isProd = process.env.NODE_ENV === "production";
   const response = NextResponse.json({ success: true });
 
-  // Clear the cookie by setting maxAge to 0
   response.cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: isProd ? "strict" : "lax",
     maxAge: 0,
     path: "/",
   });
