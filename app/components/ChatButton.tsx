@@ -28,7 +28,6 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
     setIdle(false);
   };
 
-  // Start idle countdown whenever chat is closed and not hovered
   useEffect(() => {
     if (!isOpen && !isHovered) {
       startIdleTimer();
@@ -41,10 +40,6 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isHovered]);
 
-  // When idle: slide most of the ball off-screen but leave an 10px sliver
-  // so the user can always tap/hover that sliver to wake it back up.
-  // The sliver is wide enough to be tappable on mobile (touch target ~10px
-  // of the button is still on-screen, the hit-area extends with padding).
   const idleOffset = idle && !isHovered && !isOpen ? "26px" : "0px";
 
   return (
@@ -56,9 +51,9 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
           100% { opacity: 1; transform: translateY(-50%) translateX(0)    scale(1);    }
         }
         @keyframes cb-pulse-ring {
-          0%   { transform: scale(1);    opacity: 0.4; }
-          80%  { transform: scale(1.7);  opacity: 0;   }
-          100% { transform: scale(1.7);  opacity: 0;   }
+          0%   { transform: scale(1);   opacity: 0.4; }
+          80%  { transform: scale(1.7); opacity: 0;   }
+          100% { transform: scale(1.7); opacity: 0;   }
         }
         .cb-entrance { animation: cb-pop 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards; }
         .cb-ring      { animation: cb-pulse-ring 2.6s ease-out infinite; }
@@ -74,12 +69,11 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "flex-end",
-          // Slide right by idleOffset, leaving a visible sliver
           transform: `translateY(-50%) translateX(${idleOffset})`,
           transition: "transform 0.5s cubic-bezier(0.34,1.56,0.64,1)",
           opacity: mounted ? 1 : 0,
         }}>
-        {/* Tooltip — left of ball, visible on hover when closed */}
+        {/* Tooltip */}
         <div
           style={{
             marginRight: "8px",
@@ -107,7 +101,7 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
 
         {/* Ball */}
         <div style={{ position: "relative", marginRight: "-1px" }}>
-          {/* Pulse ring — only when fully visible and closed */}
+          {/* Pulse ring */}
           {!isOpen && !idle && (
             <span
               className="cb-ring"
@@ -129,10 +123,9 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onTouchStart={() => {
-              // On mobile, a touch wakes it if idle; second tap opens chat
               if (idle) {
                 cancelIdleTimer();
-                startIdleTimer(); // restart the 3s countdown after waking
+                startIdleTimer();
               }
             }}
             aria-label={isOpen ? "Close AI Assistant" : "Open AI Assistant"}
@@ -142,10 +135,8 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              // Flat right edge when docked, circle when active
               borderRadius: isOpen || isHovered ? "50%" : "50% 36% 36% 50%",
               backgroundColor: "var(--accent)",
-              // Dimmer when idle so it's clearly "sleeping"
               opacity: idle && !isHovered && !isOpen ? 0.45 : 1,
               boxShadow:
                 isHovered || isOpen ?
@@ -166,30 +157,34 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
                 transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
                 transition: "transform 0.25s ease",
               }}>
-              {isOpen ?
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              : <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+              {
+                isOpen ?
+                  // Close × when chat is open
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  // botlight.svg when closed — same src used in ChatWindow
+                : <img
+                    src="/botlight.svg"
+                    alt="AI Assistant"
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      objectFit: "contain",
+                      // Invert to white so it's visible on the accent background
+                      filter: "brightness(0) invert(1)",
+                    }}
+                  />
+
               }
             </span>
           </button>
