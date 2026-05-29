@@ -5,6 +5,7 @@ import { useAchievements } from "../hooks/useAchievements";
 import { Achievement } from "@/app/types/achievements";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
+import AuthGuard from "../components/AuthGuard";
 
 const IconFolder = ({ className }: { className?: string }) => (
   <svg
