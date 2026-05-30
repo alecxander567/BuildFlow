@@ -340,7 +340,7 @@ export default function DashboardPage() {
                       selectedTools={project.selectedTools}
                       dailyPlan={project.dailyPlan}
                       starred={project.starred}
-                      starredBy={project.starredBy}
+                      starredBy={project.starredBy} 
                       userId={project.userId}
                       currentUserId={user?.uid}
                       onDeleteProject={handleDeleteProject}

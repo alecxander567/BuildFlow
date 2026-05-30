@@ -229,12 +229,7 @@ export default function FAQPage() {
             <div
               className="flex items-center gap-2 text-sm"
               style={{ color: "var(--text-muted)" }}>
-              <Link
-                href="/help"
-                className="transition-colors hover:underline"
-                style={{ color: "var(--text-muted)" }}>
-                Help
-              </Link>
+              <span style={{ color: "var(--text-muted)" }}>Help</span>
               <svg
                 width="14"
                 height="14"
