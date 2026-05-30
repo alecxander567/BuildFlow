@@ -395,57 +395,31 @@ export default function ProjectFormFields({
           </span>
         </div>
 
-        {/* Cover Image with Cloudinary */}
-        <div
-          className="rounded-2xl border p-5"
-          style={{
-            borderColor: "var(--border)",
-            backgroundColor: "var(--bg-card)",
-          }}>
-          <div className="mb-3 flex items-center justify-between">
-            <label
-              className="block text-xs font-semibold uppercase tracking-widest"
-              style={{ color: "var(--text-muted)" }}>
-              Cover Image
-            </label>
-            <span
-              className="rounded-md px-2 py-0.5 text-[10px] font-medium"
-              style={{
-                backgroundColor: "var(--bg-hover)",
-                color: "var(--text-muted)",
-              }}>
-              Optional
-            </span>
+        {imageUrl && (
+          <div
+            className="mb-3 w-full overflow-hidden rounded-xl border"
+            style={{
+              height: "180px",
+              borderColor: "var(--border)",
+              backgroundColor: "var(--bg-base)",
+            }}>
+            <img
+              src={imageUrl}
+              alt="Cover preview"
+              className="h-full w-full object-contain"
+            />
           </div>
+        )}
 
-          {imageUrl && (
-            <div
-              className="mb-3 w-full overflow-hidden rounded-xl border"
-              style={{
-                height: "180px",
-                borderColor: "var(--border)",
-                backgroundColor: "var(--bg-base)",
-              }}>
-              <img
-                src={imageUrl}
-                alt="Cover preview"
-                className="h-full w-full object-contain"
-              />
-            </div>
-          )}
+        <CloudinaryUpload
+          onUpload={onImageUrlChange}
+          currentImageUrl={imageUrl}
+          buttonText={imageUrl ? "Change Image" : "Upload Project Image"}
+        />
 
-          <CloudinaryUpload
-            onUpload={onImageUrlChange}
-            currentImageUrl={imageUrl}
-            buttonText={imageUrl ? "Change Image" : "Upload Project Image"}
-          />
-
-          <p
-            className="mt-2 text-[11px]"
-            style={{ color: "var(--text-muted)" }}>
-            PNG, JPG, WEBP · Images are stored in Cloudinary
-          </p>
-        </div>
+        <p className="mt-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
+          PNG, JPG, WEBP · Images are stored in Cloudinary
+        </p>
       </div>
 
       {/* Actions */}
