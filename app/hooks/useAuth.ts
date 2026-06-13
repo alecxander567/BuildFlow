@@ -14,6 +14,10 @@ import { FirebaseError } from "firebase/app";
 import { auth, db } from "@/app/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import {
+  initializeUserStats,
+  trackDailyActivity,
+} from "@/app/lib/firebase/achievementService";
 
 export type AuthStatus = {
   type: "success" | "error";
@@ -78,6 +82,11 @@ export function useAuth() {
       if (firebaseUser) {
         try {
           await syncUserToFirestore(firebaseUser);
+
+          // Ensure the stats doc exists (sets daysActive: 1 on first ever
+          // login), then bump daysActive if this is a new calendar day.
+          await initializeUserStats(firebaseUser.uid);
+          await trackDailyActivity(firebaseUser.uid);
         } catch (e) {
           console.error("Firestore sync failed, continuing anyway:", e);
         }

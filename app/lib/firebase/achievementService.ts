@@ -40,6 +40,31 @@ export const initializeUserStats = async (userId: string): Promise<void> => {
   }
 };
 
+// Increments daysActive once per calendar day on login.
+// Safe to call on every auth state change — no-ops if already
+// counted today.
+export const trackDailyActivity = async (userId: string): Promise<void> => {
+  const userStatsRef = doc(db, "userStats", userId);
+  const snap = await getDoc(userStatsRef);
+
+  // If stats doc doesn't exist yet, initializeUserStats will handle
+  // setting daysActive: 1 — nothing to do here.
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  const lastUpdated: Date = data.lastUpdated?.toDate() || new Date(0);
+  const today = new Date();
+
+  const isNewDay = lastUpdated.toDateString() !== today.toDateString();
+
+  if (isNewDay) {
+    await updateDoc(userStatsRef, {
+      daysActive: increment(1),
+      lastUpdated: Timestamp.now(),
+    });
+  }
+};
+
 // Get user stats
 export const getUserStats = async (
   userId: string,
