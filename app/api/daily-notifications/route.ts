@@ -17,6 +17,7 @@ if (!admin.apps.length) {
   });
 }
 
+// app/api/daily-notifications/route.ts
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const expectedSecret = process.env.CRON_SECRET_KEY;
@@ -26,14 +27,63 @@ export async function GET(request: Request) {
   }
 
   try {
-    const pendingTasks = await getTodayPendingTasks();
-    const results = [];
+    const db = admin.firestore();
+    const today = new Date().toISOString().split("T")[0];
+    console.log("Today:", today);
 
+    // Step 1: Check projects
+    const projectsSnapshot = await db.collection("projects").get();
+    console.log("Total projects:", projectsSnapshot.size);
+
+    // Step 2: Check each project's dailyPlan
+    for (const projectDoc of projectsSnapshot.docs) {
+      const project = projectDoc.data();
+      console.log(`Project: ${project.title}, userId: ${project.userId}`);
+
+      const dailyPlan = project.dailyPlan || {};
+      const todayKeys = Object.keys(dailyPlan);
+      console.log(`  dailyPlan dates:`, todayKeys);
+
+      const tasksForToday = dailyPlan[today] || [];
+      console.log(`  Tasks for ${today}:`, tasksForToday.length);
+
+      const incompleteTasks = tasksForToday.filter((t: any) => !t.done);
+      console.log(`  Incomplete tasks:`, incompleteTasks.length);
+
+      // Step 3: Check user FCM tokens
+      const userIds = [
+        project.userId,
+        ...(project.teamMembers || []).map((m: any) => m.uid),
+      ].filter(Boolean);
+
+      for (const uid of userIds) {
+        const userDoc = await db.collection("users").doc(uid).get();
+        console.log(`  User ${uid} exists:`, userDoc.exists);
+        if (userDoc.exists) {
+          const data = userDoc.data()!;
+          console.log(`    fcmToken:`, !!data.fcmToken);
+          console.log(`    notificationsEnabled:`, data.notificationsEnabled);
+        }
+      }
+    }
+
+    // Now run normally
+    const pendingTasks = await getTodayPendingTasks();
+    console.log("Pending tasks found:", pendingTasks.length);
+
+    // ... rest of your existing code
+    const results = [];
     for (const task of pendingTasks) {
       const alreadySent = await wasNotificationSentToday(
         task.userId,
         task.projectId,
         task.id,
+      );
+      console.log(
+        `Task ${task.id} alreadySent:`,
+        alreadySent,
+        "fcmToken:",
+        !!task.fcmToken,
       );
 
       if (!alreadySent && task.fcmToken) {
@@ -44,7 +94,7 @@ export async function GET(request: Request) {
           const message = {
             notification: { title, body },
             data: {
-              userId: task.userId, // needed by SW to write to Firestore
+              userId: task.userId,
               projectId: task.projectId,
               taskId: task.id,
               type: "daily_task_reminder",
@@ -54,16 +104,12 @@ export async function GET(request: Request) {
           };
 
           const response = await admin.messaging().send(message);
-
-          // Log dedup record (existing)
           await logNotification(
             task.userId,
             task.projectId,
             task.id,
             task.taskText,
           );
-
-          // Write to notifications collection so the in-app bell shows it
           await admin.firestore().collection("notifications").add({
             userId: task.userId,
             title,
@@ -78,14 +124,11 @@ export async function GET(request: Request) {
 
           results.push({ task: task.id, status: "sent", messageId: response });
         } catch (error) {
-          console.error(
-            `Failed to send notification for task ${task.id}:`,
-            error,
-          );
+          console.error(`Failed for task ${task.id}:`, error);
           results.push({
             task: task.id,
             status: "failed",
-            error: error instanceof Error ? error.message : "Unknown error",
+            error: String(error),
           });
         }
       } else {
@@ -102,10 +145,7 @@ export async function GET(request: Request) {
       results,
     });
   } catch (error) {
-    console.error("Error processing daily notifications:", error);
-    return NextResponse.json(
-      { error: "Failed to process notifications" },
-      { status: 500 },
-    );
+    console.error("Error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
