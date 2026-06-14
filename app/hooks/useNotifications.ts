@@ -1,6 +1,7 @@
 // app/hooks/useNotifications.ts
 import { useEffect, useState } from "react";
 import { db, auth } from "@/app/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   query,
@@ -30,36 +31,51 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+    let unsubSnap: (() => void) | undefined;
 
-    const q = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid),
-      where("deleted", "!=", true),
-      orderBy("deleted"),
-      orderBy("createdAt", "desc"),
-      limit(30),
-    );
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      // Cleanup any previous snapshot listener when auth state changes
+      if (unsubSnap) {
+        unsubSnap();
+        unsubSnap = undefined;
+      }
 
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setNotifications(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as AppNotification),
-        );
+      if (!user) {
+        setNotifications([]);
         setLoading(false);
-      },
-      (err) => {
-        console.error("useNotifications snapshot error:", err);
-        setLoading(false);
-      },
-    );
+        return;
+      }
 
-    return unsub;
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "==", user.uid),
+        where("deleted", "!=", true),
+        orderBy("deleted"),
+        orderBy("createdAt", "desc"),
+        limit(30),
+      );
+
+      unsubSnap = onSnapshot(
+        q,
+        (snap) => {
+          setNotifications(
+            snap.docs.map(
+              (d) => ({ id: d.id, ...d.data() }) as AppNotification,
+            ),
+          );
+          setLoading(false);
+        },
+        (err) => {
+          console.error("useNotifications snapshot error:", err);
+          setLoading(false);
+        },
+      );
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubSnap) unsubSnap();
+    };
   }, []);
 
   async function markAllRead() {
@@ -77,7 +93,6 @@ export function useNotifications() {
   }
 
   async function dismiss(id: string) {
-    // Soft-delete — keeps the notificationLog intact
     await updateDoc(doc(db, "notifications", id), { deleted: true });
   }
 
