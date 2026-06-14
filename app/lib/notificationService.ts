@@ -1,13 +1,6 @@
 // app/lib/notificationService.ts
-import { db } from "./firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc, 
-  Timestamp,
-} from "firebase/firestore";
+import admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 
 export interface NotificationTask {
   id: string;
@@ -22,14 +15,13 @@ export interface NotificationTask {
   fcmToken?: string;
 }
 
-// Rest of your code remains the same, but update the pending tasks to include fcmToken
 export const getTodayPendingTasks = async (): Promise<NotificationTask[]> => {
   const today = new Date().toISOString().split("T")[0];
   const pendingTasks: NotificationTask[] = [];
 
   try {
-    const projectsQuery = query(collection(db, "projects"));
-    const projectsSnapshot = await getDocs(projectsQuery);
+    const db = admin.firestore();
+    const projectsSnapshot = await db.collection("projects").get();
 
     for (const projectDoc of projectsSnapshot.docs) {
       const project = projectDoc.data();
@@ -37,36 +29,38 @@ export const getTodayPendingTasks = async (): Promise<NotificationTask[]> => {
       const tasksForToday = dailyPlan[today] || [];
       const incompleteTasks = tasksForToday.filter((task: any) => !task.done);
 
+      if (incompleteTasks.length === 0) continue;
+
       const teamMembers = project.teamMembers || [];
-      const userIds = [
+      const userIds: string[] = [
         project.userId,
         ...teamMembers.map((member: any) => member.uid),
-      ];
+      ].filter(Boolean);
 
       for (const task of incompleteTasks) {
         for (const userId of userIds) {
-          const userDoc = await getDocs(
-            query(collection(db, "users"), where("uid", "==", userId)),
-          );
+          // Use doc(userId) instead of where("uid", "==", userId)
+          const userDoc = await db.collection("users").doc(userId).get();
 
-          if (!userDoc.empty) {
-            const userData = userDoc.docs[0].data();
-            const fcmToken = userData.fcmToken;
+          if (!userDoc.exists) continue;
 
-            if (fcmToken) {
-              pendingTasks.push({
-                id: `${projectDoc.id}_${task.id}_${userId}`,
-                projectId: projectDoc.id,
-                projectTitle: project.title,
-                date: today,
-                taskText: task.text,
-                userId: userId,
-                userEmail: userData.email || "",
-                sent: false,
-                createdAt: Timestamp.now(),
-                fcmToken: fcmToken, 
-              });
-            }
+          const userData = userDoc.data()!;
+          const fcmToken = userData.fcmToken;
+          const notificationsEnabled = userData.notificationsEnabled === true;
+
+          if (fcmToken && notificationsEnabled) {
+            pendingTasks.push({
+              id: `${projectDoc.id}_${task.id}_${userId}`,
+              projectId: projectDoc.id,
+              projectTitle: project.title,
+              date: today,
+              taskText: task.text,
+              userId,
+              userEmail: userData.email || "",
+              sent: false,
+              createdAt: Timestamp.now(),
+              fcmToken,
+            });
           }
         }
       }
@@ -79,27 +73,26 @@ export const getTodayPendingTasks = async (): Promise<NotificationTask[]> => {
   }
 };
 
-// Function to check if notification was already sent today
 export const wasNotificationSentToday = async (
   userId: string,
   projectId: string,
   taskId: string,
 ): Promise<boolean> => {
   try {
+    const db = admin.firestore();
     const today = new Date().toISOString().split("T")[0];
     const startOfDay = new Date(today + "T00:00:00");
     const endOfDay = new Date(today + "T23:59:59");
 
-    const notificationsQuery = query(
-      collection(db, "notificationLogs"),
-      where("userId", "==", userId),
-      where("projectId", "==", projectId),
-      where("taskId", "==", taskId),
-      where("sentAt", ">=", Timestamp.fromDate(startOfDay)),
-      where("sentAt", "<=", Timestamp.fromDate(endOfDay)),
-    );
+    const snapshot = await db
+      .collection("notificationLogs")
+      .where("userId", "==", userId)
+      .where("projectId", "==", projectId)
+      .where("taskId", "==", taskId)
+      .where("sentAt", ">=", Timestamp.fromDate(startOfDay))
+      .where("sentAt", "<=", Timestamp.fromDate(endOfDay))
+      .get();
 
-    const snapshot = await getDocs(notificationsQuery);
     return !snapshot.empty;
   } catch (error) {
     console.error("Error checking notification log:", error);
@@ -107,7 +100,6 @@ export const wasNotificationSentToday = async (
   }
 };
 
-// Function to log sent notification
 export const logNotification = async (
   userId: string,
   projectId: string,
@@ -115,7 +107,8 @@ export const logNotification = async (
   taskText: string,
 ): Promise<void> => {
   try {
-    await addDoc(collection(db, "notificationLogs"), {
+    const db = admin.firestore();
+    await db.collection("notificationLogs").add({
       userId,
       projectId,
       taskId,
