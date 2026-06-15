@@ -20,6 +20,7 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
 import { AlertContainer, useAlert } from "../components/Alert";
 import ConfirmationModal from "../components/ConfirmationModal";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function SettingsPage() {
   const { user, authLoading } = useAuth();
@@ -94,6 +95,18 @@ export default function SettingsPage() {
 
   return (
     <>
+      {account.deleteSaving && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center"
+          style={{ backgroundColor: "var(--bg-base)", opacity: 0.95 }}>
+          <LoadingSpinner
+            variant="dots"
+            size="lg"
+            label="Deleting your account…"
+          />
+        </div>
+      )}
+
       <div
         className="flex h-screen overflow-hidden"
         style={{

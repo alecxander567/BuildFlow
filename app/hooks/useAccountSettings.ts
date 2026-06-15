@@ -130,7 +130,7 @@ export function useAccountSettings(userEmail?: string | null) {
       await reauthenticateWithCredential(user, credential);
       await deleteUser(user);
       await fetch("/api/auth/session", { method: "DELETE" });
-      router.push("/login");
+      router.replace("/");
     } catch (err: unknown) {
       if (err instanceof Error && "code" in err) {
         const code = (err as { code: string }).code;

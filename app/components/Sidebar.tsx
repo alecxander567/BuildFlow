@@ -11,6 +11,7 @@ import {
 } from "@/app/hooks/useNotifications";
 import { useRouter } from "next/navigation";
 import ProfileModal, { SelfProfileModal } from "@/app/components/ProfileModal";
+import LoadingSpinner from "@/app/components/LoadingSpinner";
 
 const navItems = [
   {
@@ -1002,6 +1003,14 @@ export default function Sidebar() {
 
   return (
     <>
+      {loading && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center"
+          style={{ backgroundColor: "var(--bg-base)", opacity: 0.95 }}>
+          <LoadingSpinner variant="dots" size="lg" label="Signing out…" />
+        </div>
+      )}
+
       {/* ── Desktop sidebar ── */}
       <aside
         className="hidden md:flex h-screen w-[220px] shrink-0 flex-col border-r"
