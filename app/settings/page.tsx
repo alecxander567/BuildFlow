@@ -493,7 +493,7 @@ export default function SettingsPage() {
                     <div
                       className="flex items-start gap-2.5 rounded-xl p-3"
                       style={{
-                        backgroundColor: "var(--error-subtle, #fff1f1)",
+                        backgroundColor: "var(--bg-error)",
                       }}>
                       <TriangleAlert
                         className="h-4 w-4 mt-0.5 shrink-0"
@@ -667,7 +667,7 @@ function Section({
         className="px-5 py-4 border-b flex items-center gap-2"
         style={{
           borderColor: danger ? "var(--error)" : "var(--border)",
-          backgroundColor: danger ? "var(--error-subtle, #fff8f8)" : undefined,
+          backgroundColor: danger ? "var(--bg-error)" : undefined,
         }}>
         {icon}
         <h2
