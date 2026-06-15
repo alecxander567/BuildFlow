@@ -1,24 +1,21 @@
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { NextRequest, NextResponse } from "next/server";
+import { adminAuth, adminDb } from "@/app/lib/firebase-admin";
 
-function getAdminApp() {
-  if (getApps().length > 0) return getApps()[0];
+export async function DELETE(req: NextRequest) {
+  try {
+    const { uid } = await req.json();
+    if (!uid)
+      return NextResponse.json({ error: "Missing uid" }, { status: 400 });
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    await adminAuth.deleteUser(uid);
+    await adminDb.collection("users").doc(uid).delete();
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      "Missing Firebase Admin env vars. Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY",
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Delete user error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete user" },
+      { status: 500 },
     );
   }
-
-  return initializeApp({
-    credential: cert({ projectId, clientEmail, privateKey }),
-  });
 }
-
-export const adminAuth = getAuth(getAdminApp());
-export const adminDb = getFirestore(getAdminApp());
