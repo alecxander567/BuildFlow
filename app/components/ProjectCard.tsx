@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmationModal from "./ConfirmationModal";
 import ProjectOverviewModal from "./ProjectOverviewModal";
+import { UserProfileModal } from "@/app/components/ProfileModal";
 import {
   type DailyPlan,
   type DayTask,
@@ -173,7 +174,6 @@ const typeTheme: Record<ProjectType, { light: TextBg; dark: TextBg }> = {
   },
 };
 
-// Day strip pill colours
 const dayPill: Record<string, { light: Pair; dark: Pair }> = {
   today: {
     light: { bg: "#FEF0E7", border: "#F5C89A", text: "#E8610A" },
@@ -197,7 +197,6 @@ const dayPill: Record<string, { light: Pair; dark: Pair }> = {
   },
 };
 
-// Cover placeholder gradients (Tailwind classes, light vs dark handled by isDark flag)
 const placeholderGradients: Record<ProjectType, string> = {
   Engineering: "from-[#DBEAFE] to-[#EFF6FF]",
   Technology: "from-[#DCFCE7] to-[#F0FDF4]",
@@ -389,7 +388,6 @@ function DayTaskModal({
           borderColor: "var(--border)",
         }}
         onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div
           className="flex items-center justify-between rounded-t-2xl px-5 py-4"
           style={{
@@ -733,6 +731,10 @@ export default function ProjectCard({
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
 
+  // ── owner profile modal state ──
+  const [ownerProfileOpen, setOwnerProfileOpen] = useState(false);
+  const [ownerProfilePos, setOwnerProfilePos] = useState({ top: 0, left: 0 });
+
   const isOwner = currentUserId === userId;
   const canEdit = isOwner;
   const starred = !!currentUserId && starredBy.includes(currentUserId);
@@ -807,7 +809,6 @@ export default function ProjectCard({
     [id, onUpdateDailyPlan],
   );
 
-  // Accent hover helpers (used inline for buttons that can't use Tailwind dark:)
   const accentHoverBg = isDark ? "#1a1200" : "#FEF0E7";
   const accentHoverBorder = isDark ? "#7c3900" : "#F5C89A";
   const dangerHoverBg = isDark ? "#3b1111" : "#FEF2F2";
@@ -831,12 +832,11 @@ export default function ProjectCard({
         <div
           className="relative h-36 w-full overflow-hidden rounded-t-2xl"
           style={{ backgroundColor: "var(--bg-base)" }}>
-          {" "}
           {imageUrl ?
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]" // ✅ object-contain
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
             />
           : <div
               className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
@@ -849,6 +849,7 @@ export default function ProjectCard({
               </div>
             </div>
           }
+
           {/* Priority badge */}
           <div
             className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold backdrop-blur-sm"
@@ -863,6 +864,7 @@ export default function ProjectCard({
             />
             {p.label}
           </div>
+
           {/* ⋯ menu */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
@@ -1007,27 +1009,61 @@ export default function ProjectCard({
                 No description provided
               </p>
             }
+
+            {/* ── Owner email — clickable to open profile ── */}
             {!isOwner && ownerEmail && (
-              <div className="mt-2 flex items-center gap-1.5">
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ color: "var(--text-primary)" }}>
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span
-                  className="text-[10px] font-bold truncate"
-                  style={{ color: "var(--text-primary)" }}>
-                  {ownerEmail}
-                </span>
-              </div>
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rect = (
+                      e.currentTarget as HTMLElement
+                    ).getBoundingClientRect();
+                    setOwnerProfilePos({
+                      top: rect.bottom + 8,
+                      left: Math.min(rect.left, window.innerWidth - 316),
+                    });
+                    setOwnerProfileOpen(true);
+                  }}
+                  className="mt-2 flex items-center gap-1.5 transition-colors"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "2px 0",
+                    color: "var(--text-primary)",
+                  }}
+                  onMouseEnter={(e) =>
+                    ((e.currentTarget as HTMLElement).style.color = "#E8610A")
+                  }
+                  onMouseLeave={(e) =>
+                    ((e.currentTarget as HTMLElement).style.color =
+                      "var(--text-primary)")
+                  }>
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span className="text-[10px] font-bold truncate max-w-[140px]">
+                    {ownerEmail}
+                  </span>
+                </button>
+
+                <UserProfileModal
+                  isOpen={ownerProfileOpen}
+                  onClose={() => setOwnerProfileOpen(false)}
+                  ownerEmail={ownerEmail}
+                  position={ownerProfilePos}
+                />
+              </>
             )}
           </div>
 

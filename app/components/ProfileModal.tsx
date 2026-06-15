@@ -1,15 +1,33 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useAnalytics } from "@/app/hooks/useAnalytics";
 import { useAchievements } from "@/app/hooks/useAchievements";
+import { db } from "@/app/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-interface ProfileModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  anchorRef?: React.RefObject<HTMLElement>;
+// ─── shared types ────────────────────────────────────────────────────────────
+
+interface ToolStat {
+  name: string;
+  count: number;
+  category: string;
 }
+
+interface ProfileData {
+  displayName: string;
+  email: string;
+  totalProjects: number;
+  taskCompletionRate: number;
+  topTools: ToolStat[];
+  // only present for self-view
+  unlockedCount?: number;
+  totalAchievements?: number;
+  productivityScore?: number;
+}
+
+// ─── shared UI helpers ───────────────────────────────────────────────────────
 
 const categoryColors: Record<
   string,
@@ -21,61 +39,106 @@ const categoryColors: Record<
   c: { bg: "#FDF4FF", text: "#A855F7", border: "#E9D5FF" },
   d: { bg: "#FFF7ED", text: "#F59E0B", border: "#FDE68A" },
 };
-
 const colorKeys = ["default", "a", "b", "c", "d"];
-
 function getColor(index: number) {
   return categoryColors[colorKeys[index % colorKeys.length]];
 }
 
-export default function ProfileModal({
-  isOpen,
+// ─── Firestore loader for OTHER users ────────────────────────────────────────
+
+async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
+  // 1. Look up the user doc by email
+  const usersSnap = await getDocs(
+    query(collection(db, "users"), where("email", "==", email)),
+  );
+
+  let displayName = email.split("@")[0];
+  let userId: string | null = null;
+
+  if (!usersSnap.empty) {
+    const userDoc = usersSnap.docs[0];
+    userId = userDoc.id;
+    const data = userDoc.data();
+    displayName = data.displayName ?? data.name ?? displayName;
+  }
+
+  // 2. Load their projects
+  const projectsQuery =
+    userId ?
+      query(collection(db, "projects"), where("userId", "==", userId))
+    : query(collection(db, "projects"), where("ownerEmail", "==", email));
+
+  const projectsSnap = await getDocs(projectsQuery);
+  const projects = projectsSnap.docs.map((d) => d.data());
+
+  // 3. Compute stats
+  const totalProjects = projects.length;
+
+  let totalTasks = 0;
+  let doneTasks = 0;
+  const toolCounts: Record<string, { count: number; category: string }> = {};
+
+  projects.forEach((p) => {
+    // tasks
+    Object.values(p.dailyPlan ?? {}).forEach((tasks: any) => {
+      tasks.forEach((t: any) => {
+        totalTasks++;
+        if (t.done) doneTasks++;
+      });
+    });
+
+    // tools
+    Object.entries(p.selectedTools ?? {}).forEach(
+      ([category, tools]: [string, any]) => {
+        tools.forEach((tool: string) => {
+          const key = `${category}:${tool}`;
+          if (!toolCounts[key]) toolCounts[key] = { count: 0, category };
+          toolCounts[key].count++;
+        });
+      },
+    );
+  });
+
+  const taskCompletionRate =
+    totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+  const topTools = Object.entries(toolCounts)
+    .map(([key, data]) => ({
+      name: key.split(":")[1],
+      count: data.count,
+      category: data.category,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return { displayName, email, totalProjects, taskCompletionRate, topTools };
+}
+
+// ─── shared modal shell ───────────────────────────────────────────────────────
+
+interface ModalShellProps {
+  data: ProfileData | null;
+  isLoading: boolean;
+  onClose: () => void;
+  modalRef: React.RefObject<HTMLDivElement>;
+  style?: React.CSSProperties;
+  isSelf?: boolean;
+}
+
+function ModalShell({
+  data,
+  isLoading,
   onClose,
-  anchorRef,
-}: ProfileModalProps) {
-  const { user } = useAuth();
-  const { toolAnalytics, productivityMetrics, productivityScore, isLoading } =
-    useAnalytics();
-  const { unlockedCount, totalAchievements } = useAchievements();
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        modalRef.current &&
-        !modalRef.current.contains(e.target as Node) &&
-        anchorRef?.current &&
-        !anchorRef.current.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    }
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen, onClose, anchorRef]);
-
-  useEffect(() => {
-    function handleEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (isOpen) document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "?";
-  const displayName = user?.displayName ?? user?.email?.split("@")[0] ?? "User";
-  const email = user?.email ?? "";
-  const topTools = toolAnalytics.topTools.slice(0, 5);
+  modalRef,
+  style,
+  isSelf,
+}: ModalShellProps) {
+  const initials = data?.email?.slice(0, 2).toUpperCase() ?? "?";
 
   return (
     <div
       ref={modalRef}
       style={{
-        position: "absolute",
-        bottom: "calc(100% + 10px)",
-        left: 0,
         width: 300,
         backgroundColor: "var(--bg-card)",
         border: "1px solid var(--border)",
@@ -83,6 +146,7 @@ export default function ProfileModal({
         boxShadow: "0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.07)",
         zIndex: 100,
         overflow: "hidden",
+        ...style,
       }}
       role="dialog"
       aria-label="Profile">
@@ -122,7 +186,7 @@ export default function ProfileModal({
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}>
-            {displayName}
+            {data?.displayName ?? "—"}
           </p>
           <p
             style={{
@@ -133,8 +197,24 @@ export default function ProfileModal({
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}>
-            {email}
+            {data?.email ?? ""}
           </p>
+          {!isSelf && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#E8610A",
+                backgroundColor: "#FEF0E7",
+                border: "1px solid #F5C89A",
+                borderRadius: 20,
+                padding: "1px 7px",
+                display: "inline-block",
+                marginTop: 4,
+              }}>
+              Team member
+            </span>
+          )}
         </div>
         <button
           onClick={onClose}
@@ -166,23 +246,42 @@ export default function ProfileModal({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: isSelf ? "1fr 1fr 1fr" : "1fr 1fr",
           borderBottom: "1px solid var(--border)",
         }}>
         {[
-          { label: "Projects", value: productivityMetrics.totalProjects },
-          {
-            label: "Achievements",
-            value: `${unlockedCount}/${totalAchievements}`,
-          },
-          { label: "Score", value: `${productivityScore}%` },
-        ].map((stat, i) => (
+          { label: "Projects", value: data?.totalProjects ?? "—" },
+          ...(isSelf ?
+            [
+              {
+                label: "Achievements",
+                value:
+                  data?.unlockedCount !== undefined ?
+                    `${data.unlockedCount}/${data.totalAchievements}`
+                  : "—",
+              },
+              {
+                label: "Score",
+                value:
+                  data?.productivityScore !== undefined ?
+                    `${data.productivityScore}%`
+                  : "—",
+              },
+            ]
+          : [
+              {
+                label: "Tasks Done",
+                value: data ? `${data.taskCompletionRate}%` : "—",
+              },
+            ]),
+        ].map((stat, i, arr) => (
           <div
             key={stat.label}
             style={{
               padding: "12px 8px",
               textAlign: "center",
-              borderRight: i < 2 ? "1px solid var(--border)" : "none",
+              borderRight:
+                i < arr.length - 1 ? "1px solid var(--border)" : "none",
             }}>
             <p
               style={{
@@ -222,7 +321,6 @@ export default function ProfileModal({
           }}>
           Most Used Tools
         </p>
-
         {isLoading ?
           <div
             style={{
@@ -233,7 +331,7 @@ export default function ProfileModal({
             }}>
             Loading…
           </div>
-        : topTools.length === 0 ?
+        : !data || data.topTools.length === 0 ?
           <div
             style={{
               fontSize: 13,
@@ -244,11 +342,10 @@ export default function ProfileModal({
             No tools added yet
           </div>
         : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {topTools.map((tool, i) => {
+            {data.topTools.map((tool, i) => {
               const color = getColor(i);
-              const maxCount = topTools[0].count;
+              const maxCount = data.topTools[0].count;
               const barWidth = maxCount > 0 ? (tool.count / maxCount) * 100 : 0;
-
               return (
                 <div key={tool.name}>
                   <div
@@ -300,7 +397,6 @@ export default function ProfileModal({
                       {tool.count}x
                     </span>
                   </div>
-                  {/* Bar */}
                   <div
                     style={{
                       height: 3,
@@ -353,7 +449,7 @@ export default function ProfileModal({
               fontWeight: 700,
               color: "var(--text-primary)",
             }}>
-            {isLoading ? "—" : `${productivityMetrics.taskCompletionRate}%`}
+            {isLoading ? "—" : `${data?.taskCompletionRate ?? 0}%`}
           </span>
         </div>
         <div
@@ -366,8 +462,7 @@ export default function ProfileModal({
           <div
             style={{
               height: "100%",
-              width:
-                isLoading ? "0%" : `${productivityMetrics.taskCompletionRate}%`,
+              width: isLoading ? "0%" : `${data?.taskCompletionRate ?? 0}%`,
               borderRadius: 99,
               backgroundColor: "#E8610A",
               transition: "width 0.5s ease",
@@ -378,3 +473,149 @@ export default function ProfileModal({
     </div>
   );
 }
+
+// ─── SELF modal (sidebar footer) ─────────────────────────────────────────────
+
+interface SelfProfileModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  anchorRef?: React.RefObject<HTMLElement>;
+}
+
+export function SelfProfileModal({
+  isOpen,
+  onClose,
+  anchorRef,
+}: SelfProfileModalProps) {
+  const { user } = useAuth();
+  const { toolAnalytics, productivityMetrics, productivityScore, isLoading } =
+    useAnalytics();
+  const { unlockedCount, totalAchievements } = useAchievements();
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(e.target as Node) &&
+        anchorRef?.current &&
+        !anchorRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    }
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose, anchorRef]);
+
+  useEffect(() => {
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    if (isOpen) document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const data: ProfileData = {
+    displayName: user?.displayName ?? user?.email?.split("@")[0] ?? "User",
+    email: user?.email ?? "",
+    totalProjects: productivityMetrics.totalProjects,
+    taskCompletionRate: productivityMetrics.taskCompletionRate,
+    topTools: toolAnalytics.topTools.slice(0, 5),
+    unlockedCount,
+    totalAchievements,
+    productivityScore,
+  };
+
+  return (
+    <ModalShell
+      data={data}
+      isLoading={isLoading}
+      onClose={onClose}
+      modalRef={modalRef}
+      isSelf
+      style={{ position: "absolute", bottom: "calc(100% + 10px)", left: 0 }}
+    />
+  );
+}
+
+// ─── OTHER USER modal (project card) ─────────────────────────────────────────
+
+interface UserProfileModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  ownerEmail: string;
+  /** Position the modal relative to the trigger element */
+  position?: { top: number; left: number };
+}
+
+export function UserProfileModal({
+  isOpen,
+  onClose,
+  ownerEmail,
+  position,
+}: UserProfileModalProps) {
+  const [data, setData] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || !ownerEmail) return;
+    setIsLoading(true);
+    setData(null);
+    loadUserProfileByEmail(ownerEmail)
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [isOpen, ownerEmail]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node))
+        onClose();
+    }
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    if (isOpen) document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        pointerEvents: "none",
+      }}>
+      <div
+        style={{
+          position: "absolute",
+          top: position?.top ?? 100,
+          left: position?.left ?? 100,
+          pointerEvents: "auto",
+        }}>
+        <ModalShell
+          data={data}
+          isLoading={isLoading}
+          onClose={onClose}
+          modalRef={modalRef}
+          isSelf={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── default export stays backward-compatible with Sidebar ───────────────────
+export default SelfProfileModal;

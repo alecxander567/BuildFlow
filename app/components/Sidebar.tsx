@@ -10,7 +10,7 @@ import {
   type AppNotification,
 } from "@/app/hooks/useNotifications";
 import { useRouter } from "next/navigation";
-import ProfileModal from "@/app/components/ProfileModal";
+import ProfileModal, { SelfProfileModal } from "@/app/components/ProfileModal";
 
 const navItems = [
   {
@@ -576,7 +576,7 @@ function UserFooter({
   return (
     <div className="relative flex items-center gap-3" ref={footerRef}>
       {/* Profile modal anchored above the footer */}
-      <ProfileModal
+      <SelfProfileModal
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
         anchorRef={footerRef as React.RefObject<HTMLElement>}
