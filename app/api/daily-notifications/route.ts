@@ -67,7 +67,7 @@ export async function GET(request: Request) {
 
             await db.collection("notifications").add({
               userId,
-              title: `📋 Task Reminder: ${project.title}`,
+              title: `Task Reminder: ${project.title}`,
               message: `Don't forget: "${task.text}"`,
               type: "warning",
               read: false,
