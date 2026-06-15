@@ -5,7 +5,6 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  deleteUser,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase";
@@ -128,7 +127,21 @@ export function useAccountSettings(userEmail?: string | null) {
         deletePassword,
       );
       await reauthenticateWithCredential(user, credential);
-      await deleteUser(user);
+
+      const uid = user.uid;
+
+      // Sign out first so Firebase Auth state clears cleanly
+      await auth.signOut();
+
+      // Admin API deletes from both Auth + Firestore
+      const res = await fetch("/api/admin/delete-user", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
+      });
+
+      if (!res.ok) throw new Error("API delete failed");
+
       await fetch("/api/auth/session", { method: "DELETE" });
       router.replace("/");
     } catch (err: unknown) {
@@ -144,6 +157,8 @@ export function useAccountSettings(userEmail?: string | null) {
         } else {
           setDeleteError("Failed to delete account. Please try again.");
         }
+      } else {
+        setDeleteError("Failed to delete account. Please try again.");
       }
     } finally {
       setDeleteSaving(false);
