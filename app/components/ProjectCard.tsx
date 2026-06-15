@@ -1011,59 +1011,56 @@ export default function ProjectCard({
             }
 
             {/* ── Owner email — clickable to open profile ── */}
+            {/* FIX: Only render the trigger button here, NOT the modal.            */}
+            {/* The modal is moved outside the card div at the bottom of the JSX   */}
+            {/* to escape the card's stacking context (transform + overflow).       */}
             {!isOwner && ownerEmail && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const rect = (
-                      e.currentTarget as HTMLElement
-                    ).getBoundingClientRect();
-                    setOwnerProfilePos({
-                      top: rect.bottom + 8,
-                      left: Math.min(rect.left, window.innerWidth - 316),
-                    });
-                    setOwnerProfileOpen(true);
-                  }}
-                  className="mt-2 flex items-center gap-1.5 transition-colors"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "2px 0",
-                    color: "var(--text-primary)",
-                  }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color = "#E8610A")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLElement).style.color =
-                      "var(--text-primary)")
-                  }>
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span className="text-[10px] font-bold truncate max-w-[140px]">
-                    {ownerEmail}
-                  </span>
-                </button>
-
-                <UserProfileModal
-                  isOpen={ownerProfileOpen}
-                  onClose={() => setOwnerProfileOpen(false)}
-                  ownerEmail={ownerEmail}
-                  position={ownerProfilePos}
-                />
-              </>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+                  setOwnerProfilePos({
+                    top: rect.bottom + window.scrollY + 8,
+                    left: Math.min(
+                      rect.left + window.scrollX,
+                      window.innerWidth - 316,
+                    ),
+                  });
+                  setOwnerProfileOpen(true);
+                }}
+                className="mt-2 flex items-center gap-1.5 transition-colors"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "2px 0",
+                  color: "var(--text-primary)",
+                }}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLElement).style.color = "#E8610A")
+                }
+                onMouseLeave={(e) =>
+                  ((e.currentTarget as HTMLElement).style.color =
+                    "var(--text-primary)")
+                }>
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-[10px] font-bold truncate max-w-[140px]">
+                  {ownerEmail}
+                </span>
+              </button>
             )}
           </div>
 
@@ -1320,6 +1317,7 @@ export default function ProjectCard({
           </div>
         </div>
       </div>
+      {/* ── END of card div ── */}
 
       {selectedDay && isOwner && (
         <DayTaskModal
@@ -1365,6 +1363,18 @@ export default function ProjectCard({
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={handleDelete}
       />
+
+      {/* ── FIX: UserProfileModal rendered OUTSIDE the card div so it escapes   ── */}
+      {/* the card's stacking context (caused by transform on hover + overflow).   */}
+      {/* Position uses window.scrollY offset so it stays anchored to the trigger. */}
+      {!isOwner && ownerEmail && (
+        <UserProfileModal
+          isOpen={ownerProfileOpen}
+          onClose={() => setOwnerProfileOpen(false)}
+          ownerEmail={ownerEmail}
+          position={ownerProfilePos}
+        />
+      )}
     </>
   );
 }
