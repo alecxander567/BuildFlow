@@ -11,6 +11,7 @@ import {
   UserCircle,
   Eye,
   EyeOff,
+  TriangleAlert,
 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useSettings } from "@/app/hooks/useSettings";
@@ -42,6 +43,9 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   const handleSave = async () => {
     await saveSettings();
@@ -441,6 +445,153 @@ export default function SettingsPage() {
                 }
               </Section>
 
+              {/* ── Danger Zone Section ── */}
+              <Section
+                icon={
+                  <TriangleAlert
+                    className="h-4 w-4"
+                    style={{ color: "var(--error)" }}
+                  />
+                }
+                title="Danger Zone"
+                danger>
+                {!showDeleteConfirm ?
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "var(--text-primary)" }}>
+                        Delete account
+                      </p>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "var(--text-muted)" }}>
+                        Permanently deletes your account and all associated
+                        data. This cannot be undone.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="shrink-0 h-9 px-4 text-sm font-semibold rounded-xl border transition-colors"
+                      style={{
+                        borderColor: "var(--error)",
+                        color: "var(--error)",
+                        backgroundColor: "transparent",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--error)";
+                        e.currentTarget.style.color = "#fff";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "var(--error)";
+                      }}>
+                      Delete account
+                    </button>
+                  </div>
+                : <div className="flex flex-col gap-3">
+                    <div
+                      className="flex items-start gap-2.5 rounded-xl p-3"
+                      style={{
+                        backgroundColor: "var(--error-subtle, #fff1f1)",
+                      }}>
+                      <TriangleAlert
+                        className="h-4 w-4 mt-0.5 shrink-0"
+                        style={{ color: "var(--error)" }}
+                      />
+                      <p
+                        className="text-xs leading-relaxed"
+                        style={{ color: "var(--error)" }}>
+                        This will permanently delete your account and all
+                        associated data. This action{" "}
+                        <span className="font-bold">cannot be undone.</span>
+                      </p>
+                    </div>
+
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-primary)" }}>
+                      Enter your password to confirm:
+                    </p>
+
+                    <div className="relative">
+                      <input
+                        type={showDeletePassword ? "text" : "password"}
+                        placeholder="Your password"
+                        value={account.deletePassword}
+                        onChange={(e) =>
+                          account.setDeletePassword(e.target.value)
+                        }
+                        className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                        style={{
+                          backgroundColor: "var(--bg-base)",
+                          borderColor:
+                            account.deleteError ? "var(--error)" : (
+                              "var(--border)"
+                            ),
+                          color: "var(--text-primary)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeletePassword((v) => !v)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                        style={{ color: "var(--text-muted)" }}>
+                        {showDeletePassword ?
+                          <EyeOff className="h-4 w-4" />
+                        : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+
+                    {account.deleteError && (
+                      <p className="text-xs" style={{ color: "var(--error)" }}>
+                        {account.deleteError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setShowDeletePassword(false);
+                          account.setDeletePassword("");
+                        }}
+                        className="h-9 px-4 text-sm font-semibold rounded-xl border transition-colors"
+                        style={{
+                          borderColor: "var(--border)",
+                          color: "var(--text-secondary)",
+                          backgroundColor: "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor =
+                            "var(--bg-base)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}>
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => account.deleteAccount()}
+                        disabled={account.deleteSaving}
+                        className="flex items-center gap-2 h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                        style={{ backgroundColor: "var(--error)" }}>
+                        {account.deleteSaving ?
+                          <>
+                            <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                            Deleting…
+                          </>
+                        : <>
+                            <Trash2 className="h-4 w-4" />
+                            Delete permanently
+                          </>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                }
+              </Section>
+
               {/* ── Save Button ── */}
               <div className="flex justify-end pb-4">
                 <button
@@ -496,11 +647,13 @@ function Section({
   icon,
   title,
   action,
+  danger = false,
   children,
 }: {
   icon?: React.ReactNode;
   title: string;
   action?: React.ReactNode;
+  danger?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -508,16 +661,19 @@ function Section({
       className="rounded-2xl border overflow-hidden"
       style={{
         backgroundColor: "var(--bg-card)",
-        borderColor: "var(--border)",
+        borderColor: danger ? "var(--error)" : "var(--border)",
       }}>
       <div
         className="px-5 py-4 border-b flex items-center gap-2"
-        style={{ borderColor: "var(--border)" }}>
+        style={{
+          borderColor: danger ? "var(--error)" : "var(--border)",
+          backgroundColor: danger ? "var(--error-subtle, #fff8f8)" : undefined,
+        }}>
         {icon}
         <h2
           className="text-sm font-bold"
           style={{
-            color: "var(--text-primary)",
+            color: danger ? "var(--error)" : "var(--text-primary)",
             fontFamily: "'Sora', sans-serif",
           }}>
           {title}

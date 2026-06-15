@@ -5,10 +5,11 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  deleteUser,
 } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase";
 
-// Export this from useAuth.ts so it can be shared
 async function setSessionCookie(user: { getIdToken: () => Promise<string> }) {
   const idToken = await user.getIdToken();
   await fetch("/api/auth/session", {
@@ -19,6 +20,8 @@ async function setSessionCookie(user: { getIdToken: () => Promise<string> }) {
 }
 
 export function useAccountSettings(userEmail?: string | null) {
+  const router = useRouter();
+
   const [newEmail, setNewEmail] = useState(userEmail ?? "");
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState("");
@@ -28,6 +31,10 @@ export function useAccountSettings(userEmail?: string | null) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteSaving, setDeleteSaving] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const updateEmailHandler = async () => {
     setEmailError("");
@@ -106,6 +113,43 @@ export function useAccountSettings(userEmail?: string | null) {
     }
   };
 
+  const deleteAccountHandler = async () => {
+    setDeleteError("");
+    if (!deletePassword)
+      return setDeleteError("Enter your password to confirm.");
+
+    const user = auth.currentUser;
+    if (!user || !user.email) return setDeleteError("No user logged in.");
+
+    setDeleteSaving(true);
+    try {
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        deletePassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      await deleteUser(user);
+      await fetch("/api/auth/session", { method: "DELETE" });
+      router.push("/login");
+    } catch (err: unknown) {
+      if (err instanceof Error && "code" in err) {
+        const code = (err as { code: string }).code;
+        if (
+          code === "auth/wrong-password" ||
+          code === "auth/invalid-credential"
+        ) {
+          setDeleteError("Incorrect password.");
+        } else if (code === "auth/too-many-requests") {
+          setDeleteError("Too many attempts. Please try again later.");
+        } else {
+          setDeleteError("Failed to delete account. Please try again.");
+        }
+      }
+    } finally {
+      setDeleteSaving(false);
+    }
+  };
+
   return {
     newEmail,
     setNewEmail,
@@ -121,5 +165,10 @@ export function useAccountSettings(userEmail?: string | null) {
     passwordError,
     updateEmail: updateEmailHandler,
     updatePassword: updatePasswordHandler,
+    deletePassword,
+    setDeletePassword,
+    deleteSaving,
+    deleteError,
+    deleteAccount: deleteAccountHandler,
   };
 }
