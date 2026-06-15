@@ -10,6 +10,7 @@ import {
   type AppNotification,
 } from "@/app/hooks/useNotifications";
 import { useRouter } from "next/navigation";
+import ProfileModal from "@/app/components/ProfileModal";
 
 const navItems = [
   {
@@ -569,25 +570,46 @@ function UserFooter({
   loading: boolean;
   user: { email?: string | null; displayName?: string | null } | null;
 }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const footerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="flex items-center gap-3">
+    <div className="relative flex items-center gap-3" ref={footerRef}>
+      {/* Profile modal anchored above the footer */}
+      <ProfileModal
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        anchorRef={footerRef as React.RefObject<HTMLElement>}
+      />
+
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
         style={{ backgroundColor: "var(--accent)" }}>
         {user?.email?.slice(0, 2).toUpperCase() ?? "?"}
       </div>
-      <div className="min-w-0 flex-1">
+
+      {/* Clickable name/email — opens profile modal */}
+      <button
+        onClick={() => setProfileOpen((prev) => !prev)}
+        className="min-w-0 flex-1 text-left"
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+        }}>
         <p
           className="truncate text-xs font-semibold"
-          style={{ color: "var(--text-primary)" }}>
+          style={{ color: "var(--text-primary)", margin: 0 }}>
           {user?.displayName ?? user?.email ?? "Unknown"}
         </p>
         <p
           className="truncate text-[11px]"
-          style={{ color: "var(--text-muted)" }}>
+          style={{ color: "var(--text-muted)", margin: 0 }}>
           {user?.email ?? ""}
         </p>
-      </div>
+      </button>
+
       <button
         onClick={onSignOut}
         disabled={loading}
@@ -685,7 +707,6 @@ function MobileBell() {
         )}
       </button>
 
-      {/* Panel — anchored below the bell, full-width on small screens */}
       {isOpen && (
         <div
           ref={panelRef}
@@ -1089,7 +1110,7 @@ export default function Sidebar() {
             </svg>
           </Link>
 
-          {/* Bell — fully wired */}
+          {/* Bell */}
           <MobileBell />
 
           {/* Hamburger */}
