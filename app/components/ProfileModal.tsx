@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useAnalytics } from "@/app/hooks/useAnalytics";
 import { useAchievements } from "@/app/hooks/useAchievements";
@@ -47,7 +48,6 @@ function getColor(index: number) {
 // ─── Firestore loader for OTHER users ────────────────────────────────────────
 
 async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
-  // 1. Look up the user doc by email
   const usersSnap = await getDocs(
     query(collection(db, "users"), where("email", "==", email)),
   );
@@ -62,7 +62,6 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
     displayName = data.displayName ?? data.name ?? displayName;
   }
 
-  // 2. Load their projects
   const projectsQuery =
     userId ?
       query(collection(db, "projects"), where("userId", "==", userId))
@@ -71,7 +70,6 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
   const projectsSnap = await getDocs(projectsQuery);
   const projects = projectsSnap.docs.map((d) => d.data());
 
-  // 3. Compute stats
   const totalProjects = projects.length;
 
   let totalTasks = 0;
@@ -79,7 +77,6 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
   const toolCounts: Record<string, { count: number; category: string }> = {};
 
   projects.forEach((p) => {
-    // tasks
     Object.values(p.dailyPlan ?? {}).forEach((tasks: any) => {
       tasks.forEach((t: any) => {
         totalTasks++;
@@ -87,7 +84,6 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
       });
     });
 
-    // tools
     Object.entries(p.selectedTools ?? {}).forEach(
       ([category, tools]: [string, any]) => {
         tools.forEach((tool: string) => {
@@ -547,7 +543,6 @@ interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   ownerEmail: string;
-  /** Position the modal relative to the trigger element */
   position?: { top: number; left: number };
 }
 
@@ -559,7 +554,13 @@ export function UserProfileModal({
 }: UserProfileModalProps) {
   const [data, setData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Needed for Next.js SSR — document doesn't exist on the server
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !ownerEmail) return;
@@ -572,12 +573,22 @@ export function UserProfileModal({
   }, [isOpen, ownerEmail]);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node))
-        onClose();
-    }
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (!isOpen) return;
+
+    // Use a small delay so the click that opened the modal doesn't
+    // immediately trigger the outside-click handler
+    const timeout = setTimeout(() => {
+      function handleClickOutside(e: MouseEvent) {
+        if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+          onClose();
+        }
+      }
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }, 50);
+
+    return () => clearTimeout(timeout);
   }, [isOpen, onClose]);
 
   useEffect(() => {
@@ -588,22 +599,32 @@ export function UserProfileModal({
     return () => document.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        pointerEvents: "none",
-      }}>
+  // FIX: Use createPortal to render directly into document.body.
+  // This escapes every parent stacking context (card transforms, overflow,
+  // z-index containment) so the modal always floats above everything.
+  // Position is pure viewport-relative (fixed), so NO scroll offset needed —
+  // getBoundingClientRect() already gives viewport coords.
+  return createPortal(
+    <>
+      {/* Full-screen invisible backdrop — catches outside clicks */}
       <div
         style={{
-          position: "absolute",
+          position: "fixed",
+          inset: 0,
+          zIndex: 9998,
+        }}
+        onClick={onClose}
+      />
+
+      {/* Modal card — sits above the backdrop */}
+      <div
+        style={{
+          position: "fixed",
           top: position?.top ?? 100,
-          left: position?.left ?? 100,
-          pointerEvents: "auto",
+          left: Math.min(position?.left ?? 100, window.innerWidth - 316),
+          zIndex: 9999,
         }}>
         <ModalShell
           data={data}
@@ -613,7 +634,8 @@ export function UserProfileModal({
           isSelf={false}
         />
       </div>
-    </div>
+    </>,
+    document.body,
   );
 }
 

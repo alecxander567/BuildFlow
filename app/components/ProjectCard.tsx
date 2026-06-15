@@ -1022,11 +1022,8 @@ export default function ProjectCard({
                     e.currentTarget as HTMLElement
                   ).getBoundingClientRect();
                   setOwnerProfilePos({
-                    top: rect.bottom + window.scrollY + 8,
-                    left: Math.min(
-                      rect.left + window.scrollX,
-                      window.innerWidth - 316,
-                    ),
+                    top: rect.bottom + 8,
+                    left: rect.left,
                   });
                   setOwnerProfileOpen(true);
                 }}
@@ -1364,9 +1361,8 @@ export default function ProjectCard({
         onConfirm={handleDelete}
       />
 
-      {/* ── FIX: UserProfileModal rendered OUTSIDE the card div so it escapes   ── */}
-      {/* the card's stacking context (caused by transform on hover + overflow).   */}
-      {/* Position uses window.scrollY offset so it stays anchored to the trigger. */}
+      {/* ── UserProfileModal outside the card div + portal in ProfileModal.tsx ── */}
+      {/* Together these fully escape the card stacking context.                  */}
       {!isOwner && ownerEmail && (
         <UserProfileModal
           isOpen={ownerProfileOpen}
