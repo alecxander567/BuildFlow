@@ -4,16 +4,16 @@ import { useState } from "react";
 import {
   Sun,
   Moon,
-  Bell,
   History,
   Save,
   Trash2,
   Lock,
   UserCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useSettings } from "@/app/hooks/useSettings";
-import { useNotificationPermission } from "@/app/hooks/useNotificationPermission";
 import { useAccountSettings } from "@/app/hooks/useAccountSettings";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
@@ -33,18 +33,15 @@ export default function SettingsPage() {
     formatTimestamp,
   } = useSettings(user?.email);
 
-  const {
-    notificationsEnabled,
-    loading: notificationLoading,
-    permissionState,
-    toggleNotifications,
-  } = useNotificationPermission();
-
   const account = useAccountSettings(user?.email);
 
   const { toasts, remove, show } = useAlert();
   const [showClearLogsConfirm, setShowClearLogsConfirm] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSave = async () => {
     await saveSettings();
@@ -57,29 +54,6 @@ export default function SettingsPage() {
     setClearingLogs(false);
     setShowClearLogsConfirm(false);
     show("success", "Activity logs have been cleared.", "Logs cleared");
-  };
-
-  const handleToggleNotifications = async () => {
-    const success = await toggleNotifications();
-    if (success) {
-      show(
-        "success",
-        "Notifications enabled! You'll receive daily task reminders.",
-        "Notifications On",
-      );
-    } else if (permissionState === "denied") {
-      show(
-        "error",
-        "Notifications are blocked. Please check your browser settings to enable them.",
-        "Permission Denied",
-      );
-    } else if (!user) {
-      show(
-        "error",
-        "Please login first to enable notifications.",
-        "Login Required",
-      );
-    }
   };
 
   if (authLoading || loading) {
@@ -221,51 +195,95 @@ export default function SettingsPage() {
                     style={{ color: "var(--text-primary)" }}>
                     Change password
                   </p>
-                  <input
-                    type="password"
-                    placeholder="Current password"
-                    value={account.currentPassword}
-                    onChange={(e) => account.setCurrentPassword(e.target.value)}
-                    className="h-9 px-3 text-sm rounded-xl border outline-none"
-                    style={{
-                      backgroundColor: "var(--bg-base)",
-                      borderColor:
-                        account.passwordError ? "var(--error)" : (
-                          "var(--border)"
-                        ),
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="New password"
-                    value={account.newPassword}
-                    onChange={(e) => account.setNewPassword(e.target.value)}
-                    className="h-9 px-3 text-sm rounded-xl border outline-none"
-                    style={{
-                      backgroundColor: "var(--bg-base)",
-                      borderColor:
-                        account.passwordError ? "var(--error)" : (
-                          "var(--border)"
-                        ),
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={account.confirmPassword}
-                    onChange={(e) => account.setConfirmPassword(e.target.value)}
-                    className="h-9 px-3 text-sm rounded-xl border outline-none"
-                    style={{
-                      backgroundColor: "var(--bg-base)",
-                      borderColor:
-                        account.passwordError ? "var(--error)" : (
-                          "var(--border)"
-                        ),
-                      color: "var(--text-primary)",
-                    }}
-                  />
+
+                  {/* Current Password */}
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Current password"
+                      value={account.currentPassword}
+                      onChange={(e) =>
+                        account.setCurrentPassword(e.target.value)
+                      }
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showCurrentPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="New password"
+                      value={account.newPassword}
+                      onChange={(e) => account.setNewPassword(e.target.value)}
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showNewPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={account.confirmPassword}
+                      onChange={(e) =>
+                        account.setConfirmPassword(e.target.value)
+                      }
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showConfirmPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
                   {account.passwordError && (
                     <p className="text-xs" style={{ color: "var(--error)" }}>
                       {account.passwordError}
@@ -332,88 +350,6 @@ export default function SettingsPage() {
                     onToggle={toggleTheme}
                   />
                 </Row>
-              </Section>
-
-              {/* ── Notifications Section ── */}
-              <Section
-                icon={
-                  <Bell
-                    className="h-4 w-4"
-                    style={{ color: "var(--text-secondary)" }}
-                  />
-                }
-                title="Notifications">
-                <div className="space-y-4">
-                  <Row
-                    label="Push Notifications"
-                    description="Receive daily task reminders and project updates">
-                    <div className="flex items-center gap-3">
-                      {permissionState === "denied" && (
-                        <span
-                          className="text-xs px-2 py-1 rounded-lg"
-                          style={{
-                            backgroundColor: "var(--bg-error)",
-                            color: "var(--error)",
-                          }}>
-                          Blocked
-                        </span>
-                      )}
-                      <Toggle
-                        active={notificationsEnabled}
-                        onToggle={handleToggleNotifications}
-                        disabled={notificationLoading}
-                        loading={notificationLoading}
-                      />
-                    </div>
-                  </Row>
-
-                  {permissionState === "denied" && (
-                    <div
-                      className="mt-3 p-3 rounded-lg text-xs"
-                      style={{
-                        backgroundColor: "var(--bg-error-soft)",
-                        color: "var(--error)",
-                        border: "1px solid var(--error-border)",
-                      }}>
-                      <div className="flex items-start gap-2">
-                        <Bell className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium mb-0.5">
-                            Notifications are blocked
-                          </p>
-                          <p className="opacity-90">
-                            Please check your browser settings and allow
-                            notifications for this site, then toggle the switch
-                            again.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {notificationsEnabled && (
-                    <div
-                      className="mt-3 p-3 rounded-lg text-xs"
-                      style={{
-                        backgroundColor: "var(--bg-success-soft)",
-                        color: "var(--success)",
-                        border: "1px solid var(--success-border)",
-                      }}>
-                      <div className="flex items-start gap-2">
-                        <Bell className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium mb-0.5">
-                            Notifications enabled ✓
-                          </p>
-                          <p className="opacity-90">
-                            You'll receive daily reminders for pending tasks in
-                            your projects.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </Section>
 
               {/* ── Activity Logs Section ── */}
@@ -538,7 +474,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Clear Logs Confirmation Modal ── */}
       <ConfirmationModal
         isOpen={showClearLogsConfirm}
         title="Clear Activity Logs?"
