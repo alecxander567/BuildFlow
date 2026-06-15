@@ -601,38 +601,40 @@ export function UserProfileModal({
 
   if (!isOpen || !mounted) return null;
 
-  // FIX: Use createPortal to render directly into document.body.
-  // This escapes every parent stacking context (card transforms, overflow,
-  // z-index containment) so the modal always floats above everything.
-  // Position is pure viewport-relative (fixed), so NO scroll offset needed —
-  // getBoundingClientRect() already gives viewport coords.
   return createPortal(
     <>
-      {/* Full-screen invisible backdrop — catches outside clicks */}
+      {/* Dimmed backdrop — click to close */}
       <div
         style={{
           position: "fixed",
           inset: 0,
           zIndex: 9998,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          backdropFilter: "blur(2px)",
         }}
         onClick={onClose}
       />
 
-      {/* Modal card — sits above the backdrop */}
+      {/* Centered modal */}
       <div
         style={{
           position: "fixed",
-          top: position?.top ?? 100,
-          left: Math.min(position?.left ?? 100, window.innerWidth - 316),
+          inset: 0,
           zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
         }}>
-        <ModalShell
-          data={data}
-          isLoading={isLoading}
-          onClose={onClose}
-          modalRef={modalRef}
-          isSelf={false}
-        />
+        <div style={{ pointerEvents: "auto" }}>
+          <ModalShell
+            data={data}
+            isLoading={isLoading}
+            onClose={onClose}
+            modalRef={modalRef}
+            isSelf={false}
+          />
+        </div>
       </div>
     </>,
     document.body,
