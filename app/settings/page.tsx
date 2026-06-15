@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Sun, Moon, Bell, History, Save, Trash2 } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Bell,
+  History,
+  Save,
+  Trash2,
+  Lock,
+  UserCircle,
+} from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useSettings } from "@/app/hooks/useSettings";
 import { useNotificationPermission } from "@/app/hooks/useNotificationPermission";
+import { useAccountSettings } from "@/app/hooks/useAccountSettings";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
 import { AlertContainer, useAlert } from "../components/Alert";
@@ -29,6 +39,8 @@ export default function SettingsPage() {
     permissionState,
     toggleNotifications,
   } = useNotificationPermission();
+
+  const account = useAccountSettings(user?.email);
 
   const { toasts, remove, show } = useAlert();
   const [showClearLogsConfirm, setShowClearLogsConfirm] = useState(false);
@@ -132,6 +144,173 @@ export default function SettingsPage() {
                 </p>
               </div>
 
+              {/* ── Account Section ── */}
+              <Section
+                icon={
+                  <UserCircle
+                    className="h-4 w-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  />
+                }
+                title="Account">
+                {/* Email */}
+                <div className="flex flex-col gap-1.5 mb-5">
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: "var(--text-primary)" }}>
+                    Email address
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={account.newEmail}
+                      onChange={(e) => account.setNewEmail(e.target.value)}
+                      className="flex-1 h-9 px-3 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.emailError ? "var(--error)" : "var(--border)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      onClick={async () => {
+                        const ok = await account.updateEmail();
+                        if (ok)
+                          show(
+                            "success",
+                            "Email updated successfully.",
+                            "Done",
+                          );
+                      }}
+                      disabled={account.emailSaving}
+                      className="h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                      style={{ backgroundColor: "var(--accent)" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--accent-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--accent)";
+                      }}>
+                      {account.emailSaving ?
+                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      : "Update"}
+                    </button>
+                  </div>
+                  {account.emailError && (
+                    <p className="text-xs" style={{ color: "var(--error)" }}>
+                      {account.emailError}
+                    </p>
+                  )}
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    A confirmation link will be sent to your new address.
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div
+                  className="border-t mb-5"
+                  style={{ borderColor: "var(--border)" }}
+                />
+
+                {/* Password */}
+                <div className="flex flex-col gap-2">
+                  <p
+                    className="text-sm font-medium mb-1"
+                    style={{ color: "var(--text-primary)" }}>
+                    Change password
+                  </p>
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={account.currentPassword}
+                    onChange={(e) => account.setCurrentPassword(e.target.value)}
+                    className="h-9 px-3 text-sm rounded-xl border outline-none"
+                    style={{
+                      backgroundColor: "var(--bg-base)",
+                      borderColor:
+                        account.passwordError ? "var(--error)" : (
+                          "var(--border)"
+                        ),
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="New password"
+                    value={account.newPassword}
+                    onChange={(e) => account.setNewPassword(e.target.value)}
+                    className="h-9 px-3 text-sm rounded-xl border outline-none"
+                    style={{
+                      backgroundColor: "var(--bg-base)",
+                      borderColor:
+                        account.passwordError ? "var(--error)" : (
+                          "var(--border)"
+                        ),
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={account.confirmPassword}
+                    onChange={(e) => account.setConfirmPassword(e.target.value)}
+                    className="h-9 px-3 text-sm rounded-xl border outline-none"
+                    style={{
+                      backgroundColor: "var(--bg-base)",
+                      borderColor:
+                        account.passwordError ? "var(--error)" : (
+                          "var(--border)"
+                        ),
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                  {account.passwordError && (
+                    <p className="text-xs" style={{ color: "var(--error)" }}>
+                      {account.passwordError}
+                    </p>
+                  )}
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Minimum 8 characters.
+                  </p>
+                  <div className="flex justify-end mt-1">
+                    <button
+                      onClick={async () => {
+                        const ok = await account.updatePassword();
+                        if (ok)
+                          show(
+                            "success",
+                            "Password changed successfully.",
+                            "Done",
+                          );
+                      }}
+                      disabled={account.passwordSaving}
+                      className="flex items-center gap-2 h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                      style={{ backgroundColor: "var(--accent)" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--accent-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--accent)";
+                      }}>
+                      {account.passwordSaving ?
+                        <>
+                          <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                          Saving…
+                        </>
+                      : <>
+                          <Lock className="h-4 w-4" />
+                          Update password
+                        </>
+                      }
+                    </button>
+                  </div>
+                </div>
+              </Section>
+
+              {/* ── Appearance Section ── */}
               <Section
                 icon={
                   settings.theme === "light" ?
@@ -155,7 +334,7 @@ export default function SettingsPage() {
                 </Row>
               </Section>
 
-              {/* Notifications Section - Now Active */}
+              {/* ── Notifications Section ── */}
               <Section
                 icon={
                   <Bell
@@ -237,6 +416,7 @@ export default function SettingsPage() {
                 </div>
               </Section>
 
+              {/* ── Activity Logs Section ── */}
               <Section
                 icon={
                   <History
@@ -325,24 +505,21 @@ export default function SettingsPage() {
                 }
               </Section>
 
+              {/* ── Save Button ── */}
               <div className="flex justify-end pb-4">
                 <button
                   onClick={handleSave}
                   disabled={saving}
                   className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors active:scale-[0.987] disabled:opacity-60"
-                  style={{
-                    backgroundColor: "var(--accent)",
-                  }}
+                  style={{ backgroundColor: "var(--accent)" }}
                   onMouseEnter={(e) => {
-                    if (!saving) {
+                    if (!saving)
                       e.currentTarget.style.backgroundColor =
                         "var(--accent-hover)";
-                    }
                   }}
                   onMouseLeave={(e) => {
-                    if (!saving) {
+                    if (!saving)
                       e.currentTarget.style.backgroundColor = "var(--accent)";
-                    }
                   }}>
                   {saving ?
                     <>
@@ -378,7 +555,8 @@ export default function SettingsPage() {
   );
 }
 
-// Helper Components remain the same but update Toggle to support loading
+// ── Helper Components ──
+
 function Section({
   icon,
   title,
@@ -462,9 +640,7 @@ function Toggle({
       className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
       }`}
-      style={{
-        backgroundColor: active ? "var(--accent)" : "var(--border)",
-      }}>
+      style={{ backgroundColor: active ? "var(--accent)" : "var(--border)" }}>
       {loading ?
         <span className="absolute inset-0 flex items-center justify-center">
           <div className="h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" />

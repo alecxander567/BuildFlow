@@ -1,0 +1,125 @@
+"use client";
+import { useState } from "react";
+import {
+  updateEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+} from "firebase/auth";
+import { auth } from "@/app/lib/firebase";
+
+// Export this from useAuth.ts so it can be shared
+async function setSessionCookie(user: { getIdToken: () => Promise<string> }) {
+  const idToken = await user.getIdToken();
+  await fetch("/api/auth/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+}
+
+export function useAccountSettings(userEmail?: string | null) {
+  const [newEmail, setNewEmail] = useState(userEmail ?? "");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
+  const updateEmailHandler = async () => {
+    setEmailError("");
+    if (!newEmail.includes("@")) return setEmailError("Enter a valid email.");
+    if (newEmail === userEmail)
+      return setEmailError("That's already your email.");
+
+    const user = auth.currentUser;
+    if (!user) return setEmailError("No user logged in.");
+
+    setEmailSaving(true);
+    try {
+      await updateEmail(user, newEmail);
+      await setSessionCookie(user);
+      return true;
+    } catch (err: unknown) {
+      if (err instanceof Error && "code" in err) {
+        const code = (err as { code: string }).code;
+        if (code === "auth/requires-recent-login") {
+          setEmailError(
+            "Please sign out and sign back in before changing your email.",
+          );
+        } else if (code === "auth/email-already-in-use") {
+          setEmailError("That email is already in use by another account.");
+        } else if (code === "auth/invalid-email") {
+          setEmailError("Enter a valid email address.");
+        } else {
+          setEmailError("Failed to update email. Please try again.");
+        }
+      }
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
+  const updatePasswordHandler = async () => {
+    setPasswordError("");
+    if (!currentPassword)
+      return setPasswordError("Enter your current password.");
+    if (newPassword.length < 8)
+      return setPasswordError("New password must be at least 8 characters.");
+    if (newPassword !== confirmPassword)
+      return setPasswordError("Passwords don't match.");
+
+    const user = auth.currentUser;
+    if (!user || !user.email) return setPasswordError("No user logged in.");
+
+    setPasswordSaving(true);
+    try {
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      return true;
+    } catch (err: unknown) {
+      if (err instanceof Error && "code" in err) {
+        const code = (err as { code: string }).code;
+        if (
+          code === "auth/wrong-password" ||
+          code === "auth/invalid-credential"
+        ) {
+          setPasswordError("Current password is incorrect.");
+        } else if (code === "auth/too-many-requests") {
+          setPasswordError("Too many attempts. Please try again later.");
+        } else {
+          setPasswordError("Failed to update password. Please try again.");
+        }
+      }
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  return {
+    newEmail,
+    setNewEmail,
+    emailSaving,
+    emailError,
+    currentPassword,
+    setCurrentPassword,
+    newPassword,
+    setNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    passwordSaving,
+    passwordError,
+    updateEmail: updateEmailHandler,
+    updatePassword: updatePasswordHandler,
+  };
+}
