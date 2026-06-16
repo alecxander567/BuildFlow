@@ -51,7 +51,6 @@ export function useComments(
   // Load on mount / projectId change
   useEffect(() => {
     setLoading(true);
-    // Simulate async fetch — replace with your real API call
     const fetched = loadComments(projectId);
     setComments(fetched);
     setLoading(false);
@@ -114,6 +113,7 @@ export function useComments(
 
   return {
     comments,
+    commentCount: comments.length, 
     loading,
     submitting,
     addComment,

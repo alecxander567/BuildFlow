@@ -12,6 +12,7 @@ import {
   computeProgress,
 } from "@/app/hooks/useProject";
 import CommentsModal from "./CommentsModal";
+import { useComments } from "@/app/hooks/useComments";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -727,6 +728,8 @@ export default function ProjectCard({
   const isDark = useIsDark();
   const m = isDark ? "dark" : "light";
 
+  const { commentCount } = useComments(id, currentUserId, currentUserEmail);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
@@ -1292,6 +1295,16 @@ export default function ProjectCard({
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
               <span>Comments</span>
+              {commentCount > 0 && (
+                <span
+                  className="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+                  style={{
+                    backgroundColor: isDark ? "#2d1a00" : "#FEF0E7",
+                    color: "#E8610A",
+                  }}>
+                  {commentCount}
+                </span>
+              )}
             </button>
 
             {/* Star button */}
