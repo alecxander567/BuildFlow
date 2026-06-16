@@ -7,7 +7,6 @@ import {
   useNotifications,
   type AppNotification,
 } from "@/app/hooks/useNotifications";
-import { useRouter } from "next/navigation";
 
 interface TopBarProps {
   searchQuery?: string;
@@ -87,7 +86,6 @@ export default function TopBar({
   const [visible, setVisible] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
-  const router = useRouter();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const hasUnread = unreadCount > 0;
@@ -120,13 +118,6 @@ export default function TopBar({
       markAllRead();
     }
     setIsOpen((prev) => !prev);
-  }
-
-  function handleNotificationClick(n: AppNotification) {
-    if (n.projectId) {
-      router.push(`/project/${n.projectId}`);
-      setIsOpen(false);
-    }
   }
 
   return (
@@ -340,7 +331,6 @@ export default function TopBar({
                     return (
                       <div
                         key={n.id}
-                        onClick={() => handleNotificationClick(n)}
                         style={{
                           display: "flex",
                           gap: 10,
@@ -348,7 +338,6 @@ export default function TopBar({
                           borderBottom: "1px solid var(--border)",
                           backgroundColor:
                             n.read ? "transparent" : "rgba(232, 97, 10, 0.03)",
-                          cursor: n.projectId ? "pointer" : "default",
                           position: "relative",
                           transition: "background-color 0.15s",
                         }}>
