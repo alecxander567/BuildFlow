@@ -11,6 +11,7 @@ import {
   generateDateRange,
   computeProgress,
 } from "@/app/hooks/useProject";
+import CommentsModal from "./CommentsModal";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -46,6 +47,7 @@ export interface ProjectCardProps {
   onDeleteProject?: (id: string) => Promise<boolean>;
   onUpdateDailyPlan?: (id: string, plan: DailyPlan) => Promise<void>;
   onToggleStar?: (id: string) => Promise<void>;
+  currentUserEmail?: string;
 }
 
 function getDurationLabel(startDate?: string | null, endDate?: string | null) {
@@ -713,6 +715,7 @@ export default function ProjectCard({
   dailyPlan: dailyPlanProp,
   userId,
   currentUserId,
+  currentUserEmail,
   onDeleteProject,
   onUpdateDailyPlan,
   onToggleStar,
@@ -730,6 +733,7 @@ export default function ProjectCard({
   const [deleting, setDeleting] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   // ── owner profile modal state ──
   const [ownerProfileOpen, setOwnerProfileOpen] = useState(false);
@@ -1254,6 +1258,42 @@ export default function ProjectCard({
               </span>
             }
 
+            {/* Comments button — add between the URL <a> and the Star <button> */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCommentsOpen(true);
+              }}
+              className="flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
+              style={{
+                backgroundColor: "var(--bg-base)",
+                borderColor: "var(--border)",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = accentHoverBg;
+                e.currentTarget.style.borderColor = accentHoverBorder;
+                e.currentTarget.style.color = "#E8610A";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--bg-base)";
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }}>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Comments</span>
+            </button>
+
             {/* Star button */}
             <button
               onClick={(e) => {
@@ -1359,6 +1399,16 @@ export default function ProjectCard({
         loading={deleting}
         onCancel={() => setConfirmDeleteOpen(false)}
         onConfirm={handleDelete}
+      />
+
+      <CommentsModal
+        isOpen={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        projectId={id}
+        projectTitle={title}
+        currentUserId={currentUserId}
+        currentUserEmail={currentUserEmail}
+        isDark={isDark}
       />
 
       {/* ── UserProfileModal outside the card div + portal in ProfileModal.tsx ── */}
