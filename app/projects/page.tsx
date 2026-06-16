@@ -510,6 +510,7 @@ export default function ProjectsPage() {
                           starredBy={project.starredBy}
                           userId={project.userId}
                           currentUserId={user?.uid}
+                          currentUserEmail={user?.email ?? undefined}
                           onDeleteProject={deleteProject}
                           onUpdateDailyPlan={updateDailyPlan}
                           onToggleStar={toggleStar}
@@ -563,6 +564,7 @@ export default function ProjectsPage() {
                           starredBy={project.starredBy}
                           userId={project.userId}
                           currentUserId={user?.uid}
+                          currentUserEmail={user?.email ?? undefined}
                           onDeleteProject={deleteProject}
                           onUpdateDailyPlan={updateDailyPlan}
                           onToggleStar={toggleStar}
