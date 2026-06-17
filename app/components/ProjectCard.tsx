@@ -711,7 +711,10 @@ function MenuItem({ onClick, accentBg, children }: MenuItemProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(e);
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
@@ -735,7 +738,10 @@ function DeleteMenuItem({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(e);
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors"
@@ -810,6 +816,7 @@ function PortalDropdown({
     const handleScroll = () => onClose();
     const handleResize = () => onClose();
 
+    // Use mousedown instead of click for better responsiveness
     document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("scroll", handleScroll, true);
     window.addEventListener("resize", handleResize);
@@ -832,7 +839,8 @@ function PortalDropdown({
         left: position.left,
         backgroundColor: "var(--bg-card)",
         borderColor: "var(--border)",
-      }}>
+      }}
+      onClick={(e) => e.stopPropagation()}>
       {children}
     </div>,
     document.body,
@@ -929,15 +937,6 @@ export default function ProjectCard({
   const visibleTools = allTools.slice(0, PILL_LIMIT);
   const overflowCount = allTools.length - PILL_LIMIT;
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
-  }, [menuOpen]);
-
   const handleDelete = async () => {
     if (!onDeleteProject) return;
     setDeleting(true);
@@ -965,13 +964,22 @@ export default function ProjectCard({
 
   // Generate summary directly from existing project data — same tools shown
   // in ProjectOverviewModal's "Tools & Stack" section (grouped by category).
-  const handleGenerateSummary = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleGenerateSummary = () => {
     setMenuOpen(false);
     readme.generate({
       tools: selectedTools ?? {},
       resources: [],
     });
+  };
+
+  const handleEditProject = () => {
+    setMenuOpen(false);
+    router.push(`/AddProjectPage?edit=${id}`);
+  };
+
+  const handleDeleteClick = () => {
+    setMenuOpen(false);
+    setConfirmDeleteOpen(true);
   };
 
   const accentHoverBg = isDark ? "#1a1200" : "#FEF0E7";
@@ -1030,7 +1038,7 @@ export default function ProjectCard({
             {p.label}
           </div>
 
-          {/* ⋯ menu button - FIXED: uses portal for dropdown */}
+          {/* ⋯ menu button */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
               <button
@@ -1473,13 +1481,7 @@ export default function ProjectCard({
         </MenuItem>
 
         {/* Edit project */}
-        <MenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen(false);
-            router.push(`/AddProjectPage?edit=${id}`);
-          }}
-          accentBg={accentHoverBg}>
+        <MenuItem onClick={handleEditProject} accentBg={accentHoverBg}>
           <svg
             width="12"
             height="12"
@@ -1502,14 +1504,7 @@ export default function ProjectCard({
         />
 
         {/* Delete */}
-        <DeleteMenuItem
-          dangerBg={dangerHoverBg}
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen(false);
-            setConfirmDeleteOpen(true);
-          }}
-        />
+        <DeleteMenuItem onClick={handleDeleteClick} dangerBg={dangerHoverBg} />
       </PortalDropdown>
 
       {selectedDay && isOwner && (
