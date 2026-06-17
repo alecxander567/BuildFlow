@@ -456,7 +456,6 @@ function DayTaskModal({
             </button>
           </div>
         </div>
-
         {tasks.length > 0 && (
           <div className="px-5 pt-3">
             <div
@@ -472,7 +471,6 @@ function DayTaskModal({
             </div>
           </div>
         )}
-
         <div className="max-h-72 overflow-y-auto px-4 py-3">
           {tasks.length === 0 ?
             <p
@@ -530,7 +528,6 @@ function DayTaskModal({
             </ul>
           }
         </div>
-
         <div
           className="border-t px-5 py-3"
           style={{ borderColor: "var(--divide)" }}>
@@ -622,7 +619,6 @@ function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
           {dateRange.length} day{dateRange.length !== 1 ? "s" : ""}
         </p>
       </div>
-
       <div
         ref={stripRef}
         className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -653,7 +649,6 @@ function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
           else if (hasTasks) dotColor = isDark ? "#484f58" : "#B0ADA7";
 
           const { weekday } = formatDayLabel(dateStr);
-
           return (
             <button
               key={dateStr}
@@ -685,7 +680,6 @@ function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
           );
         })}
       </div>
-
       <div className="flex items-center gap-3 pt-0.5">
         {legend.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
@@ -700,6 +694,71 @@ function DayStrip({ dateRange, dailyPlan, onDayClick, isDark }: DayStripProps) {
         ))}
       </div>
     </div>
+  );
+}
+
+// ── Dropdown menu item components to avoid inline handler bugs ──────────────
+
+interface MenuItemProps {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  accentBg: string;
+  children: React.ReactNode;
+}
+
+function MenuItem({ onClick, accentBg, children }: MenuItemProps) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
+      style={{
+        backgroundColor: hovered ? accentBg : "transparent",
+        color: hovered ? "#E8610A" : "var(--text-primary)",
+      }}>
+      {children}
+    </button>
+  );
+}
+
+function DeleteMenuItem({
+  onClick,
+  dangerBg,
+}: {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  dangerBg: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition-colors"
+      style={{
+        backgroundColor: hovered ? dangerBg : "transparent",
+        color: "#DC2626",
+      }}>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14H6L5 6" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+        <path d="M9 6V4h6v2" />
+      </svg>
+      Delete project
+    </button>
   );
 }
 
@@ -739,13 +798,12 @@ export default function ProjectCard({
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(dailyPlanProp ?? {});
   const [commentsOpen, setCommentsOpen] = useState(false);
-
-  // ── owner profile modal state ──
   const [ownerProfileOpen, setOwnerProfileOpen] = useState(false);
   const [ownerProfilePos, setOwnerProfilePos] = useState({ top: 0, left: 0 });
 
-  // ── Project summary via useReadme hook ──
-  // No form needed — generate directly from existing project data
+  // ── useReadme: generate summary from existing project data — no form step ──
+  // selectedTools is the same Record<string, string[]> that ProjectOverviewModal
+  // uses to render the "Tools & Stack" section, grouped by category.
   const readme = useReadme({
     title,
     description,
@@ -828,7 +886,8 @@ export default function ProjectCard({
     [id, onUpdateDailyPlan],
   );
 
-  // ── Generate summary directly from project data — no form step ──
+  // Generate summary directly from existing project data — same tools shown
+  // in ProjectOverviewModal's "Tools & Stack" section (grouped by category).
   const handleGenerateSummary = (e: React.MouseEvent) => {
     e.stopPropagation();
     setMenuOpen(false);
@@ -839,8 +898,8 @@ export default function ProjectCard({
   };
 
   const accentHoverBg = isDark ? "#1a1200" : "#FEF0E7";
-  const accentHoverBorder = isDark ? "#7c3900" : "#F5C89A";
   const dangerHoverBg = isDark ? "#3b1111" : "#FEF2F2";
+  const accentHoverBorder = isDark ? "#7c3900" : "#F5C89A";
 
   return (
     <>
@@ -940,19 +999,10 @@ export default function ProjectCard({
                     backgroundColor: "var(--bg-card)",
                     borderColor: "var(--border)",
                   }}>
-                  {/* Generate Summary — fires directly, no form */}
-                  <button
+                  {/* Generate Summary */}
+                  <MenuItem
                     onClick={handleGenerateSummary}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
-                    style={{ color: "var(--text-primary)" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = accentHoverBg;
-                      e.currentTarget.style.color = "#E8610A";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "var(--text-primary)";
-                    }}>
+                    accentBg={accentHoverBg}>
                     <svg
                       width="12"
                       height="12"
@@ -968,25 +1018,16 @@ export default function ProjectCard({
                       <line x1="9" y1="17" x2="15" y2="17" />
                     </svg>
                     Generate Summary
-                  </button>
+                  </MenuItem>
 
                   {/* Edit project */}
-                  <button
+                  <MenuItem
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(false);
                       router.push(`/AddProjectPage?edit=${id}`);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
-                    style={{ color: "var(--text-primary)" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = accentHoverBg;
-                      e.currentTarget.style.color = "#E8610A";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "var(--text-primary)";
-                    }}>
+                    accentBg={accentHoverBg}>
                     <svg
                       width="12"
                       height="12"
@@ -1000,7 +1041,7 @@ export default function ProjectCard({
                       <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
                     </svg>
                     Edit project
-                  </button>
+                  </MenuItem>
 
                   {/* Divider */}
                   <div
@@ -1008,40 +1049,15 @@ export default function ProjectCard({
                     style={{ backgroundColor: "var(--border)" }}
                   />
 
-                  {/* Delete project */}
-                  <button
+                  {/* Delete — uses its own component so color is never lost */}
+                  <DeleteMenuItem
+                    dangerBg={dangerHoverBg}
                     onClick={(e) => {
                       e.stopPropagation();
                       setMenuOpen(false);
                       setConfirmDeleteOpen(true);
                     }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
-                    style={{ color: "#DC2626" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = dangerHoverBg;
-                      e.currentTarget.style.color = "#DC2626";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.color = "#DC2626";
-                    }}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-1 14H6L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
-                      <path d="M9 6V4h6v2" />
-                    </svg>
-                    Delete project
-                  </button>
+                  />
                 </div>
               )}
             </div>
@@ -1423,7 +1439,6 @@ export default function ProjectCard({
           </div>
         </div>
       </div>
-      {/* ── END of card div ── */}
 
       {selectedDay && isOwner && (
         <DayTaskModal
@@ -1480,7 +1495,7 @@ export default function ProjectCard({
         isDark={isDark}
       />
 
-      {/* ── Project Summary modal — no form, fires directly from project data ── */}
+      {/* Project Summary modal — no form, fires directly from existing project data */}
       <ProjectSummaryModal
         isOpen={readme.isPreviewOpen}
         projectTitle={title}
@@ -1491,7 +1506,6 @@ export default function ProjectCard({
         onDownload={readme.download}
       />
 
-      {/* ── UserProfileModal outside the card div ── */}
       {!isOwner && ownerEmail && (
         <UserProfileModal
           isOpen={ownerProfileOpen}
