@@ -14,7 +14,6 @@ import {
 import CommentsModal from "./CommentsModal";
 import { useComments } from "@/app/hooks/useComments";
 import { useReadme } from "@/app/hooks/useReadme";
-import ProjectSummaryFormModal from "./ReadmeFormModal";
 import ProjectSummaryModal from "./ReadmeModal";
 
 export type Priority = "High" | "Moderate" | "Low";
@@ -746,6 +745,7 @@ export default function ProjectCard({
   const [ownerProfilePos, setOwnerProfilePos] = useState({ top: 0, left: 0 });
 
   // ── Project summary via useReadme hook ──
+  // No form needed — generate directly from existing project data
   const readme = useReadme({
     title,
     description,
@@ -827,6 +827,16 @@ export default function ProjectCard({
     },
     [id, onUpdateDailyPlan],
   );
+
+  // ── Generate summary directly from project data — no form step ──
+  const handleGenerateSummary = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    readme.generate({
+      tools: selectedTools ?? {},
+      resources: [],
+    });
+  };
 
   const accentHoverBg = isDark ? "#1a1200" : "#FEF0E7";
   const accentHoverBorder = isDark ? "#7c3900" : "#F5C89A";
@@ -930,12 +940,9 @@ export default function ProjectCard({
                     backgroundColor: "var(--bg-card)",
                     borderColor: "var(--border)",
                   }}>
+                  {/* Generate Summary — fires directly, no form */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                      readme.openForm();
-                    }}
+                    onClick={handleGenerateSummary}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
                     style={{ color: "var(--text-primary)" }}
                     onMouseEnter={(e) => {
@@ -960,8 +967,10 @@ export default function ProjectCard({
                       <line x1="9" y1="13" x2="15" y2="13" />
                       <line x1="9" y1="17" x2="15" y2="17" />
                     </svg>
-                    Generate Project Summary
+                    Generate Summary
                   </button>
+
+                  {/* Edit project */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -992,6 +1001,14 @@ export default function ProjectCard({
                     </svg>
                     Edit project
                   </button>
+
+                  {/* Divider */}
+                  <div
+                    className="my-1 h-px"
+                    style={{ backgroundColor: "var(--border)" }}
+                  />
+
+                  {/* Delete project */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1002,9 +1019,11 @@ export default function ProjectCard({
                     style={{ color: "#DC2626" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = dangerHoverBg;
+                      e.currentTarget.style.color = "#DC2626";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "#DC2626";
                     }}>
                     <svg
                       width="12"
@@ -1068,10 +1087,7 @@ export default function ProjectCard({
                   const rect = (
                     e.currentTarget as HTMLElement
                   ).getBoundingClientRect();
-                  setOwnerProfilePos({
-                    top: rect.bottom + 8,
-                    left: rect.left,
-                  });
+                  setOwnerProfilePos({ top: rect.bottom + 8, left: rect.left });
                   setOwnerProfileOpen(true);
                 }}
                 className="mt-2 flex items-center gap-1.5 transition-colors"
@@ -1464,13 +1480,7 @@ export default function ProjectCard({
         isDark={isDark}
       />
 
-      {/* ── Project Summary modals using useReadme ── */}
-      <ProjectSummaryFormModal
-        isOpen={readme.isFormOpen}
-        projectTitle={title}
-        onClose={readme.closeForm}
-        onGenerate={readme.generate}
-      />
+      {/* ── Project Summary modal — no form, fires directly from project data ── */}
       <ProjectSummaryModal
         isOpen={readme.isPreviewOpen}
         projectTitle={title}
