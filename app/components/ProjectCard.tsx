@@ -14,8 +14,8 @@ import {
 import CommentsModal from "./CommentsModal";
 import { useComments } from "@/app/hooks/useComments";
 import { useReadme } from "@/app/hooks/useReadme";
-import ReadmeFormModal from "./ReadmeFormModal";
-import ReadmeModal from "./ReadmeModal";
+import ProjectSummaryFormModal from "./ReadmeFormModal";
+import ProjectSummaryModal from "./ReadmeModal";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -745,14 +745,12 @@ export default function ProjectCard({
   const [ownerProfileOpen, setOwnerProfileOpen] = useState(false);
   const [ownerProfilePos, setOwnerProfilePos] = useState({ top: 0, left: 0 });
 
-  // ── README generation, separated into its own hook ──
+  // ── Project summary via useReadme hook ──
   const readme = useReadme({
     title,
     description,
     projectType,
     priority,
-    startDate,
-    endDate,
     projectUrl,
   });
 
@@ -927,7 +925,7 @@ export default function ProjectCard({
 
               {menuOpen && (
                 <div
-                  className="absolute right-0 mt-1.5 w-44 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
+                  className="absolute right-0 mt-1.5 w-48 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
                   style={{
                     backgroundColor: "var(--bg-card)",
                     borderColor: "var(--border)",
@@ -962,7 +960,7 @@ export default function ProjectCard({
                       <line x1="9" y1="13" x2="15" y2="13" />
                       <line x1="9" y1="17" x2="15" y2="17" />
                     </svg>
-                    Generate README
+                    Generate Project Summary
                   </button>
                   <button
                     onClick={(e) => {
@@ -1063,10 +1061,6 @@ export default function ProjectCard({
               </p>
             }
 
-            {/* ── Owner email — clickable to open profile ── */}
-            {/* FIX: Only render the trigger button here, NOT the modal.            */}
-            {/* The modal is moved outside the card div at the bottom of the JSX   */}
-            {/* to escape the card's stacking context (transform + overflow).       */}
             {!isOwner && ownerEmail && (
               <button
                 onClick={(e) => {
@@ -1307,7 +1301,7 @@ export default function ProjectCard({
               </span>
             }
 
-            {/* Comments button — add between the URL <a> and the Star <button> */}
+            {/* Comments button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -1470,14 +1464,14 @@ export default function ProjectCard({
         isDark={isDark}
       />
 
-      {/* ── README: tech stack form, then auto-opening rendered preview ── */}
-      <ReadmeFormModal
+      {/* ── Project Summary modals using useReadme ── */}
+      <ProjectSummaryFormModal
         isOpen={readme.isFormOpen}
         projectTitle={title}
         onClose={readme.closeForm}
         onGenerate={readme.generate}
       />
-      <ReadmeModal
+      <ProjectSummaryModal
         isOpen={readme.isPreviewOpen}
         projectTitle={title}
         content={readme.content}
@@ -1487,8 +1481,7 @@ export default function ProjectCard({
         onDownload={readme.download}
       />
 
-      {/* ── UserProfileModal outside the card div + portal in ProfileModal.tsx ── */}
-      {/* Together these fully escape the card stacking context.                  */}
+      {/* ── UserProfileModal outside the card div ── */}
       {!isOwner && ownerEmail && (
         <UserProfileModal
           isOpen={ownerProfileOpen}
