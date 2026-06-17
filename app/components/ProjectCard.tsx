@@ -13,6 +13,9 @@ import {
 } from "@/app/hooks/useProject";
 import CommentsModal from "./CommentsModal";
 import { useComments } from "@/app/hooks/useComments";
+import { useReadme } from "@/app/hooks/useReadme";
+import ReadmeFormModal from "./ReadmeFormModal";
+import ReadmeModal from "./ReadmeModal";
 
 export type Priority = "High" | "Moderate" | "Low";
 
@@ -742,6 +745,17 @@ export default function ProjectCard({
   const [ownerProfileOpen, setOwnerProfileOpen] = useState(false);
   const [ownerProfilePos, setOwnerProfilePos] = useState({ top: 0, left: 0 });
 
+  // ── README generation, separated into its own hook ──
+  const readme = useReadme({
+    title,
+    description,
+    projectType,
+    priority,
+    startDate,
+    endDate,
+    projectUrl,
+  });
+
   const isOwner = currentUserId === userId;
   const canEdit = isOwner;
   const starred = !!currentUserId && starredBy.includes(currentUserId);
@@ -913,11 +927,43 @@ export default function ProjectCard({
 
               {menuOpen && (
                 <div
-                  className="absolute right-0 mt-1.5 w-40 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
+                  className="absolute right-0 mt-1.5 w-44 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
                   style={{
                     backgroundColor: "var(--bg-card)",
                     borderColor: "var(--border)",
                   }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      readme.openForm();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors"
+                    style={{ color: "var(--text-primary)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = accentHoverBg;
+                      e.currentTarget.style.color = "#E8610A";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }}>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="9" y1="13" x2="15" y2="13" />
+                      <line x1="9" y1="17" x2="15" y2="17" />
+                    </svg>
+                    Generate README
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1422,6 +1468,23 @@ export default function ProjectCard({
         currentUserId={currentUserId}
         currentUserEmail={currentUserEmail}
         isDark={isDark}
+      />
+
+      {/* ── README: tech stack form, then auto-opening rendered preview ── */}
+      <ReadmeFormModal
+        isOpen={readme.isFormOpen}
+        projectTitle={title}
+        onClose={readme.closeForm}
+        onGenerate={readme.generate}
+      />
+      <ReadmeModal
+        isOpen={readme.isPreviewOpen}
+        projectTitle={title}
+        content={readme.content}
+        copyState={readme.copyState}
+        onClose={readme.closePreview}
+        onCopy={readme.copy}
+        onDownload={readme.download}
       />
 
       {/* ── UserProfileModal outside the card div + portal in ProfileModal.tsx ── */}
