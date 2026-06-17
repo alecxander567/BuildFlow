@@ -51,20 +51,20 @@ export default function ProjectSummaryModal({
         if (e.target === overlayRef.current) onClose();
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <h2
-              className="text-lg font-bold text-[var(--text-primary)]"
+              className="text-lg font-bold text-[var(--text-primary)] truncate"
               style={{ fontFamily: "'Sora', sans-serif" }}>
-              Project Summary
+              📄 Project Summary
             </h2>
-            <span className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">
+            <span className="hidden sm:inline-flex rounded-full border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)] truncate max-w-[120px]">
               {projectTitle}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Copy button */}
             <button
               onClick={onCopy}
@@ -147,14 +147,19 @@ export default function ProjectSummaryModal({
           <ReactMarkdown
             components={{
               h1: ({ children }) => (
-                <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-4">
+                <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
                   {children}
                 </h1>
               ),
               h2: ({ children }) => (
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mt-6 mb-3">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mt-5 mb-3">
                   {children}
                 </h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-base font-semibold text-[var(--text-primary)] mt-4 mb-2">
+                  {children}
+                </h3>
               ),
               p: ({ children }) => (
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">
@@ -162,9 +167,14 @@ export default function ProjectSummaryModal({
                 </p>
               ),
               ul: ({ children }) => (
-                <ul className="list-disc list-inside space-y-1 mb-3">
+                <ul className="list-disc list-inside space-y-1 mb-3 text-sm text-[var(--text-secondary)]">
                   {children}
                 </ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal list-inside space-y-1 mb-3 text-sm text-[var(--text-secondary)]">
+                  {children}
+                </ol>
               ),
               li: ({ children }) => (
                 <li className="text-sm text-[var(--text-secondary)]">
@@ -172,27 +182,54 @@ export default function ProjectSummaryModal({
                 </li>
               ),
               table: ({ children }) => (
-                <div className="overflow-x-auto my-3">
-                  <table className="min-w-full border-collapse border border-[var(--border)] rounded-lg">
+                <div className="overflow-x-auto my-3 rounded-lg border border-[var(--border)]">
+                  <table className="min-w-full divide-y divide-[var(--border)]">
                     {children}
                   </table>
                 </div>
               ),
+              thead: ({ children }) => (
+                <thead className="bg-[var(--bg-base)]">{children}</thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className="divide-y divide-[var(--border)]">
+                  {children}
+                </tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className="hover:bg-[var(--bg-hover)]/50 transition-colors">
+                  {children}
+                </tr>
+              ),
               th: ({ children }) => (
-                <th className="border border-[var(--border)] px-3 py-2 text-left text-xs font-bold text-[var(--text-primary)] bg-[var(--bg-base)]">
+                <th className="px-4 py-2.5 text-left text-xs font-bold text-[var(--text-primary)] border-r border-[var(--border)] last:border-r-0">
                   {children}
                 </th>
               ),
               td: ({ children }) => (
-                <td className="border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                <td className="px-4 py-2.5 text-sm text-[var(--text-secondary)] border-r border-[var(--border)] last:border-r-0">
                   {children}
                 </td>
               ),
-              hr: () => <hr className="my-4 border-[var(--border)]" />,
+              hr: () => <hr className="my-6 border-[var(--border])" />,
               em: ({ children }) => (
                 <em className="text-xs text-[var(--text-muted)] not-italic">
                   {children}
                 </em>
+              ),
+              strong: ({ children }) => (
+                <strong className="font-semibold text-[var(--text-primary)]">
+                  {children}
+                </strong>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--accent)] hover:underline">
+                  {children}
+                </a>
               ),
             }}>
             {content}
