@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ReactDOM from "react-dom";
 import ConfirmationModal from "./ConfirmationModal";
 import ProjectOverviewModal from "./ProjectOverviewModal";
 import { UserProfileModal } from "@/app/components/ProfileModal";
@@ -762,6 +763,82 @@ function DeleteMenuItem({
   );
 }
 
+// ── Portal Dropdown Component ──
+interface PortalDropdownProps {
+  isOpen: boolean;
+  onClose: () => void;
+  buttonRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}
+
+function PortalDropdown({
+  isOpen,
+  onClose,
+  buttonRef,
+  children,
+}: PortalDropdownProps) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || !buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const dropdownWidth = 224; // w-56 = 14rem = 224px
+    const left = Math.min(
+      rect.right - dropdownWidth,
+      window.innerWidth - dropdownWidth - 8,
+    );
+    const top = rect.bottom + 6;
+
+    setPosition({
+      top,
+      left: Math.max(8, left),
+    });
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    const handleScroll = () => onClose();
+    const handleResize = () => onClose();
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isOpen, buttonRef, onClose]);
+
+  if (!isOpen) return null;
+
+  return ReactDOM.createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed w-56 rounded-xl border p-1.5 shadow-2xl shadow-black/30 z-[999]"
+      style={{
+        top: position.top,
+        left: position.left,
+        backgroundColor: "var(--bg-card)",
+        borderColor: "var(--border)",
+      }}>
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
 export default function ProjectCard({
   id,
   title,
@@ -953,7 +1030,7 @@ export default function ProjectCard({
             {p.label}
           </div>
 
-          {/* ⋯ menu - FIXED: properly positioned with max-height and scroll */}
+          {/* ⋯ menu button - FIXED: uses portal for dropdown */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
               <button
@@ -991,75 +1068,6 @@ export default function ProjectCard({
                   <circle cx="5" cy="12" r="1" />
                 </svg>
               </button>
-
-              {menuOpen && (
-                <div
-                  className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border p-1.5 shadow-lg shadow-black/20 z-50 max-h-[calc(100vh-200px)] overflow-y-auto"
-                  style={{
-                    backgroundColor: "var(--bg-card)",
-                    borderColor: "var(--border)",
-                  }}>
-                  {/* Generate Summary */}
-                  <MenuItem
-                    onClick={handleGenerateSummary}
-                    accentBg={accentHoverBg}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                      <polyline points="14 2 14 8 20 8" />
-                      <line x1="9" y1="13" x2="15" y2="13" />
-                      <line x1="9" y1="17" x2="15" y2="17" />
-                    </svg>
-                    Generate Summary
-                  </MenuItem>
-
-                  {/* Edit project */}
-                  <MenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                      router.push(`/AddProjectPage?edit=${id}`);
-                    }}
-                    accentBg={accentHoverBg}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <path d="M12 20h9" />
-                      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                    </svg>
-                    Edit project
-                  </MenuItem>
-
-                  {/* Divider */}
-                  <div
-                    className="my-1 h-px"
-                    style={{ backgroundColor: "var(--border)" }}
-                  />
-
-                  {/* Delete — uses its own component so color is never lost */}
-                  <DeleteMenuItem
-                    dangerBg={dangerHoverBg}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                      setConfirmDeleteOpen(true);
-                    }}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1439,6 +1447,70 @@ export default function ProjectCard({
           </div>
         </div>
       </div>
+
+      {/* Portal Dropdown - rendered outside the card */}
+      <PortalDropdown
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        buttonRef={menuRef}>
+        {/* Generate Summary */}
+        <MenuItem onClick={handleGenerateSummary} accentBg={accentHoverBg}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="9" y1="13" x2="15" y2="13" />
+            <line x1="9" y1="17" x2="15" y2="17" />
+          </svg>
+          Generate Summary
+        </MenuItem>
+
+        {/* Edit project */}
+        <MenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+            router.push(`/AddProjectPage?edit=${id}`);
+          }}
+          accentBg={accentHoverBg}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+          Edit project
+        </MenuItem>
+
+        {/* Divider */}
+        <div
+          className="my-1 h-px"
+          style={{ backgroundColor: "var(--border)" }}
+        />
+
+        {/* Delete */}
+        <DeleteMenuItem
+          dangerBg={dangerHoverBg}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+            setConfirmDeleteOpen(true);
+          }}
+        />
+      </PortalDropdown>
 
       {selectedDay && isOwner && (
         <DayTaskModal
