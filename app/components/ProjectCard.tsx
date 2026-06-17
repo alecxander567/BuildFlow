@@ -953,7 +953,7 @@ export default function ProjectCard({
             {p.label}
           </div>
 
-          {/* ⋯ menu - FIXED: opens upward so delete isn't cut off */}
+          {/* ⋯ menu - FIXED: properly positioned with max-height and scroll */}
           {canEdit && (
             <div className="absolute top-2.5 right-2.5 z-10" ref={menuRef}>
               <button
@@ -994,7 +994,7 @@ export default function ProjectCard({
 
               {menuOpen && (
                 <div
-                  className="absolute right-0 bottom-full mb-1.5 w-48 rounded-xl border p-1.5 shadow-lg shadow-black/10 z-20"
+                  className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border p-1.5 shadow-lg shadow-black/20 z-50 max-h-[calc(100vh-200px)] overflow-y-auto"
                   style={{
                     backgroundColor: "var(--bg-card)",
                     borderColor: "var(--border)",
