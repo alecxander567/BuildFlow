@@ -18,27 +18,45 @@ export default function ChatButton({ onClick, isOpen }: ChatButtonProps) {
     return () => clearTimeout(t);
   }, []);
 
-  const startIdleTimer = () => {
+  const clearIdleTimer = () => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = null;
+  };
+
+  const startIdleTimer = () => {
+    clearIdleTimer();
     idleTimer.current = setTimeout(() => setIdle(true), 3000);
   };
 
   const cancelIdleTimer = () => {
-    if (idleTimer.current) clearTimeout(idleTimer.current);
+    clearIdleTimer();
     setIdle(false);
   };
 
-  useEffect(() => {
-    if (!isOpen && !isHovered) {
-      startIdleTimer();
-    } else {
-      cancelIdleTimer();
+  const active = isOpen || isHovered;
+
+  // Render-time adjustment: the moment the button becomes active
+  // (open or hovered), reset idle immediately. Doing this here,
+  // guarded by the prevActive comparison, avoids calling setState
+  // synchronously inside the effect body below.
+  const [prevActive, setPrevActive] = useState(active);
+  if (active !== prevActive) {
+    setPrevActive(active);
+    if (active && idle) {
+      setIdle(false);
     }
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-    };
+  }
+
+  // Effect now only manages the external timer (start/stop),
+  // it never sets state directly itself.
+  useEffect(() => {
+    clearIdleTimer();
+    if (!active) {
+      startIdleTimer();
+    }
+    return clearIdleTimer;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isHovered]);
+  }, [active]);
 
   const idleOffset = idle && !isHovered && !isOpen ? "26px" : "0px";
 

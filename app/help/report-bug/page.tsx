@@ -74,8 +74,8 @@ export default function ReportBugPage() {
               <p
                 className="text-base leading-relaxed"
                 style={{ color: "var(--text-secondary)" }}>
-                Found something broken? Let us know and we'll fix it as quickly
-                as possible. Please provide as much detail as you can.
+                Found something broken? Let us know and we&apos;ll fix it as
+                quickly as possible. Please provide as much detail as you can.
               </p>
             </div>
 
@@ -98,8 +98,8 @@ export default function ReportBugPage() {
                       Bug report submitted!
                     </p>
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                      Thank you for helping us improve. We'll look into this and
-                      get back to you if we need more information.
+                      Thank you for helping us improve. We&apos;ll look into
+                      this and get back to you if we need more information.
                     </p>
                   </div>
                 </div>

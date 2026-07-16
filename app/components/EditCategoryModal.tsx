@@ -24,11 +24,24 @@ export function EditCategoryModal({
   const [editCategoryError, setEditCategoryError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Render-time adjustment: whenever the modal transitions into the
+  // open state (with a category to edit), reset the form fields right
+  // here instead of inside an effect.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen && categoryName) {
       setEditCategoryName(categoryName);
       setEditCategoryError("");
-      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }
+
+  // Focusing the input is a real external-system side effect (DOM focus),
+  // so it stays in an effect — it just no longer also calls setState.
+  useEffect(() => {
+    if (isOpen && categoryName) {
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
     }
   }, [isOpen, categoryName]);
 
@@ -92,7 +105,6 @@ export function EditCategoryModal({
             }`}
             style={{
               color: "var(--text-primary)",
-              placeholderColor: "var(--text-muted)",
             }}
           />
           {editCategoryError && (

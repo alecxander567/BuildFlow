@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export interface Comment {
   id: string;
@@ -45,16 +45,23 @@ export function useComments(
   currentUserEmail?: string,
 ) {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load on mount / projectId change
-  useEffect(() => {
-    setLoading(true);
-    const fetched = loadComments(projectId);
-    setComments(fetched);
-    setLoading(false);
-  }, [projectId]);
+  // Tracks which projectId the current `comments` state was loaded for.
+  // Since loadComments() is a pure, synchronous function of projectId
+  // (just a localStorage read), we don't need an Effect to "synchronize"
+  // anything — we can adjust state directly during render whenever
+  // projectId changes, per https://react.dev/learn/you-might-not-need-an-effect
+  const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
+
+  if (projectId !== loadedProjectId) {
+    setLoadedProjectId(projectId);
+    setComments(loadComments(projectId));
+  }
+
+  // True only for the very first render, before the render-phase load
+  // above has resolved against a real (client-side) projectId.
+  const loading = loadedProjectId === null;
 
   const addComment = useCallback(
     async (text: string): Promise<boolean> => {
@@ -113,7 +120,7 @@ export function useComments(
 
   return {
     comments,
-    commentCount: comments.length, 
+    commentCount: comments.length,
     loading,
     submitting,
     addComment,

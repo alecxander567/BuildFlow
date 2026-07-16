@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/Topbar";
@@ -13,7 +13,6 @@ import {
 import { useAuth } from "@/app/hooks/useAuth";
 import { useUserTools } from "@/app/hooks/useUserTools";
 import ProjectFormFields from "../components/ProjectFormFields";
-import { useEffect } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function AddProjectPageContent() {
@@ -56,17 +55,30 @@ export default function AddProjectPageContent() {
     {},
   );
 
-  useEffect(() => {
-    if (toolsLoaded) {
-      setLocalCatalog(userTools);
-    }
-  }, [userTools, toolsLoaded]);
+  // Keep localCatalog mirroring userTools once it's loaded. This is a pure
+  // sync of local state from already-fetched data (no async work of its
+  // own), so it's adjusted directly during render — tracking the userTools
+  // reference we last synced from — rather than via an Effect, per
+  // https://react.dev/learn/you-might-not-need-an-effect
+  const [syncedTools, setSyncedTools] = useState<Record<
+    string,
+    string[]
+  > | null>(null);
 
-  const seededRef = useRef(false);
-  useEffect(() => {
-    if (!isReady || seededRef.current) return;
-    seededRef.current = true;
+  if (toolsLoaded && userTools !== syncedTools) {
+    setSyncedTools(userTools);
+    setLocalCatalog(userTools);
+  }
 
+  // Seed the form fields from `target` exactly once, as soon as the data
+  // needed to do so (isReady) becomes available. Also a pure, synchronous
+  // derivation from already-loaded data, so it's handled the same way
+  // during render instead of in an Effect. A `seeded` state flag (rather
+  // than a ref) is used so this is safe under Strict Mode's double-render.
+  const [seeded, setSeeded] = useState(false);
+
+  if (isReady && !seeded) {
+    setSeeded(true);
     if (isEditMode && target) {
       setTitle(target.title ?? "");
       setDescription(target.description ?? "");
@@ -79,7 +91,7 @@ export default function AddProjectPageContent() {
       setDailyPlan(target.dailyPlan ?? {});
       setImageUrl(target.imageUrl ?? "");
     }
-  }, [isReady, isEditMode, target]);
+  }
 
   const handleCatalogChange = (updatedCatalog: Record<string, string[]>) => {
     setLocalCatalog(updatedCatalog);

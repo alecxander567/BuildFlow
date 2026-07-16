@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/app/hooks/useAuth";
 import { useAnalytics } from "@/app/hooks/useAnalytics";
@@ -26,6 +26,20 @@ interface ProfileData {
   unlockedCount?: number;
   totalAchievements?: number;
   productivityScore?: number;
+}
+
+// Loose shape of a project document as stored in Firestore.
+// Firestore data is untyped at the SDK level, so we describe just
+// enough structure to safely read from it here.
+interface DailyTaskEntry {
+  done?: boolean;
+}
+
+interface ProjectDoc {
+  userId?: string;
+  ownerEmail?: string;
+  dailyPlan?: Record<string, DailyTaskEntry[]>;
+  selectedTools?: Record<string, string[]>;
 }
 
 // ─── shared UI helpers ───────────────────────────────────────────────────────
@@ -68,7 +82,7 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
     : query(collection(db, "projects"), where("ownerEmail", "==", email));
 
   const projectsSnap = await getDocs(projectsQuery);
-  const projects = projectsSnap.docs.map((d) => d.data());
+  const projects = projectsSnap.docs.map((d) => d.data() as ProjectDoc);
 
   const totalProjects = projects.length;
 
@@ -77,22 +91,20 @@ async function loadUserProfileByEmail(email: string): Promise<ProfileData> {
   const toolCounts: Record<string, { count: number; category: string }> = {};
 
   projects.forEach((p) => {
-    Object.values(p.dailyPlan ?? {}).forEach((tasks: any) => {
-      tasks.forEach((t: any) => {
+    Object.values(p.dailyPlan ?? {}).forEach((tasks) => {
+      tasks.forEach((t) => {
         totalTasks++;
         if (t.done) doneTasks++;
       });
     });
 
-    Object.entries(p.selectedTools ?? {}).forEach(
-      ([category, tools]: [string, any]) => {
-        tools.forEach((tool: string) => {
-          const key = `${category}:${tool}`;
-          if (!toolCounts[key]) toolCounts[key] = { count: 0, category };
-          toolCounts[key].count++;
-        });
-      },
-    );
+    Object.entries(p.selectedTools ?? {}).forEach(([category, tools]) => {
+      tools.forEach((tool) => {
+        const key = `${category}:${tool}`;
+        if (!toolCounts[key]) toolCounts[key] = { count: 0, category };
+        toolCounts[key].count++;
+      });
+    });
   });
 
   const taskCompletionRate =
@@ -116,7 +128,7 @@ interface ModalShellProps {
   data: ProfileData | null;
   isLoading: boolean;
   onClose: () => void;
-  modalRef: React.RefObject<HTMLDivElement>;
+  modalRef: React.RefObject<HTMLDivElement | null>;
   style?: React.CSSProperties;
   isSelf?: boolean;
 }
@@ -475,7 +487,7 @@ function ModalShell({
 interface SelfProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  anchorRef?: React.RefObject<HTMLElement>;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function SelfProfileModal({
@@ -546,30 +558,62 @@ interface UserProfileModalProps {
   position?: { top: number; left: number };
 }
 
+// Constants for useSyncExternalStore below. Defined outside the component so
+// they're stable across renders (avoids re-subscribing unnecessarily).
+const emptySubscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function UserProfileModal({
   isOpen,
   onClose,
   ownerEmail,
-  position,
 }: UserProfileModalProps) {
   const [data, setData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Needed for Next.js SSR — document doesn't exist on the server
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Replaces the old `mounted` state + effect. useSyncExternalStore lets us
+  // ask "are we on the client yet" without ever calling setState — React
+  // uses the server snapshot during SSR/hydration and switches to the
+  // client snapshot right after, with no extra render-then-setState step.
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
 
+  // Render-time adjustment: reset loading/data the moment isOpen or
+  // ownerEmail changes, instead of doing it synchronously inside the effect.
+  const fetchKey = isOpen ? ownerEmail : "";
+  const [prevFetchKey, setPrevFetchKey] = useState(fetchKey);
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey);
+    if (isOpen && ownerEmail) {
+      setIsLoading(true);
+      setData(null);
+    }
+  }
+
+  // Effect now only kicks off the async fetch itself (an external system
+  // call) — setState calls here happen inside the promise callbacks, not
+  // synchronously in the effect body.
   useEffect(() => {
     if (!isOpen || !ownerEmail) return;
-    setIsLoading(true);
-    setData(null);
+    let cancelled = false;
+
     loadUserProfileByEmail(ownerEmail)
-      .then(setData)
+      .then((result) => {
+        if (!cancelled) setData(result);
+      })
       .catch(console.error)
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, ownerEmail]);
 
   useEffect(() => {

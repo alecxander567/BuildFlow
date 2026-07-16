@@ -1,386 +1,93 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import {
+  Sun,
+  Moon,
+  History,
+  Save,
+  Trash2,
+  Lock,
+  UserCircle,
+  Eye,
+  EyeOff,
+  TriangleAlert,
+} from "lucide-react";
 import { useAuth } from "@/app/hooks/useAuth";
-import { useProjects } from "@/app/hooks/useProject";
-import { useAlert, AlertContainer } from "@/app/components/Alert";
-import Sidebar from "@/app/components/Sidebar";
-import TopBar from "@/app/components/Topbar";
-import { useTeam, type TeamMember } from "@/app/hooks/useTeam";
+import { useSettings } from "@/app/hooks/useSettings";
+import { useAccountSettings } from "@/app/hooks/useAccountSettings";
+import Sidebar from "../components/Sidebar";
+import TopBar from "../components/Topbar";
+import { AlertContainer, useAlert } from "../components/Alert";
+import ConfirmationModal from "../components/ConfirmationModal";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-function Avatar({
-  photoURL,
-  displayName,
-  size = 40,
-  gradient = "from-blue-500 to-purple-600",
-}: {
-  photoURL?: string;
-  displayName: string;
-  size?: number;
-  gradient?: string;
-}) {
-  if (photoURL) {
-    return (
-      <Image
-        src={photoURL}
-        alt={displayName}
-        width={size}
-        height={size}
-        className="rounded-full object-cover flex-shrink-0"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
-  return (
-    <div
-      className={`bg-gradient-to-br ${gradient} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0`}
-      style={{ width: size, height: size, fontSize: size * 0.35 }}>
-      {displayName.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
-function RoleBadge({ role }: { role: "owner" | "member" }) {
-  if (role === "owner") {
-    return (
-      <span className="ml-2 text-[10px] font-semibold bg-[var(--bg-accent-soft)] text-[var(--accent)] px-2 py-0.5 rounded-full border border-[var(--accent)]/30">
-        Owner
-      </span>
-    );
-  }
-  return (
-    <span className="ml-2 text-[10px] font-semibold bg-[#EEF2FF] dark:bg-[#4F46E5]/10 text-[#4F46E5] dark:text-[#818CF8] px-2 py-0.5 rounded-full border border-[#C7D2FE] dark:border-[#4F46E5]/30">
-      Member
-    </span>
-  );
-}
-
-function YouBadge() {
-  return (
-    <span className="ml-2 text-[10px] font-semibold bg-[var(--bg-hover)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full border border-[var(--border)]">
-      You
-    </span>
-  );
-}
-
-function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-accent-soft)]">
-        {icon}
-      </div>
-      <h3
-        className="mb-1 text-sm font-semibold text-[var(--text-primary)]"
-        style={{ fontFamily: "'Sora', sans-serif" }}>
-        {title}
-      </h3>
-      <p className="mb-4 max-w-xs text-xs leading-relaxed text-[var(--text-muted)]">
-        {description}
-      </p>
-      {action}
-    </div>
-  );
-}
-
-function EmailText({ email }: { email?: string }) {
-  if (email) {
-    return <p className="text-xs text-[var(--text-muted)] truncate">{email}</p>;
-  }
-  return (
-    <p className="text-xs text-[var(--border-dashed)] italic truncate">
-      Email not available — user must log in once
-    </p>
-  );
-}
-
-function TeamMemberRow({
-  member,
-  currentUserId,
-  isOwner,
-  onRemove,
-  removing,
-}: {
-  member: TeamMember;
-  currentUserId?: string;
-  isOwner: boolean;
-  onRemove: (uid: string) => void;
-  removing: boolean;
-}) {
-  const isYou = member.uid === currentUserId;
-  const canRemove = isOwner && member.role !== "owner" && !isYou;
-
-  return (
-    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--border-dashed)] hover:shadow-sm transition-all">
-      <div className="flex items-center gap-3 min-w-0">
-        <Avatar
-          photoURL={member.photoURL}
-          displayName={member.displayName}
-          size={38}
-        />
-        <div className="min-w-0">
-          <div className="flex items-center flex-wrap gap-0.5">
-            <span className="text-sm font-semibold text-[var(--text-primary)] truncate">
-              {member.displayName}
-            </span>
-            {isYou && <YouBadge />}
-            <RoleBadge role={member.role} />
-          </div>
-          <EmailText email={member.email} />
-        </div>
-      </div>
-      {canRemove && (
-        <button
-          onClick={() => onRemove(member.uid)}
-          disabled={removing}
-          className="ml-3 flex-shrink-0 text-xs font-medium text-red-600 hover:text-white hover:bg-red-600 border border-red-200 dark:border-red-800 hover:border-red-600 px-3 py-1.5 rounded-lg transition-all disabled:opacity-50">
-          Remove
-        </button>
-      )}
-    </div>
-  );
-}
-
-function AvailableUserRow({
-  availableUser,
-  onAdd,
-  adding,
-}: {
-  availableUser: any;
-  onAdd: (user: any) => void;
-  adding: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] hover:border-[var(--border-dashed)] hover:shadow-sm transition-all">
-      <div className="flex items-center gap-3 min-w-0">
-        <Avatar
-          photoURL={availableUser.photoURL}
-          displayName={availableUser.displayName || "U"}
-          size={38}
-          gradient="from-teal-500 to-emerald-600"
-        />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
-            {availableUser.displayName || "Anonymous User"}
-          </p>
-          <EmailText email={availableUser.email} />
-          {availableUser.bio && (
-            <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">
-              {availableUser.bio.substring(0, 50)}
-            </p>
-          )}
-        </div>
-      </div>
-      <button
-        onClick={() => onAdd(availableUser)}
-        disabled={adding}
-        className="ml-3 flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:scale-[0.97] px-3 py-1.5 rounded-lg transition-all disabled:opacity-50">
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-        Add
-      </button>
-    </div>
-  );
-}
-
-function ProjectOverviewCard({
-  project,
-  teamMembers,
-  currentUserId,
-  onClick,
-}: {
-  project: any;
-  teamMembers: TeamMember[];
-  currentUserId?: string;
-  onClick: () => void;
-}) {
-  const isOwner = project.userId === currentUserId;
-  const preview = teamMembers.slice(0, 4);
-  const overflow = teamMembers.length - preview.length;
-
-  return (
-    <div
-      onClick={onClick}
-      className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] p-4 cursor-pointer hover:shadow-md hover:border-[var(--border-dashed)] transition-all group">
-      <div className="flex items-start justify-between mb-2">
-        <div className="min-w-0">
-          <h3
-            className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate"
-            style={{ fontFamily: "'Sora', sans-serif" }}>
-            {project.title}
-          </h3>
-          <span className="text-[10px] font-semibold text-[var(--accent)]">
-            {isOwner ? "Owner" : "Member"}
-          </span>
-        </div>
-        <svg
-          className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors flex-shrink-0 mt-0.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div>
-
-      <p className="text-xs text-[var(--text-muted)] mb-4 line-clamp-2 leading-relaxed">
-        {project.description || "No description"}
-      </p>
-
-      <div className="flex items-center justify-between">
-        <div className="flex -space-x-2">
-          {preview.map((member) => (
-            <div
-              key={member.uid}
-              title={member.displayName}
-              className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--accent)] to-[#F5A623] border-2 border-[var(--bg-card)] flex items-center justify-center text-white text-[10px] font-bold">
-              {member.displayName.charAt(0).toUpperCase()}
-            </div>
-          ))}
-          {overflow > 0 && (
-            <div className="w-7 h-7 rounded-full bg-[var(--bg-hover)] border-2 border-[var(--bg-card)] flex items-center justify-center text-[var(--text-secondary)] text-[10px] font-bold">
-              +{overflow}
-            </div>
-          )}
-        </div>
-        <span className="text-xs text-[var(--text-muted)]">
-          {teamMembers.length} {teamMembers.length === 1 ? "member" : "members"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pb-3 px-1 text-xs font-semibold transition-all border-b-2 ${
-        active ?
-          "border-[var(--accent)] text-[var(--accent)]"
-        : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-      }`}>
-      {children}
-    </button>
-  );
-}
-
-export default function TeamPage() {
+export default function SettingsPage() {
   const { user, authLoading } = useAuth();
-  const { projects: allProjects, loading: projectsLoading } = useProjects(
-    user,
-    authLoading,
-  );
-  const { toasts, remove, success, error } = useAlert();
-
   const {
+    settings,
+    activityLogs,
     loading,
-    addTeamMember,
-    removeTeamMember,
-    getAvailableUsers,
-    isProjectOwner,
-    getTeamForProject,
-    projectTeams,
-  } = useTeam({ user, projects: allProjects, alertFns: { success, error } });
+    saving,
+    toggleTheme,
+    saveSettings,
+    clearActivityLogs,
+    formatTimestamp,
+  } = useSettings(user?.email);
 
-  const projects = allProjects.filter((p) => {
-    if (p.userId === user?.uid) return true;
-    const members = (p.teamMembers ?? []) as TeamMember[];
-    return members.some((m) => m.uid === user?.uid);
-  });
+  const account = useAccountSettings(user?.email);
 
-  const [selectedProject, setSelectedProject] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"team" | "available">("team");
-  const [searchTerm, setSearchTerm] = useState("");
+  const { toasts, remove, show } = useAlert();
+  const [showClearLogsConfirm, setShowClearLogsConfirm] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
 
-  const handleSelectProject = (id: string) => {
-    setSelectedProject(id);
-    setActiveTab("team");
-    setSearchTerm("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+
+  const handleSave = async () => {
+    await saveSettings();
+    show("success", "Your preferences have been updated.", "Settings saved");
   };
 
-  const handleAddMember = async (member: any) => {
-    await addTeamMember(selectedProject, member);
-    setActiveTab("team");
-    setSearchTerm("");
+  const handleClearLogs = async () => {
+    setClearingLogs(true);
+    await clearActivityLogs();
+    setClearingLogs(false);
+    setShowClearLogsConfirm(false);
+    show("success", "Activity logs have been cleared.", "Logs cleared");
   };
 
-  const handleRemoveMember = (uid: string) => {
-    removeTeamMember(selectedProject, uid);
-  };
-
-  const isLoading = authLoading || projectsLoading;
-  const currentTeam = getTeamForProject(selectedProject);
-  const availableUsers = getAvailableUsers(selectedProject, searchTerm);
-  const ownerOfSelected = isProjectOwner(selectedProject);
-
-  if (isLoading) {
+  if (authLoading || loading) {
     return (
       <div
-        className="flex h-screen overflow-hidden bg-[var(--bg-base)]"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        className="flex h-screen overflow-hidden"
+        style={{
+          backgroundColor: "var(--bg-base)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
           <TopBar />
-          <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex flex-1 items-center justify-center">
             <div className="text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[var(--accent)] border-t-transparent" />
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                Loading teams…
+              <div
+                className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"
+                style={{
+                  borderColor: "var(--accent)",
+                  borderTopColor: "transparent",
+                }}
+              />
+              <p
+                className="mt-3 text-sm"
+                style={{ color: "var(--text-secondary)" }}>
+                Loading settings…
               </p>
             </div>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div
-        className="flex h-screen items-center justify-center bg-[var(--bg-base)]"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}>
-        <div className="text-center">
-          <h2
-            className="text-xl font-semibold text-[var(--text-primary)] mb-1"
-            style={{ fontFamily: "'Sora', sans-serif" }}>
-            Please log in
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            You need to be logged in to manage teams.
-          </p>
+          </div>
         </div>
       </div>
     );
@@ -388,306 +95,664 @@ export default function TeamPage() {
 
   return (
     <>
-      <AlertContainer toasts={toasts} onRemove={remove} position="top-center" />
+      {account.deleteSaving && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center"
+          style={{ backgroundColor: "var(--bg-base)", opacity: 0.95 }}>
+          <LoadingSpinner
+            variant="dots"
+            size="lg"
+            label="Deleting your account…"
+          />
+        </div>
+      )}
 
       <div
-        className="flex h-screen overflow-hidden bg-[var(--bg-base)]"
-        style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        className="flex h-screen overflow-hidden"
+        style={{
+          backgroundColor: "var(--bg-base)",
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
         <Sidebar />
 
         <div className="flex flex-1 flex-col overflow-hidden pt-[53px] md:pt-0">
           <TopBar />
 
           <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 md:px-8 md:py-7">
-            <div className="mx-auto max-w-6xl flex flex-col gap-5 md:gap-7">
-              {/* ── Page Header ── */}
+            <div className="mx-auto max-w-3xl flex flex-col gap-5 md:gap-7">
+              {/* Header */}
               <div>
-                <h1
-                  className="text-lg font-bold text-[var(--text-primary)] sm:text-xl"
-                  style={{ fontFamily: "'Sora', sans-serif" }}>
-                  Team Management
-                </h1>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                  Manage collaborators across your projects
+                <h2
+                  className="text-base font-bold sm:text-lg"
+                  style={{
+                    color: "var(--text-primary)",
+                    fontFamily: "'Sora', sans-serif",
+                  }}>
+                  Settings
+                </h2>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Manage your app preferences and account settings
                 </p>
               </div>
 
-              {/* ── Project Selector ── */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <label className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">
-                  Project
-                </label>
-                <div className="relative w-full sm:w-80">
-                  <select
-                    value={selectedProject}
-                    onChange={(e) => handleSelectProject(e.target.value)}
-                    className="w-full appearance-none bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] text-sm rounded-xl px-4 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all cursor-pointer">
-                    <option value="">Choose a project…</option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.title}
-                        {project.userId === user.uid ? " (Owner)" : " (Member)"}
-                      </option>
-                    ))}
-                  </select>
-                  <svg
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
+              {/* ── Account Section ── */}
+              <Section
+                icon={
+                  <UserCircle
+                    className="h-4 w-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  />
+                }
+                title="Account">
+                {/* Email */}
+                <div className="flex flex-col gap-1.5 mb-5">
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: "var(--text-primary)" }}>
+                    Email address
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={account.newEmail}
+                      onChange={(e) => account.setNewEmail(e.target.value)}
+                      className="flex-1 h-9 px-3 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.emailError ? "var(--error)" : "var(--border)",
+                        color: "var(--text-primary)",
+                      }}
                     />
-                  </svg>
-                </div>
-              </div>
-
-              {/* ── Selected Project Panel ── */}
-              {selectedProject ?
-                <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] overflow-hidden">
-                  {ownerOfSelected && (
-                    <div className="flex gap-6 px-6 pt-4 border-b border-[var(--border)]">
-                      <TabButton
-                        active={activeTab === "team"}
-                        onClick={() => {
-                          setActiveTab("team");
-                          setSearchTerm("");
-                        }}>
-                        Team · {currentTeam.length}
-                      </TabButton>
-                      <TabButton
-                        active={activeTab === "available"}
-                        onClick={() => setActiveTab("available")}>
-                        Add Members ·{" "}
-                        {getAvailableUsers(selectedProject, "").length}
-                      </TabButton>
-                    </div>
-                  )}
-
-                  <div className="p-6">
-                    {/* Team Tab */}
-                    {activeTab === "team" && (
-                      <>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h2
-                              className="text-sm font-bold text-[var(--text-primary)]"
-                              style={{ fontFamily: "'Sora', sans-serif" }}>
-                              Current Team
-                            </h2>
-                            {!ownerOfSelected && (
-                              <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                                You're a member of this team
-                              </p>
-                            )}
-                          </div>
-                          {ownerOfSelected && (
-                            <button
-                              onClick={() => setActiveTab("available")}
-                              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:scale-[0.97] px-3 py-2 rounded-xl transition-all">
-                              <svg
-                                className="w-3.5 h-3.5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2.5}
-                                  d="M12 4v16m8-8H4"
-                                />
-                              </svg>
-                              Add Members
-                            </button>
-                          )}
-                        </div>
-
-                        {currentTeam.length === 0 ?
-                          <EmptyState
-                            icon={
-                              <svg
-                                className="w-6 h-6 text-[var(--accent)]"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={1.75}
-                                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                            }
-                            title="No team members yet"
-                            description="Add members to start collaborating on this project."
-                            action={
-                              ownerOfSelected ?
-                                <button
-                                  onClick={() => setActiveTab("available")}
-                                  className="text-xs font-semibold text-[var(--accent)] hover:underline">
-                                  Browse users →
-                                </button>
-                              : undefined
-                            }
-                          />
-                        : <div className="flex flex-col gap-2">
-                            {currentTeam.map((member) => (
-                              <TeamMemberRow
-                                key={member.uid}
-                                member={member}
-                                currentUserId={user.uid}
-                                isOwner={ownerOfSelected}
-                                onRemove={handleRemoveMember}
-                                removing={loading}
-                              />
-                            ))}
-                          </div>
-                        }
-                      </>
-                    )}
-
-                    {/* Available Users Tab */}
-                    {activeTab === "available" && ownerOfSelected && (
-                      <>
-                        <div className="mb-4">
-                          <h2
-                            className="text-sm font-bold text-[var(--text-primary)] mb-1"
-                            style={{ fontFamily: "'Sora', sans-serif" }}>
-                            Available Users
-                          </h2>
-                          <p className="text-xs text-[var(--text-muted)] mb-3">
-                            Browse all users and add them to your project team
-                          </p>
-                          <div className="relative">
-                            <svg
-                              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                              />
-                            </svg>
-                            <input
-                              type="text"
-                              placeholder="Search by name or email…"
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="w-full pl-9 pr-4 py-2.5 bg-[var(--bg-base)] border border-[var(--border)] rounded-xl text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        {availableUsers.length === 0 ?
-                          <EmptyState
-                            icon={
-                              <svg
-                                className="w-6 h-6 text-[var(--accent)]"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={1.75}
-                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                              </svg>
-                            }
-                            title={
-                              searchTerm ? "No users found" : "All users added"
-                            }
-                            description={
-                              searchTerm ?
-                                "Try a different name or email address."
-                              : "All available users are already on this team."
-                            }
-                            action={
-                              searchTerm ?
-                                <button
-                                  onClick={() => setSearchTerm("")}
-                                  className="text-xs font-semibold text-[var(--accent)] hover:underline">
-                                  Clear search
-                                </button>
-                              : undefined
-                            }
-                          />
-                        : <div className="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-1">
-                            {availableUsers.map((u) => (
-                              <AvailableUserRow
-                                key={u.uid}
-                                availableUser={u}
-                                onAdd={handleAddMember}
-                                adding={loading}
-                              />
-                            ))}
-                          </div>
-                        }
-                      </>
-                    )}
+                    <button
+                      onClick={async () => {
+                        const ok = await account.updateEmail();
+                        if (ok)
+                          show(
+                            "success",
+                            "Email updated successfully.",
+                            "Done",
+                          );
+                      }}
+                      disabled={account.emailSaving}
+                      className="h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                      style={{ backgroundColor: "var(--accent)" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--accent-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--accent)";
+                      }}>
+                      {account.emailSaving ?
+                        <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      : "Update"}
+                    </button>
                   </div>
-                </div>
-              : projects.length > 0 ?
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h2
-                      className="text-base font-bold text-[var(--text-primary)]"
-                      style={{ fontFamily: "'Sora', sans-serif" }}>
-                      Your Project Teams
-                    </h2>
-                    <p className="text-xs text-[var(--text-muted)]">
-                      {projects.length} project
-                      {projects.length !== 1 ? "s" : ""}
+                  {account.emailError && (
+                    <p className="text-xs" style={{ color: "var(--error)" }}>
+                      {account.emailError}
                     </p>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {projects.map((project) => (
-                      <ProjectOverviewCard
-                        key={project.id}
-                        project={project}
-                        teamMembers={projectTeams[project.id] || []}
-                        currentUserId={user.uid}
-                        onClick={() => handleSelectProject(project.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              : <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-dashed)] bg-[var(--bg-card)] py-16 px-6 text-center">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-accent-soft)]">
-                    <svg
-                      className="w-6 h-6 text-[var(--accent)]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.75}
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h3
-                    className="mb-1 text-sm font-semibold text-[var(--text-primary)]"
-                    style={{ fontFamily: "'Sora', sans-serif" }}>
-                    No projects yet
-                  </h3>
-                  <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-                    Create a project first, or get added to one as a team
-                    member.
+                  )}
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    A confirmation link will be sent to your new address.
                   </p>
                 </div>
-              }
+
+                {/* Divider */}
+                <div
+                  className="border-t mb-5"
+                  style={{ borderColor: "var(--border)" }}
+                />
+
+                {/* Password */}
+                <div className="flex flex-col gap-2">
+                  <p
+                    className="text-sm font-medium mb-1"
+                    style={{ color: "var(--text-primary)" }}>
+                    Change password
+                  </p>
+
+                  {/* Current Password */}
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Current password"
+                      value={account.currentPassword}
+                      onChange={(e) =>
+                        account.setCurrentPassword(e.target.value)
+                      }
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showCurrentPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="New password"
+                      value={account.newPassword}
+                      onChange={(e) => account.setNewPassword(e.target.value)}
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showNewPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={account.confirmPassword}
+                      onChange={(e) =>
+                        account.setConfirmPassword(e.target.value)
+                      }
+                      className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                      style={{
+                        backgroundColor: "var(--bg-base)",
+                        borderColor:
+                          account.passwordError ? "var(--error)" : (
+                            "var(--border)"
+                          ),
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}>
+                      {showConfirmPassword ?
+                        <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  {account.passwordError && (
+                    <p className="text-xs" style={{ color: "var(--error)" }}>
+                      {account.passwordError}
+                    </p>
+                  )}
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Minimum 8 characters.
+                  </p>
+                  <div className="flex justify-end mt-1">
+                    <button
+                      onClick={async () => {
+                        const ok = await account.updatePassword();
+                        if (ok)
+                          show(
+                            "success",
+                            "Password changed successfully.",
+                            "Done",
+                          );
+                      }}
+                      disabled={account.passwordSaving}
+                      className="flex items-center gap-2 h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                      style={{ backgroundColor: "var(--accent)" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "var(--accent-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--accent)";
+                      }}>
+                      {account.passwordSaving ?
+                        <>
+                          <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                          Saving…
+                        </>
+                      : <>
+                          <Lock className="h-4 w-4" />
+                          Update password
+                        </>
+                      }
+                    </button>
+                  </div>
+                </div>
+              </Section>
+
+              {/* ── Appearance Section ── */}
+              <Section
+                icon={
+                  settings.theme === "light" ?
+                    <Sun
+                      className="h-4 w-4"
+                      style={{ color: "var(--text-secondary)" }}
+                    />
+                  : <Moon
+                      className="h-4 w-4"
+                      style={{ color: "var(--text-secondary)" }}
+                    />
+                }
+                title="Appearance">
+                <Row
+                  label="Dark Mode"
+                  description="Switch between light and dark themes">
+                  <Toggle
+                    active={settings.theme === "dark"}
+                    onToggle={toggleTheme}
+                  />
+                </Row>
+              </Section>
+
+              {/* ── Activity Logs Section ── */}
+              <Section
+                icon={
+                  <History
+                    className="h-4 w-4"
+                    style={{ color: "var(--text-secondary)" }}
+                  />
+                }
+                title="Activity Logs"
+                action={
+                  activityLogs.length > 0 ?
+                    <button
+                      onClick={() => setShowClearLogsConfirm(true)}
+                      className="flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                      style={{ color: "var(--accent)" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--accent-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "var(--accent)";
+                      }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Clear All
+                    </button>
+                  : null
+                }>
+                {activityLogs.length === 0 ?
+                  <div className="py-10 text-center">
+                    <History
+                      className="h-10 w-10 mx-auto mb-3"
+                      style={{ color: "var(--border-dashed)" }}
+                    />
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: "var(--text-secondary)" }}>
+                      No activity yet
+                    </p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--text-muted)" }}>
+                      Your actions will appear here as you use the app
+                    </p>
+                  </div>
+                : <div className="max-h-80 overflow-y-auto divide-y divide-[var(--divide)]">
+                    {activityLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="py-3 flex items-start justify-between gap-4 -mx-5 px-5 transition-colors"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor =
+                            "var(--bg-base)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-sm font-medium truncate"
+                            style={{ color: "var(--text-primary)" }}>
+                            {log.action}
+                          </p>
+                          {log.details && (
+                            <p
+                              className="text-xs mt-0.5 truncate"
+                              style={{ color: "var(--text-secondary)" }}>
+                              {log.details}
+                            </p>
+                          )}
+                          {log.userEmail && (
+                            <p
+                              className="text-xs mt-0.5"
+                              style={{ color: "var(--text-muted)" }}>
+                              {log.userEmail}
+                            </p>
+                          )}
+                        </div>
+                        <p
+                          className="text-xs whitespace-nowrap shrink-0"
+                          style={{ color: "var(--text-muted)" }}>
+                          {formatTimestamp(log.timestamp)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                }
+              </Section>
+
+              {/* ── Danger Zone Section ── */}
+              <Section
+                icon={
+                  <TriangleAlert
+                    className="h-4 w-4"
+                    style={{ color: "var(--error)" }}
+                  />
+                }
+                title="Danger Zone"
+                danger>
+                {!showDeleteConfirm ?
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "var(--text-primary)" }}>
+                        Delete account
+                      </p>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "var(--text-muted)" }}>
+                        Permanently deletes your account and all associated
+                        data. This cannot be undone.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="shrink-0 h-9 px-4 text-sm font-semibold rounded-xl border transition-colors"
+                      style={{
+                        borderColor: "var(--error)",
+                        color: "var(--error)",
+                        backgroundColor: "transparent",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--error)";
+                        e.currentTarget.style.color = "#fff";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "var(--error)";
+                      }}>
+                      Delete account
+                    </button>
+                  </div>
+                : <div className="flex flex-col gap-3">
+                    <div
+                      className="flex items-start gap-2.5 rounded-xl p-3"
+                      style={{
+                        backgroundColor: "var(--bg-error)",
+                      }}>
+                      <TriangleAlert
+                        className="h-4 w-4 mt-0.5 shrink-0"
+                        style={{ color: "var(--error)" }}
+                      />
+                      <p
+                        className="text-xs leading-relaxed"
+                        style={{ color: "var(--error)" }}>
+                        This will permanently delete your account and all
+                        associated data. This action{" "}
+                        <span className="font-bold">cannot be undone.</span>
+                      </p>
+                    </div>
+
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-primary)" }}>
+                      Enter your password to confirm:
+                    </p>
+
+                    <div className="relative">
+                      <input
+                        type={showDeletePassword ? "text" : "password"}
+                        placeholder="Your password"
+                        value={account.deletePassword}
+                        onChange={(e) =>
+                          account.setDeletePassword(e.target.value)
+                        }
+                        className="w-full h-9 px-3 pr-9 text-sm rounded-xl border outline-none"
+                        style={{
+                          backgroundColor: "var(--bg-base)",
+                          borderColor:
+                            account.deleteError ? "var(--error)" : (
+                              "var(--border)"
+                            ),
+                          color: "var(--text-primary)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeletePassword((v) => !v)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                        style={{ color: "var(--text-muted)" }}>
+                        {showDeletePassword ?
+                          <EyeOff className="h-4 w-4" />
+                        : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+
+                    {account.deleteError && (
+                      <p className="text-xs" style={{ color: "var(--error)" }}>
+                        {account.deleteError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setShowDeletePassword(false);
+                          account.setDeletePassword("");
+                        }}
+                        className="h-9 px-4 text-sm font-semibold rounded-xl border transition-colors"
+                        style={{
+                          borderColor: "var(--border)",
+                          color: "var(--text-secondary)",
+                          backgroundColor: "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor =
+                            "var(--bg-base)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}>
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => account.deleteAccount()}
+                        disabled={account.deleteSaving}
+                        className="flex items-center gap-2 h-9 px-4 text-sm font-semibold rounded-xl text-white disabled:opacity-60 transition-colors"
+                        style={{ backgroundColor: "var(--error)" }}>
+                        {account.deleteSaving ?
+                          <>
+                            <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                            Deleting…
+                          </>
+                        : <>
+                            <Trash2 className="h-4 w-4" />
+                            Delete permanently
+                          </>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                }
+              </Section>
+
+              {/* ── Save Button ── */}
+              <div className="flex justify-end pb-4">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors active:scale-[0.987] disabled:opacity-60"
+                  style={{ backgroundColor: "var(--accent)" }}
+                  onMouseEnter={(e) => {
+                    if (!saving)
+                      e.currentTarget.style.backgroundColor =
+                        "var(--accent-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!saving)
+                      e.currentTarget.style.backgroundColor = "var(--accent)";
+                  }}>
+                  {saving ?
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      Saving…
+                    </>
+                  : <>
+                      <Save className="h-4 w-4" />
+                      Save Settings
+                    </>
+                  }
+                </button>
+              </div>
             </div>
           </main>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showClearLogsConfirm}
+        title="Clear Activity Logs?"
+        message="This action cannot be undone. All activity logs will be permanently deleted."
+        confirmLabel="Clear All"
+        cancelLabel="Cancel"
+        loading={clearingLogs}
+        onConfirm={handleClearLogs}
+        onCancel={() => setShowClearLogsConfirm(false)}
+      />
+
+      <AlertContainer toasts={toasts} onRemove={remove} position="top-center" />
     </>
+  );
+}
+
+// ── Helper Components ──
+
+function Section({
+  icon,
+  title,
+  action,
+  danger = false,
+  children,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  action?: React.ReactNode;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden"
+      style={{
+        backgroundColor: "var(--bg-card)",
+        borderColor: danger ? "var(--error)" : "var(--border)",
+      }}>
+      <div
+        className="px-5 py-4 border-b flex items-center gap-2"
+        style={{
+          borderColor: danger ? "var(--error)" : "var(--border)",
+          backgroundColor: danger ? "var(--bg-error)" : undefined,
+        }}>
+        {icon}
+        <h2
+          className="text-sm font-bold"
+          style={{
+            color: danger ? "var(--error)" : "var(--text-primary)",
+            fontFamily: "'Sora', sans-serif",
+          }}>
+          {title}
+        </h2>
+        {action && <div className="ml-auto">{action}</div>}
+      </div>
+      <div className="px-5 py-4">{children}</div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <p
+          className="text-sm font-medium"
+          style={{ color: "var(--text-primary)" }}>
+          {label}
+        </p>
+        {description && (
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+            {description}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Toggle({
+  active,
+  onToggle,
+  disabled = false,
+  loading = false,
+}: {
+  active: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled || loading}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      }`}
+      style={{ backgroundColor: active ? "var(--accent)" : "var(--border)" }}>
+      {loading ?
+        <span className="absolute inset-0 flex items-center justify-center">
+          <div className="h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+        </span>
+      : <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+            active ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      }
+    </button>
   );
 }

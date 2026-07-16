@@ -4,36 +4,56 @@ import { type User } from "firebase/auth";
 import { db } from "@/app/lib/firebase";
 import { updateStatsAndCheckAchievements } from "@/app/lib/firebase/achievementService";
 
+// Sentinel distinct from every possible uid value (including null, for
+// "no user"), used to detect "we haven't reacted to a user yet".
+const NOT_TRACKED: unique symbol = Symbol("not-tracked");
+type UidKey = string | null;
+
 export function useUserTools(user: User | null) {
   const [userTools, setUserTools] = useState<Record<string, string[]>>({});
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) {
+  // Tracks which uid the state above currently reflects. When the uid
+  // changes, adjust state directly during render (per
+  // https://react.dev/learn/you-might-not-need-an-effect) rather than in
+  // an Effect — this covers both the synchronous "no user" reset and
+  // flipping `loaded` to false right before a fetch starts. The actual
+  // Firestore read is genuinely async, so that part stays in the Effect
+  // below.
+  const [trackedUid, setTrackedUid] = useState<UidKey | typeof NOT_TRACKED>(
+    NOT_TRACKED,
+  );
+
+  const uid = user?.uid ?? null;
+
+  if (uid !== trackedUid) {
+    setTrackedUid(uid);
+    setError(null);
+    if (uid === null) {
       setUserTools({});
       setLoaded(true);
-      return;
+    } else {
+      setLoaded(false);
     }
+  }
 
-    setLoaded(false);
+  useEffect(() => {
+    if (!user) return;
+
     let cancelled = false;
 
     const load = async () => {
       try {
         const snap = await getDoc(doc(db, "userTools", user.uid));
-        if (!cancelled) {
-          if (snap.exists()) {
-            const data = snap.data();
-            const tools = data.tools as Record<string, string[]>;
-            if (tools && typeof tools === "object") {
-              setUserTools(tools);
-            } else {
-              setUserTools({});
-            }
-          } else {
-            setUserTools({});
-          }
+        if (cancelled) return;
+
+        if (snap.exists()) {
+          const data = snap.data();
+          const tools = data.tools as Record<string, string[]>;
+          setUserTools(tools && typeof tools === "object" ? tools : {});
+        } else {
+          setUserTools({});
         }
       } catch (err) {
         console.error("Failed to load user tools:", err);

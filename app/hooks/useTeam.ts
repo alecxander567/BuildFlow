@@ -8,8 +8,10 @@ import {
   updateDoc,
   getDoc,
 } from "firebase/firestore";
+import { type User } from "firebase/auth";
 import { db } from "@/app/lib/firebase";
 import { updateStatsAndCheckAchievements } from "@/app/lib/firebase/achievementService";
+import { type Project } from "@/app/hooks/useProject";
 
 export type TeamMember = {
   uid: string;
@@ -20,9 +22,20 @@ export type TeamMember = {
   joinedAt: string;
 };
 
+// A user document from the "users" Firestore collection. Extends beyond
+// these known fields since it's built via `{ uid: doc.id, ...doc.data() }`,
+// so extra dynamic fields are allowed through the index signature.
+export type AppUser = {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  [key: string]: unknown;
+};
+
 type UseTeamProps = {
-  user: any;
-  projects: any[];
+  user: User | null;
+  projects: Project[];
   alertFns: {
     success: (msg: string) => void;
     error: (msg: string) => void;
@@ -30,7 +43,7 @@ type UseTeamProps = {
 };
 
 export function useTeam({ user, projects, alertFns }: UseTeamProps) {
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [projectTeams, setProjectTeams] = useState<
     Record<string, TeamMember[]>
   >({});
@@ -46,7 +59,7 @@ export function useTeam({ user, projects, alertFns }: UseTeamProps) {
         const usersList = snapshot.docs.map((doc) => ({
           uid: doc.id,
           ...doc.data(),
-        }));
+        })) as AppUser[];
         setAllUsers(usersList);
       } catch (err) {
         console.error("Error fetching users:", err);
@@ -73,7 +86,7 @@ export function useTeam({ user, projects, alertFns }: UseTeamProps) {
             projectData?.teamMembers &&
             Array.isArray(projectData.teamMembers)
           ) {
-            teams[project.id] = projectData.teamMembers;
+            teams[project.id] = projectData.teamMembers as TeamMember[];
           } else {
             const owner = allUsers.find((u) => u.uid === project.userId);
             if (owner) {
@@ -102,7 +115,7 @@ export function useTeam({ user, projects, alertFns }: UseTeamProps) {
   }, [projects, allUsers, user]);
 
   const addTeamMember = useCallback(
-    async (projectId: string, member: any) => {
+    async (projectId: string, member: AppUser) => {
       if (!user) return;
       const project = projects.find((p) => p.id === projectId);
       if (!project) return;

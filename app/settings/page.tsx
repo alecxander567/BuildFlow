@@ -412,9 +412,7 @@ export default function SettingsPage() {
                       Your actions will appear here as you use the app
                     </p>
                   </div>
-                : <div
-                    className="max-h-80 overflow-y-auto divide-y"
-                    style={{ divideColor: "var(--divide)" }}>
+                : <div className="max-h-80 overflow-y-auto divide-y divide-[var(--divide)]">
                     {activityLogs.map((log) => (
                       <div
                         key={log.id}

@@ -339,9 +339,20 @@ const typeColors = {
   warning: { bg: "#FFF7ED", icon: "#E8610A", border: "#FED7AA" },
 };
 
-function timeAgo(ts: any): string {
+// Firestore Timestamp-like objects expose toDate(); we also want to accept
+// plain Date objects, ISO strings, or epoch numbers for flexibility.
+type TimestampLike =
+  | { toDate: () => Date }
+  | Date
+  | string
+  | number
+  | null
+  | undefined;
+
+function timeAgo(ts: TimestampLike): string {
   if (!ts) return "";
-  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  const date =
+    typeof ts === "object" && "toDate" in ts ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
@@ -387,9 +398,14 @@ function HelpNavItem({
 }) {
   const isHelpActive = pathname.startsWith("/help");
   const [open, setOpen] = useState(isHelpActive);
-  useEffect(() => {
+
+  // Render-time adjustment: force the section open the moment
+  // isHelpActive becomes true, instead of doing it inside an effect.
+  const [prevIsHelpActive, setPrevIsHelpActive] = useState(isHelpActive);
+  if (isHelpActive !== prevIsHelpActive) {
+    setPrevIsHelpActive(isHelpActive);
     if (isHelpActive) setOpen(true);
-  }, [isHelpActive]);
+  }
 
   return (
     <div>
@@ -643,9 +659,21 @@ function MobileBell() {
   const unreadCount = notifications.filter((n) => !n.read).length;
   const hasUnread = unreadCount > 0;
 
+  // Render-time adjustment: the instant isOpen flips to false, hide
+  // immediately (no animation needed for closing). The effect below then
+  // only handles the "animate in on open" case via requestAnimationFrame,
+  // whose setVisible(true) call happens inside a callback, not
+  // synchronously in the effect body.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) setVisible(false);
+  }
+
   useEffect(() => {
-    if (isOpen) requestAnimationFrame(() => setVisible(true));
-    else setVisible(false);
+    if (!isOpen) return;
+    const raf = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
   useEffect(() => {
@@ -842,7 +870,7 @@ function MobileBell() {
                     color: "var(--text-muted)",
                     margin: 0,
                   }}>
-                  You're all caught up!
+                  You&apos;re all caught up!
                 </p>
               </div>
             : notifications.map((n) => {

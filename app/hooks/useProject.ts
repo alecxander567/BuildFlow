@@ -360,7 +360,7 @@ export function useProjects(user: User | null, authLoading: boolean) {
       if (!project) return { success: false, message: "Project not found" };
 
       // Only add if not already in the array
-      let updatedStarredBy = [...(project.starredBy || [])];
+      const updatedStarredBy = [...(project.starredBy || [])];
       if (!updatedStarredBy.includes(user.uid)) {
         updatedStarredBy.push(user.uid);
       }

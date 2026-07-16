@@ -137,7 +137,6 @@ export default function ProjectFormFields({
           }`}
           style={{
             color: "var(--text-primary)",
-            placeholderColor: "var(--text-muted)",
           }}
         />
         {submitted && !title.trim() && (
@@ -169,7 +168,6 @@ export default function ProjectFormFields({
             borderColor: "var(--border)",
             backgroundColor: "var(--bg-base)",
             color: "var(--text-primary)",
-            placeholderColor: "var(--text-muted)",
           }}
         />
       </div>
@@ -353,7 +351,6 @@ export default function ProjectFormFields({
               borderColor: "var(--border)",
               backgroundColor: "var(--bg-base)",
               color: "var(--text-primary)",
-              placeholderColor: "var(--text-muted)",
             }}
           />
         </div>

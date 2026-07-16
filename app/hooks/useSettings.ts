@@ -21,6 +21,11 @@ const DEFAULT_SETTINGS: Settings = {
   notifications: false,
 };
 
+// Sentinel used to detect "we haven't loaded for any user yet", distinct
+// from every valid value of `userEmail` (including null and undefined).
+const UNLOADED: unique symbol = Symbol("unloaded");
+type UserKey = string | null | undefined;
+
 // Helper function to apply theme - defined outside to ensure consistency
 const applyThemeToDocument = (theme: ThemeMode) => {
   if (typeof window === "undefined") return;
@@ -56,15 +61,73 @@ export const initializeThemeForUser = (userEmail?: string | null) => {
   }
 };
 
+// Pure, synchronous read of a user's settings + logs from localStorage.
+// Kept as a plain function (not an Effect) since it has no async work and
+// no external subscription — it's just derived data for a given userEmail.
+function loadForUser(userEmail: string): {
+  settings: Settings;
+  activityLogs: ActivityLog[];
+} {
+  const settingsKey = getSettingsKey(userEmail);
+  const savedSettings = localStorage.getItem(settingsKey);
+
+  let settings: Settings;
+  if (savedSettings) {
+    settings = JSON.parse(savedSettings) as Settings;
+  } else {
+    const themeKey = getThemePreferenceKey(userEmail);
+    const savedTheme = localStorage.getItem(themeKey);
+    settings = {
+      ...DEFAULT_SETTINGS,
+      theme: savedTheme === "dark" ? "dark" : "light",
+    };
+  }
+
+  const logsKey = getActivityLogsKey(userEmail);
+  const savedLogs = localStorage.getItem(logsKey);
+  const activityLogs: ActivityLog[] = savedLogs ? JSON.parse(savedLogs) : [];
+
+  return { settings, activityLogs };
+}
+
 export function useSettings(userEmail?: string | null) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // Tracks which userEmail the current settings/activityLogs state was
+  // loaded for. Adjust state directly during render when userEmail changes
+  // (per https://react.dev/learn/you-might-not-need-an-effect) instead of
+  // using an Effect just to call setState synchronously.
+  const [loadedFor, setLoadedFor] = useState<UserKey | typeof UNLOADED>(
+    UNLOADED,
+  );
+
+  if (userEmail !== loadedFor) {
+    setLoadedFor(userEmail);
+    if (userEmail) {
+      const { settings: loaded, activityLogs: loadedLogs } =
+        loadForUser(userEmail);
+      setSettings(loaded);
+      setActivityLogs(loadedLogs);
+    } else {
+      setSettings(DEFAULT_SETTINGS);
+      setActivityLogs([]);
+    }
+  }
+
+  const loading = loadedFor === UNLOADED;
+
+  // Keep the document's theme class in sync with settings.theme. This is a
+  // genuine external-system synchronization (mutating the DOM), so it
+  // belongs in an Effect — it just doesn't call setState.
+  useEffect(() => {
+    applyThemeToDocument(settings.theme);
+  }, [settings.theme]);
 
   // Apply theme to document
   const applyTheme = (theme: ThemeMode) => {
@@ -77,42 +140,6 @@ export function useSettings(userEmail?: string | null) {
     const settingsKey = getSettingsKey(userEmail);
     localStorage.setItem(settingsKey, JSON.stringify(newSettings));
   };
-
-  // Load settings and logs from localStorage on mount (user-specific)
-  useEffect(() => {
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
-
-    const loadSettings = () => {
-      const settingsKey = getSettingsKey(userEmail);
-      const savedSettings = localStorage.getItem(settingsKey);
-
-      if (savedSettings) {
-        const parsed: Settings = JSON.parse(savedSettings);
-        setSettings(parsed);
-        applyTheme(parsed.theme);
-      } else {
-        // Check for standalone theme preference for this user
-        const themeKey = getThemePreferenceKey(userEmail);
-        const savedTheme = localStorage.getItem(themeKey);
-        if (savedTheme === "dark") {
-          applyTheme("dark");
-          setSettings((prev) => ({ ...prev, theme: "dark" }));
-        } else {
-          applyTheme("light");
-        }
-      }
-
-      const logsKey = getActivityLogsKey(userEmail);
-      const savedLogs = localStorage.getItem(logsKey);
-      setActivityLogs(savedLogs ? JSON.parse(savedLogs) : []);
-      setLoading(false);
-    };
-
-    loadSettings();
-  }, [userEmail]);
 
   // Log an activity entry (user-specific)
   const logActivity = (action: string, details?: string) => {

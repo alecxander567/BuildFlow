@@ -13,6 +13,16 @@ interface TopBarProps {
   onSearchChange?: (value: string) => void;
 }
 
+// Covers Firestore Timestamp objects (with .toDate()), plain Dates,
+// ISO strings/numbers, or missing values.
+type TimestampLike =
+  | { toDate: () => Date }
+  | Date
+  | string
+  | number
+  | null
+  | undefined;
+
 const typeIcon = {
   info: (
     <svg
@@ -66,9 +76,10 @@ const typeColors = {
   warning: { bg: "#FFF7ED", icon: "#E8610A", border: "#FED7AA" },
 };
 
-function timeAgo(ts: any): string {
+function timeAgo(ts: TimestampLike): string {
   if (!ts) return "";
-  const date = ts.toDate ? ts.toDate() : new Date(ts);
+  const date =
+    typeof ts === "object" && "toDate" in ts ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
   if (diff < 60) return "just now";
   if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
@@ -91,11 +102,13 @@ export default function TopBar({
   const hasUnread = unreadCount > 0;
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => setVisible(true));
-    } else {
-      setVisible(false);
-    }
+    // Both branches defer the state update to the next animation frame
+    // rather than calling setState synchronously in the effect body, which
+    // avoids the cascading-render warning. The panel unmounts entirely when
+    // isOpen is false, so the timing of the "false" branch has no visible
+    // effect on the UI — it only resets state for the next time it opens.
+    const raf = requestAnimationFrame(() => setVisible(isOpen));
+    return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
   useEffect(() => {
@@ -323,7 +336,7 @@ export default function TopBar({
                         color: "var(--text-muted)",
                         margin: 0,
                       }}>
-                      You're all caught up!
+                      You&apos;re all caught up!
                     </p>
                   </div>
                 : notifications.map((n) => {

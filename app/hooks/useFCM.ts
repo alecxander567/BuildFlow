@@ -1,5 +1,6 @@
 // app/hooks/useFCM.ts
 import { useEffect, useState } from "react";
+import type { MessagePayload } from "firebase/messaging";
 import {
   requestNotificationPermission,
   onMessageListener,
@@ -9,7 +10,7 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 
 export const useFCM = () => {
-  const [notification, setNotification] = useState<any>(null);
+  const [notification, setNotification] = useState<MessagePayload | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export const useFCM = () => {
     onMessageListener().then((payload) => {
       if (payload) {
         console.log("Foreground message received:", payload);
-        setNotification(payload);
+        setNotification(payload as MessagePayload);
       }
     });
   }, []);

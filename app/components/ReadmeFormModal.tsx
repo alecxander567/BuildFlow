@@ -18,12 +18,16 @@ export default function ReadmeFormModal({
   const [techStack, setTechStack] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
 
-  useEffect(() => {
+  // Render-time adjustment: reset the form the moment the modal
+  // transitions to open, instead of doing it inside an effect.
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setTechStack([]);
       setInputValue("");
     }
-  }, [isOpen]);
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -204,8 +208,8 @@ export default function ReadmeFormModal({
             <p
               className="mt-2 text-[11px] italic"
               style={{ color: "var(--text-muted)" }}>
-              You can also generate without a tech stack — it'll be marked as
-              not specified yet.
+              You can also generate without a tech stack — it&apos;ll be
+              marked as not specified yet.
             </p>
           )}
         </div>

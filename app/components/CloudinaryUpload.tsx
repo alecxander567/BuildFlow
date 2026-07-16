@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 interface CloudinaryUploadProps {
   onUpload: (imageUrl: string) => void;
@@ -16,12 +16,17 @@ export default function CloudinaryUpload({
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [imageUrl, setImageUrl] = useState(currentImageUrl);
+  const [prevCurrentImageUrl, setPrevCurrentImageUrl] =
+    useState(currentImageUrl);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Render-time adjustment: keep imageUrl in sync with the currentImageUrl
+  // prop whenever it changes, without a useEffect + setState round-trip.
+  if (currentImageUrl !== prevCurrentImageUrl) {
+    setPrevCurrentImageUrl(currentImageUrl);
     setImageUrl(currentImageUrl);
-  }, [currentImageUrl]);
+  }
 
   // Extract public ID from Cloudinary URL
   const getPublicIdFromUrl = (url: string): string | null => {
@@ -30,7 +35,7 @@ export default function CloudinaryUpload({
       const uploadIndex = url.indexOf("/upload/");
       if (uploadIndex === -1) return null;
 
-      let path = url.substring(uploadIndex + 8); 
+      let path = url.substring(uploadIndex + 8);
 
       // Remove version prefix if exists (v1234567890/)
       const versionMatch = path.match(/^v\d+\//);

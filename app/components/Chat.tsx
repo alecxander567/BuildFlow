@@ -5,6 +5,11 @@ import ChatButton from "./ChatButton";
 import ChatWindow from "./ChatWindow";
 import { Message } from "./ChatTypes";
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Sorry, I'm having trouble connecting. Please try again later.";
+}
+
 export default function Chat() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -67,13 +72,13 @@ export default function Chat() {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sending message:", error);
 
       // Error message with details
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: `Error: ${error.message || "Sorry, I'm having trouble connecting. Please try again later."}`,
+        text: `Error: ${getErrorMessage(error)}`,
         sender: "bot",
         timestamp: new Date(),
       };
