@@ -19,15 +19,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Add no-cache headers to prevent bfcache restoration after logout.
-  // When the user hits Back, the browser re-validates with the server
-  // instead of showing a stale cached copy.
-  const response = NextResponse.next();
-  response.headers.set("Cache-Control", "no-store, must-revalidate");
-  response.headers.set("Pragma", "no-cache");
-  response.headers.set("Expires", "0");
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
