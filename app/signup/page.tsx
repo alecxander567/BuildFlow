@@ -46,16 +46,12 @@ export default function SignUpPage() {
 
   const { signUp, loading, status, clearStatus, user, authLoading } = useAuth();
 
-  // Add redirect guard - redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      window.location.replace("/dashboard");
-    }
-  }, [user, authLoading]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await signUp(email, password, confirmPassword);
+    if (status?.type === "success" && user) {
+      window.location.replace("/dashboard");
+    }
   };
 
   // Show loading while checking auth state
@@ -77,7 +73,6 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen w-full font-sans bg-[#F9F7F4]">
-      {/* Rest of your existing JSX remains exactly the same */}
       <div className="relative hidden md:flex md:w-[45%] flex-col justify-center overflow-hidden bg-[#E8610A] p-10 lg:p-14">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full"
@@ -228,9 +223,7 @@ export default function SignUpPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0ADA7] hover:text-[#72706A] transition-colors">
-                  {showPassword ?
-                    <EyeOffIcon />
-                  : <EyeIcon />}
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
             </div>
@@ -257,9 +250,7 @@ export default function SignUpPage() {
                   onClick={() => setShowConfirm(!showConfirm)}
                   aria-label={showConfirm ? "Hide password" : "Show password"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0ADA7] hover:text-[#72706A] transition-colors">
-                  {showConfirm ?
-                    <EyeOffIcon />
-                  : <EyeIcon />}
+                  {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
             </div>

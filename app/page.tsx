@@ -29,16 +29,16 @@ export default function LoginPage() {
     authLoading, 
   } = useAuth();
 
-  // Add redirect guard - redirect to dashboard if already logged in
-  useEffect(() => {
-    if (!authLoading && user) {
-      window.location.replace("/dashboard"); 
-    }
-  }, [user, authLoading]);
+  const redirectToDashboard = () => {
+    window.location.replace("/dashboard");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await signIn(email, password);
+    if (status?.type === "success" && user) {
+      window.location.replace("/dashboard");
+    }
   };
 
   // Show loading while checking auth state
@@ -267,7 +267,13 @@ export default function LoginPage() {
           <div className="flex gap-2.5">
             <button
               type="button"
-              onClick={signInWithGoogle}
+              onClick={() => {
+                signInWithGoogle().then(() => {
+                  if (status?.type === "success" && user) {
+                    window.location.replace("/dashboard");
+                  }
+                });
+              }}
               disabled={loading}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E8E4DE] bg-[#FDFCFB] py-2.5 text-sm font-medium text-[#1A1916] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] disabled:opacity-50 disabled:cursor-not-allowed">
               <svg
@@ -296,7 +302,13 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={signInWithGithub}
+              onClick={() => {
+                signInWithGithub().then(() => {
+                  if (status?.type === "success" && user) {
+                    window.location.replace("/dashboard");
+                  }
+                });
+              }}
               disabled={loading}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E8E4DE] bg-[#FDFCFB] py-2.5 text-sm font-medium text-[#1A1916] transition-colors hover:border-[#F5C89A] hover:bg-[#FEF0E7] disabled:opacity-50 disabled:cursor-not-allowed">
               <svg
