@@ -134,7 +134,6 @@ export function useAuth() {
 
       await setSessionCookie(userCredential.user);
 
-      // useEffect in SignUpPage handles redirect to /dashboard
       setStatus({
         type: "success",
         message: "Account created successfully! Welcome to BuildFlow.",
@@ -166,7 +165,6 @@ export function useAuth() {
       await syncUserToFirestore(userCredential.user);
       await setSessionCookie(userCredential.user);
 
-      // useEffect in LoginPage handles redirect to /dashboard
       setStatus({ type: "success", message: "Signed in successfully!" });
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
@@ -207,8 +205,6 @@ export function useAuth() {
       );
 
       await setSessionCookie(result.user);
-
-      // useEffect in LoginPage handles redirect to /dashboard
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       if (code === "auth/popup-closed-by-user") {
@@ -249,8 +245,6 @@ export function useAuth() {
       );
 
       await setSessionCookie(result.user);
-
-      // useEffect in LoginPage handles redirect to /dashboard
     } catch (err) {
       const code = err instanceof FirebaseError ? err.code : "";
       if (code === "auth/popup-closed-by-user") {

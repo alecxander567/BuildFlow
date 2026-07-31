@@ -49,9 +49,6 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await signUp(email, password, confirmPassword);
-    if (status?.type === "success" && user) {
-      window.location.replace("/dashboard");
-    }
   };
 
   // Show loading while checking auth state
@@ -66,8 +63,9 @@ export default function SignUpPage() {
     );
   }
 
-  // If user is logged in, don't render the signup form (redirect will happen)
-  if (user) {
+  // If user is logged in, redirect to dashboard
+  if (user && status?.type === "success") {
+    window.location.replace("/dashboard");
     return null;
   }
 
