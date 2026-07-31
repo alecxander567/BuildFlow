@@ -64,7 +64,7 @@ export default function SignUpPage() {
   }
 
   // If user is logged in, redirect to dashboard
-  if (user && status?.type === "success") {
+  if (user) {
     window.location.replace("/dashboard");
     return null;
   }

@@ -50,8 +50,8 @@ export default function LoginPage() {
     );
   }
 
-  // If user is logged in, don't render the login form (redirect will happen)
-  if (user && status?.type === "success") {
+  // If user is already logged in (e.g. from a persisted session), redirect to dashboard
+  if (user) {
     window.location.replace("/dashboard");
     return null;
   }
