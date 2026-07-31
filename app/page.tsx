@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"; 
 import Link from "next/link";
-import { useRouter } from "next/navigation"; 
 import { useAuth } from "@/app/hooks/useAuth";
 import AuthAlert from "@/app/components/AuthAlert";
 
@@ -15,7 +14,6 @@ const AVATARS = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter(); 
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +32,9 @@ export default function LoginPage() {
   // Add redirect guard - redirect to dashboard if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace("/dashboard"); 
+      window.location.replace("/dashboard"); 
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

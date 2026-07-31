@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import AuthAlert from "@/app/components/AuthAlert";
 
@@ -39,7 +38,6 @@ const EyeOffIcon = () => (
 );
 
 export default function SignUpPage() {
-  const router = useRouter(); // Add router
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [email, setEmail] = useState("");
@@ -51,9 +49,9 @@ export default function SignUpPage() {
   // Add redirect guard - redirect to dashboard if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace("/dashboard");
+      window.location.replace("/dashboard");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
