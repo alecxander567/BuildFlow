@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react"; 
+import { useState } from "react"; 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/hooks/useAuth";
 import AuthAlert from "@/app/components/AuthAlert";
 
@@ -14,6 +15,7 @@ const AVATARS = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +32,7 @@ export default function LoginPage() {
   } = useAuth();
 
   const redirectToDashboard = () => {
-    window.location.replace("/dashboard");
+    router.replace("/dashboard");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,7 +54,7 @@ export default function LoginPage() {
 
   // If user is already logged in (e.g. from a persisted session), redirect to dashboard
   if (user) {
-    window.location.replace("/dashboard");
+    router.replace("/dashboard");
     return null;
   }
 
@@ -268,7 +270,7 @@ export default function LoginPage() {
               onClick={() => {
                 signInWithGoogle().then(() => {
                   if (status?.type === "success" && user) {
-                    window.location.replace("/dashboard");
+                    router.replace("/dashboard");
                   }
                 });
               }}
@@ -303,7 +305,7 @@ export default function LoginPage() {
               onClick={() => {
                 signInWithGithub().then(() => {
                   if (status?.type === "success" && user) {
-                    window.location.replace("/dashboard");
+                    router.replace("/dashboard");
                   }
                 });
               }}

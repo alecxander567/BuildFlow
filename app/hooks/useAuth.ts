@@ -77,6 +77,9 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
+      // Unblock the UI immediately — don't wait for Firestore sync
+      setAuthLoading(false);
+
       if (firebaseUser) {
         try {
           await syncUserToFirestore(firebaseUser);
@@ -89,9 +92,6 @@ export function useAuth() {
           console.error("Firestore sync failed, continuing anyway:", e);
         }
       }
-
-      // Always runs — no more stuck loading state
-      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
