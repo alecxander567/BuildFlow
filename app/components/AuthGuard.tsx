@@ -9,6 +9,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, authLoading } = useAuth();
   const router = useRouter();
 
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (authLoading) return;
 
@@ -16,22 +17,25 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       // Replace so the protected page is wiped from history —
       // pressing Back won't return to it.
       router.replace("/");
-      return;
-    }
-
-    // Prevent browser cache from serving this page after logout.
-    // When the user hits Back, the browser re-validates with the server
-    // instead of showing a stale cached copy.
-    if (typeof window !== "undefined") {
-      window.history.pushState(null, "", window.location.href);
-      const blockBack = () => {
-        if (!user) router.replace("/");
-        else window.history.pushState(null, "", window.location.href);
-      };
-      window.addEventListener("popstate", blockBack);
-      return () => window.removeEventListener("popstate", blockBack);
     }
   }, [user, authLoading, router]);
+
+  // Prevent bfcache (back/forward cache) from restoring a protected
+  // page after the user has logged out. When a page is restored from
+  // the bfcache, the JavaScript state is stale — the `user` object
+  // might still reference the old session. Reloading forces a fresh
+  // server request which runs through the proxy auth check.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page was restored from bfcache — reload to re-validate auth
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   // While Firebase is checking auth state, show a neutral loader
   if (authLoading) {

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ChatWrapper from "./components/ChatWrapper";
 import NotificationHandler from "@/app/components/NotificationHandler";
+import BfcachePrevention from "./components/BfcachePrevention";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeInitializer />
+        <BfcachePrevention />
         {children}
         <ChatWrapper />
         <NotificationHandler />

@@ -13,7 +13,6 @@ import {
 import { FirebaseError } from "firebase/app";
 import { auth, db } from "@/app/lib/firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import {
   initializeUserStats,
   trackDailyActivity,
@@ -69,7 +68,6 @@ async function clearSessionCookie() {
 }
 
 export function useAuth() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [status, setStatus] = useState<AuthStatus>(null);
@@ -278,7 +276,7 @@ export function useAuth() {
       await signOut(auth);
       setStatus(null);
       // Redirect to login page after logout
-      router.replace("/");
+      window.location.replace("/");
     } catch {
       setStatus({ type: "error", message: "Failed to sign out." });
     } finally {
